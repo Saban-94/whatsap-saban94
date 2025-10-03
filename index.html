@@ -34,19 +34,25 @@
         
         /* Dashboard Screen */
         .dashboard-screen { display: flex; flex-direction: column; height: 100%; }
-        .dashboard-header { padding: 15px; background: var(--brand-color); color: white; flex-shrink: 0; }
+        .dashboard-header { padding: 15px; background: var(--brand-color); color: white; flex-shrink: 0; z-index: 10; }
         .dashboard-header h1 { margin: 0; font-size: 1.5rem; }
-        .dashboard-content { flex-grow: 1; display: flex; flex-direction: column; }
+        .dashboard-content { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; }
         #map { height: 50%; width: 100%; background-color: #eee; flex-shrink: 0; }
         .feed-container { flex-grow: 1; overflow-y: auto; padding: 15px; }
         .feed-item { background: #fff; padding: 10px; border-radius: var(--small-radius); margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 
-        /* Chat Screen (as modal/overlay) */
-        .chat-view { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; background: var(--app-bg-color); transform: translateY(100%); transition: transform 0.3s ease-in-out; display: flex; flex-direction: column; }
+        /* Chat View & Fab Button */
+        .chat-view { position: fixed; bottom: 0; right: 0; left: 0; top: 0; margin: auto; max-width: 600px; z-index: 200; background: #e5ddd5; transform: translateY(100%); transition: transform 0.3s ease-in-out; display: flex; flex-direction: column; }
         .chat-view.open { transform: translateY(0); }
-
-        .fab-chat-btn { position: fixed; bottom: 20px; left: 20px; background: #25d366; color: white; width: 60px; height: 60px; border-radius: 50%; border: none; box-shadow: var(--shadow); display: flex; align-items: center; justify-content: center; z-index: 50; }
-
+        .fab-chat-btn { position: fixed; bottom: 20px; left: 20px; background: #25d366; color: white; width: 60px; height: 60px; border-radius: 50%; border: none; box-shadow: var(--shadow); display: flex; align-items: center; justify-content: center; z-index: 150; cursor: pointer; }
+        
+        /* Styles for chat components (header, canvas, footer) go here */
+        .chat-header { display: flex; align-items: center; padding: 10px 15px; background: #f1f1f1; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
+        .chat-header img { width: 45px; height: 45px; border-radius: 50%; margin-left: 15px; }
+        .chat-header .info { flex-grow: 1; }
+        .chat-canvas { flex-grow: 1; overflow-y: auto; padding: 15px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); }
+        .chat-footer { display: flex; align-items: center; padding: 10px; background: #f1f1f1; flex-shrink: 0; }
+        
         /* General Spinner */
         #spinner-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.8); display: none; align-items: center; justify-content: center; z-index: 1001; }
         #spinner-text { background-color: #fff; padding: 20px 30px; border-radius: var(--small-radius); box-shadow: var(--shadow); font-weight: 600; color: var(--text-dark); }
@@ -55,10 +61,12 @@
 <body>
     <div id="root"></div>
     <div id="spinner-overlay"><div id="spinner-text"></div></div>
+    <div class="chat-view" id="chat-view"></div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const root = document.getElementById('root');
+            const chatView = document.getElementById('chat-view');
             const API_URL = "https://script.google.com/macros/s/AKfycbyEtlNgRighnTbSI64_o62j1Lt5hxSF8To4wNEJ1Y2nC_Lrg5Ynb6Noe2e3C4n_uohE/exec";
             let clientData = null;
             let dashboardData = null;
@@ -112,7 +120,7 @@
                                     ${dashboardData.activeOrders.map(order => `
                                         <div class="feed-item">
                                             <strong>הזמנה לפרויקט ${order.project}</strong><br>
-                                            סטטוס: ${order.status} | פריטים: ${order.items.substring(0, 30)}...
+                                            <small>סטטוס: ${order.status} | פריטים: ${order.items.substring(0, 30)}...</small>
                                         </div>
                                     `).join('') || '<p>אין עדכונים כרגע.</p>'}
                                 </div>
@@ -125,13 +133,34 @@
                         </div>
                     </div>
                 `;
-                // Use a timeout to ensure the #map div is in the DOM before initializing Leaflet
+                document.querySelector('.fab-chat-btn').addEventListener('click', openChatView);
                 setTimeout(initMap, 0);
+            }
+            
+            function openChatView() {
+                // For now, this just opens the view. The full chat logic can be added here.
+                chatView.innerHTML = `
+                    <header class="chat-header">
+                         <button id="close-chat-btn" style="background:none; border:none; font-size: 1.5rem; cursor:pointer; margin-left: 10px;">✖</button>
+                         <img src="${clientData.avatar || 'https://i.postimg.cc/rsxW32Jj/logo.png'}" alt="Avatar">
+                         <div class="info"><h2>צ'אט הזמנות</h2><p>${clientData.name}</p></div>
+                    </header>
+                    <div class="chat-canvas"></div>
+                    <footer class="chat-footer">
+                        <textarea placeholder="הקלד הודעה..."></textarea>
+                    </footer>
+                `;
+                document.getElementById('close-chat-btn').addEventListener('click', closeChatView);
+                chatView.classList.add('open');
+            }
+
+            function closeChatView() {
+                chatView.classList.remove('open');
             }
 
             function initMap() {
-                if (map) map.remove(); // Remove previous map instance if exists
-                map = L.map('map').setView([32.0853, 34.7818], 10); // Center on Tel Aviv
+                if (map) map.remove(); 
+                map = L.map('map').setView([32.0853, 34.7818], 10); 
 
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     maxZoom: 19,
@@ -140,8 +169,6 @@
 
                 const projectMarkers = [];
                 dashboardData.projects.forEach(project => {
-                    // Simple geocoding placeholder - a real app would use a geocoding service
-                    // For now, we'll use a placeholder or random location if lat/lon not provided.
                     const lat = project.lat || 32.0853 + (Math.random() - 0.5) * 0.1;
                     const lon = project.lon || 34.7818 + (Math.random() - 0.5) * 0.1;
                     
@@ -150,17 +177,21 @@
                     projectMarkers.push(marker);
                 });
 
-                // Fit map to show all project markers
                 if (projectMarkers.length > 0) {
                     const group = new L.featureGroup(projectMarkers);
                     map.fitBounds(group.getBounds().pad(0.1));
                 }
+                
+                // The Fix: Tell the map to re-check its size after a brief moment
+                setTimeout(() => {
+                    map.invalidateSize();
+                }, 100);
             }
 
             function showSpinner(text) { 
-                const spinner = document.getElementById('spinner-overlay');
-                spinner.querySelector('#spinner-text').textContent = text;
-                spinner.style.display = 'flex';
+                const spinnerOverlay = document.getElementById('spinner-overlay');
+                spinnerOverlay.firstElementChild.textContent = text;
+                spinnerOverlay.style.display = 'flex';
             }
             function hideSpinner() { document.getElementById('spinner-overlay').style.display = 'none'; }
             
@@ -175,7 +206,6 @@
                 return response.json();
             }
             
-            // Initial render
             renderLoginScreen();
         });
     </script>
