@@ -106,21 +106,44 @@
             let clientData = null, dashboardData = null;
             let orderDetails = { fileLink: null, deliverySlot: null, location: null, transportType: null };
 
-            // --- ALL FUNCTIONS DECLARED HERE FOR SCOPE ---
-            let handleLogin, renderDashboardScreen, openChatView, closeChatView, handleSendMessage,
-                toggleAttachmentMenu, handleAttachmentAction, handleFileUpload, handleLocationAttach,
-                renderCalendarModal, renderTransportChoice, createDraftBubble, handleConfirmOrder,
-                openOrderDetailsView, initOrderMap, showSpinner, hideSpinner, apiPost, 
-                addHtmlToCanvas, addSystemMessage, getGreeting, closeModal;
+            // --- API & UTILITY FUNCTIONS ---
 
-            // --- CORE APP LOGIC ---
-
-            renderLoginScreen = function() {
-                root.innerHTML = `<div class="login-screen"><div class="login-box"><h1>ח. סבן</h1><p>מרכז הבקרה האישי</p><input id="client-id-input" type="tel" placeholder="הקלד מספר לקוח" /><button id="login-btn">כניסה</button></div></div>`;
-                document.getElementById('login-btn').addEventListener('click', handleLogin);
+            function showSpinner(text) { 
+                const spinnerOverlay = document.getElementById('spinner-overlay');
+                spinnerOverlay.firstElementChild.textContent = text;
+                spinnerOverlay.style.display = 'flex';
+            }
+            function hideSpinner() { 
+                document.getElementById('spinner-overlay').style.display = 'none'; 
+            }
+            
+            async function apiPost(body) {
+                const response = await fetch(API_URL, {
+                    method: 'POST', redirect: 'follow',
+                    body: JSON.stringify(body),
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                });
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                return response.json();
             }
 
-            handleLogin = async function() {
+            function addHtmlToCanvas(html) {
+                const canvas = document.getElementById('chat-canvas');
+                if(canvas) {
+                    canvas.insertAdjacentHTML('beforeend', html);
+                    canvas.scrollTop = canvas.scrollHeight;
+                }
+            }
+            function addSystemMessage(text) { 
+                addHtmlToCanvas(`<div class="message-bubble system">${text}</div>`); 
+            }
+            function closeModal() { 
+                document.getElementById('modal-container').classList.remove('visible'); 
+            }
+
+            // --- LOGIN & DASHBOARD LOGIC ---
+
+            async function handleLogin() {
                 const clientId = document.getElementById('client-id-input').value;
                 if (!clientId) return;
                 showSpinner('טוען נתונים...');
@@ -135,7 +158,7 @@
                 finally { hideSpinner(); }
             }
 
-            renderDashboardScreen = function() {
+            function renderDashboardScreen() {
                 let feedHtml = dashboardData.activeOrders.map((order, index) => `
                     <div class="feed-item" data-order-index="${index}">
                         <strong>הזמנה לפרויקט ${order.project}</strong><br>
@@ -163,10 +186,50 @@
                     });
                 });
             }
+            
+            // --- ORDER DETAILS VIEW LOGIC ---
+
+            function openOrderDetailsView(order) {
+                orderDetailsView.innerHTML = `
+                    <header class="order-details-header">
+                        <button id="close-details-btn" class="back-btn">➤</button>
+                        <div class="info"><h2>פרטי הזמנה</h2><p>${order.project}</p></div>
+                    </header>
+                    <div class="order-details-content">
+                        <p><strong>סטטוס:</strong> ${order.status}</p>
+                        <p><strong>פריטים:</strong> ${order.items}</p>
+                        <p><strong>כתובת:</strong> ${order.address || 'לא צוינה'}</p>
+                        <div id="order-map"></div>
+                    </div>
+                `;
+                orderDetailsView.classList.add('open');
+                document.getElementById('close-details-btn').addEventListener('click', () => orderDetailsView.classList.remove('open'));
+                
+                setTimeout(() => initOrderMap(order), 50);
+            }
+
+            function initOrderMap(order) {
+                const lat = order.lat || 32.0853;
+                const lon = order.lon || 34.7818;
+                let map = L.map('order-map').setView([lat, lon], 15);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+                let icon = L.marker([lat, lon]);
+                if (order.status === 'בדרך') {
+                     const truckIcon = L.divIcon({
+                        html: '🚚', className: 'map-truck-icon', 
+                        iconSize: [40, 40], iconAnchor: [20, 20]
+                    });
+                    icon = L.marker([lat, lon], { icon: truckIcon });
+                }
+                
+                icon.addTo(map).bindPopup(`<b>${order.project}</b><br>${order.address}`).openPopup();
+                setTimeout(() => map.invalidateSize(), 400);
+            }
 
             // --- CHAT VIEW LOGIC (FULL) ---
 
-            getGreeting = function() {
+            function getGreeting() {
                 const hour = new Date().getHours();
                 const name = clientData.name.split(' ')[0];
                 if (hour >= 5 && hour < 12) return `בוקר טוב ${name} ☀️`;
@@ -175,7 +238,7 @@
                 return `לילה טוב ${name} 😴`;
             }
 
-            openChatView = function() {
+            function openChatView() {
                 chatView.innerHTML = `
                     <header class="chat-header">
                          <button id="close-chat-btn" class="back-btn">➤</button>
@@ -204,11 +267,11 @@
                 addSystemMessage(getGreeting());
             }
 
-            closeChatView = function() {
+            function closeChatView() {
                 chatView.classList.remove('open');
             }
 
-            toggleAttachmentMenu = function() {
+            function toggleAttachmentMenu() {
                 let menu = document.getElementById('attachment-menu');
                 menu.classList.toggle('visible');
                 if (menu.classList.contains('visible')) {
@@ -222,7 +285,7 @@
                 }
             }
             
-            handleAttachmentAction = function(e) {
+            function handleAttachmentAction(e) {
                 const action = e.currentTarget.dataset.action;
                 toggleAttachmentMenu();
                 switch(action) {
@@ -233,7 +296,7 @@
                 }
             }
 
-            handleFileUpload = function(event) {
+            function handleFileUpload(event) {
                 const file = event.target.files[0];
                 if (!file) return;
                 const reader = new FileReader();
@@ -252,7 +315,7 @@
                 reader.readAsDataURL(file);
             }
 
-            handleLocationAttach = function() {
+            function handleLocationAttach() {
                 if (!navigator.geolocation) return addSystemMessage("שירותי מיקום לא נתמכים בדפדפן.");
                 showSpinner('מאתר מיקום...');
                 navigator.geolocation.getCurrentPosition(
@@ -265,7 +328,7 @@
                 );
             }
 
-            handleSendMessage = async function() {
+            async function handleSendMessage() {
                 const input = document.getElementById('message-input');
                 const text = input.value.trim();
                 if (!text) return;
@@ -290,7 +353,7 @@
                 } finally { hideSpinner(); }
             }
             
-            createDraftBubble = function(data) {
+            function createDraftBubble(data) {
                 const draftId = `draft-${Date.now()}`;
                 const { predictedItems, unidentifiedItems } = data;
                 let itemsHtml = predictedItems.map(item => `<li>${item.quantity} x ${item.name} (${item.sku || 'לא ידוע'})</li>`).join('');
@@ -310,7 +373,7 @@
                 draftElement.querySelector('.cancel-btn').onclick = () => draftElement.remove();
             }
 
-            handleConfirmOrder = async function(draftId, orderData) {
+            async function handleConfirmOrder(draftId, orderData) {
                 showSpinner('יוצר הזמנה...');
                 const draftElement = document.getElementById(draftId);
                 draftElement.innerHTML = 'מאשר הזמנה...';
@@ -327,11 +390,7 @@
                 }
             }
 
-            closeModal = function() { 
-                document.getElementById('modal-container').classList.remove('visible'); 
-            }
-
-            renderCalendarModal = function(date = new Date()) {
+            function renderCalendarModal(date = new Date()) {
                 const modalContainer = document.getElementById('modal-container');
                 let selectedDate = null;
                 function render() {
@@ -364,7 +423,7 @@
                 modalContainer.onclick = (e) => { if (e.target === modalContainer) closeModal(); };
             }
 
-            renderTransportChoice = function() {
+            function renderTransportChoice() {
                 const modalContainer = document.getElementById('modal-container');
                 modalContainer.innerHTML = `<div class="modal-content"><h3>בחר סוג הובלה</h3><div class="transport-options"><button data-type="פריקה ידנית">פריקה ידנית</button><button data-type="הובלת מנוף">הובלת מנוף</button></div></div>`;
                 modalContainer.querySelectorAll('button').forEach(btn => {
@@ -377,8 +436,8 @@
                 modalContainer.classList.add('visible');
                 modalContainer.onclick = (e) => { if (e.target === modalContainer) closeModal(); };
             }
-
-            // Initial call
+            
+            // --- INITIALIZATION ---
             renderLoginScreen();
         });
     </script>
