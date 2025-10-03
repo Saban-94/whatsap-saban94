@@ -28,6 +28,7 @@
             margin: 0 auto;
             background-color: var(--app-bg-color);
             box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            position: relative;
         }
         
         /* Login Screen */
@@ -105,10 +106,15 @@
             position: absolute; inset: 0; background: rgba(255,255,255,0.8);
             display: none; align-items: center; justify-content: center; z-index: 100;
         }
+        #spinner-text {
+             background-color: #fff; padding: 20px 30px; border-radius: var(--small-radius);
+             box-shadow: var(--shadow); font-weight: 600; color: var(--text-dark);
+        }
     </style>
 </head>
 <body>
     <div id="root"></div>
+    <div id="spinner-overlay"><div id="spinner-text"></div></div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -144,7 +150,7 @@
                         alert(response.error);
                     }
                 } catch (e) {
-                    alert('שגיאת תקשורת. בדוק את הכתובת של ה-API.');
+                    alert('שגיאת תקשורת. ודא שהכתובת של ה-API נכונה ושהשרת פועל.');
                     console.error(e);
                 } finally {
                     hideSpinner();
@@ -169,7 +175,6 @@
                             <textarea id="message-input" placeholder="הדבק כאן את רשימת המוצרים..." rows="1"></textarea>
                         </footer>
                     </div>
-                    <div id="spinner-overlay"><div id="spinner-text"></div></div>
                 `;
                 document.getElementById('send-btn').addEventListener('click', handleSendMessage);
                 document.getElementById('message-input').addEventListener('input', autoResizeTextarea);
@@ -290,33 +295,22 @@
 
             async function apiPost(body) {
                 if (API_URL === "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE") {
+                    // This error is a safeguard to remind the developer to deploy the script.
                     throw new Error("Please set your Google Apps Script URL in the API_URL constant.");
                 }
+                // Using redirect: 'follow' is important for Apps Script web apps.
                 const response = await fetch(API_URL, { 
                     method: 'POST', 
+                    redirect: 'follow',
                     body: JSON.stringify(body), 
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    mode: 'no-cors' // Required for basic Apps Script web apps
                 });
-                // Since 'no-cors' prevents reading the response, we assume success and proceed.
-                // For a real app, you'd need a proper JSONP or CORS-enabled response.
-                // For this demo, we'll simulate the response based on the action.
                 
-                // This is a MOCK response for the 'no-cors' limitation
-                const mockResponses = {
-                    login: { success: true, data: { id: body.clientId, name: "לקוח דמה", avatar: "https://i.postimg.cc/rsxW32Jj/logo.png" }},
-                    predictOrder: { success: true, data: { predictedItems: [{quantity: 2, name: "מלט", sku: "987564"}], predictedProject: "פרויקט דמה" }},
-                    createOrder: { success: true, data: { formattedOrder: `הזמנה חדשה התקבלה:\nלקוח: לקוח דמה (${body.clientId})\n* פריטים:\n - 2 x מלט (987564)`}}
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 
-                // This is a workaround. In a real scenario, the Apps Script would need to be configured for CORS.
-                // For now, we'll return a mock response.
-                if (mockResponses[body.action]) {
-                    console.log("Using MOCK response due to no-cors limitation.");
-                    return mockResponses[body.action];
-                }
-                
-                return { success: true }; 
+                return response.json();
             }
             
             // Initial render
