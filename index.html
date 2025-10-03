@@ -48,6 +48,9 @@
         .draft-bubble { background: #fff; border: 1px solid var(--border-color); padding: 15px; }
         .draft-bubble h3 { margin: 0 0 10px; font-size: 1.1rem; border-bottom: 1px solid #eee; padding-bottom: 5px; }
         .draft-bubble ul { margin: 0; padding: 0 15px 0 0; }
+        .draft-bubble .actions { margin-top: 15px; display: flex; gap: 10px; }
+        .draft-bubble button { padding: 8px 15px; border-radius: var(--small-radius); border: none; cursor: pointer; font-weight: 600; }
+        .draft-bubble .confirm-btn { background-color: #25d366; color: white; } .draft-bubble .cancel-btn { background-color: #e74c3c; color: white; }
         
         .catalog-bubble { padding: 0; overflow: hidden; max-height: 40vh; display: flex; flex-direction: column; background: #fff; border-radius: var(--small-radius); }
         .catalog-bubble-header { padding: 10px; border-bottom: 1px solid var(--border-color); }
@@ -65,11 +68,11 @@
 
         .chat-footer { display: flex; align-items: center; padding: 10px; background: #f1f1f1; position: relative; z-index: 20; flex-shrink: 0; }
         .chat-footer textarea { flex-grow: 1; border: none; padding: 12px 15px; border-radius: 20px; font-size: 1rem; resize: none; max-height: 100px; }
-        .chat-footer .footer-btn { border: none; background: transparent; color: #555; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .chat-footer .footer-btn { border: none; background: transparent; color: #555; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .chat-footer .send-btn { background-color: var(--brand-color); color: white; margin-right: 10px; }
 
-        .attachment-menu { position: absolute; bottom: 100%; right: 10px; left: 10px; background: #fff; border-radius: var(--large-radius); box-shadow: var(--shadow); padding: 15px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; transition: transform 0.3s ease, opacity 0.3s ease; transform: translateY(20px); opacity: 0; pointer-events: none; z-index: 25; }
-        .attachment-menu.visible { transform: translateY(-10px); opacity: 1; pointer-events: auto; }
+        .attachment-menu { position: absolute; bottom: calc(100% + 5px); right: 10px; left: 10px; background: #fff; border-radius: var(--large-radius); box-shadow: var(--shadow); padding: 15px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; transition: transform 0.2s ease-out, opacity 0.2s ease-out; transform: translateY(10px); opacity: 0; pointer-events: none; z-index: 25; }
+        .attachment-menu.visible { transform: translateY(0); opacity: 1; pointer-events: auto; }
         .attachment-item { text-align: center; cursor: pointer; }
         .attachment-item .icon-wrapper { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 5px; color: white; font-size: 24px; }
 
@@ -105,6 +108,8 @@
             const menuOverlay = document.getElementById('menu-overlay');
             const API_URL = "https://script.google.com/macros/s/AKfycbzF7YbSOWDLiUwcEvWPK7w9lQQA5iv7OwooFh8sjj_VVfj-F_dpQR9xHBaNYS8IsV50/exec";
             let clientData = null;
+            let attachedFileLink = null;
+            let selectedDeliverySlot = null;
             
             function renderLoginScreen() {
                 root.innerHTML = `
@@ -157,6 +162,7 @@
                            <main class="chat-canvas" id="chat-canvas"></main>
                         </div>
                         <footer class="chat-footer">
+                             <div class="attachment-menu" id="attachment-menu"></div>
                             <button id="send-btn" class="footer-btn send-btn">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                             </button>
@@ -165,7 +171,6 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
                             </button>
                         </footer>
-                        <div class="attachment-menu" id="attachment-menu"></div>
                     </div>
                 `;
                 
@@ -197,17 +202,36 @@
             async function handleAttachmentAction(e) {
                 const action = e.currentTarget.dataset.action;
                 toggleAttachmentMenu();
-                if (action === 'catalog') {
-                    showSpinner('טוען קטלוג...');
-                    try {
-                        const response = await apiPost({ action: 'getCatalog' });
-                        if (response.success) renderCatalogBubble(response.data);
-                        else alert('שגיאה בטעינת הקטלוג');
-                    } catch {
-                        alert('שגיאת תקשורת');
-                    } finally {
-                        hideSpinner();
-                    }
+                switch(action) {
+                    case 'catalog':
+                        showSpinner('טוען קטלוג...');
+                        try {
+                            const response = await apiPost({ action: 'getCatalog' });
+                            if (response.success) renderCatalogBubble(response.data);
+                            else alert('שגיאה בטעינת הקטלוג');
+                        } catch {
+                            alert('שגיאת תקשורת');
+                        } finally {
+                            hideSpinner();
+                        }
+                        break;
+                    case 'file':
+                        handleFileAttach();
+                        break;
+                }
+            }
+
+            function handleFileAttach() {
+                const fileUrl = prompt("הדבק כאן קישור למסמך (מגוגל דרייב, וכו'):");
+                if (fileUrl) {
+                    attachedFileLink = fileUrl;
+                    const chatCanvas = document.getElementById('chat-canvas');
+                    chatCanvas.insertAdjacentHTML('beforeend', `
+                        <div class="message-bubble system">
+                            קובץ קושר להזמנה. הקישור יישלח עם אישור הטיוטה.
+                        </div>
+                    `);
+                    chatCanvas.scrollTop = chatCanvas.scrollHeight;
                 }
             }
 
@@ -293,11 +317,68 @@
 
                 try {
                     const response = await apiPost({ action: 'predictOrder', text, clientId: clientData.id });
-                    // Handle response...
+                    if (response.success && response.data.predictedItems.length > 0) {
+                        createDraftBubble(response.data);
+                    } else {
+                        chatCanvas.insertAdjacentHTML('beforeend', `<div class="message-bubble system">לא הצלחתי לזהות מוצרים.</div>`);
+                    }
                 } catch(e) {
-                   // Handle error...
+                   chatCanvas.insertAdjacentHTML('beforeend', `<div class="message-bubble system">שגיאה בניתוח ההודעה.</div>`);
                 } finally {
                     hideSpinner();
+                }
+            }
+
+             function createDraftBubble(data) {
+                const draftId = `draft-${Date.now()}`;
+                const itemsHtml = data.predictedItems.map(item => `<li>${item.quantity} x ${item.name} (${item.sku})</li>`).join('');
+                const projectHtml = data.predictedProject ? `<p><strong>פרויקט:</strong> ${data.predictedProject}</p>` : '';
+                const fileLinkHtml = attachedFileLink ? `<p><strong>קובץ מצורף:</strong> <a href="${attachedFileLink}" target="_blank">פתח קישור</a></p>` : '';
+
+                const bubbleHtml = `
+                    <div class="message-bubble system draft-bubble" id="${draftId}">
+                        <h3>טיוטת הזמנה מוכנה לאישור</h3>
+                        ${projectHtml}
+                        <ul>${itemsHtml}</ul>
+                        ${fileLinkHtml}
+                        <div class="actions">
+                            <button class="confirm-btn">אשר ושתף</button>
+                            <button class="cancel-btn">בטל</button>
+                        </div>
+                    </div>`;
+                const chatCanvas = document.getElementById('chat-canvas');
+                chatCanvas.insertAdjacentHTML('beforeend', bubbleHtml);
+                const draftElement = document.getElementById(draftId);
+                draftElement.querySelector('.confirm-btn').addEventListener('click', () => handleConfirmOrder(draftId, data));
+                draftElement.querySelector('.cancel-btn').addEventListener('click', () => draftElement.remove());
+                chatCanvas.scrollTop = chatCanvas.scrollHeight;
+            }
+
+            async function handleConfirmOrder(draftId, orderData) {
+                showSpinner('יוצר הזמנה...');
+                const draftElement = document.getElementById(draftId);
+                draftElement.innerHTML = 'מאשר הזמנה...';
+                
+                try {
+                    const response = await apiPost({ 
+                        action: 'createOrder', 
+                        orderData, 
+                        clientId: clientData.id, 
+                        delivery: selectedDeliverySlot,
+                        fileLink: attachedFileLink
+                    });
+
+                    if (response.success) {
+                        confetti({ particleCount: 150, spread: 90, origin: { y: 0.6 } });
+                        draftElement.innerHTML = 'ההזמנה תועדה במערכת בהצלחה!';
+                        window.open(`https://wa.me/972508860896?text=${encodeURIComponent(response.data.formattedOrder)}`, '_blank');
+                    } else {
+                         draftElement.innerHTML = `שגיאה בתיעוד: ${response.error}`;
+                    }
+                } finally {
+                    hideSpinner();
+                    selectedDeliverySlot = null;
+                    attachedFileLink = null;
                 }
             }
             
