@@ -103,7 +103,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             const root = document.getElementById('root');
             const chatView = document.getElementById('chat-view');
-            const API_URL = "https://script.google.com/macros/s/AKfycbyEtlNgRighnTbSI64_o62j1Lt5hxSF8To4wNEJ1Y2nC_Lrg5Ynb6Noe2e3C4n_uohE/exec";
+            const API_URL = "hhttps://script.google.com/macros/s/AKfycbyEtlNgRighnTbSI64_o62j1Lt5hxSF8To4wNEJ1Y2nC_Lrg5Ynb6Noe2e3C4n_uohE/exec";
             let clientData = null, dashboardData = null, map = null;
             let orderDetails = { fileLink: null, deliverySlot: null, location: null, transportType: null };
 
@@ -277,8 +277,6 @@
                 );
             }
 
-            function renderCalendarModal(date = new Date()) { /* Omitted for brevity but included in full code */ }
-            function renderTransportChoice() { /* Omitted for brevity but included in full code */ }
             function closeModal() { document.getElementById('modal-container').classList.remove('visible'); }
 
             async function handleSendMessage() {
@@ -305,9 +303,6 @@
                 }
             }
             
-            function createDraftBubble(data) { /* Omitted for brevity but included in full code */ }
-            async function handleConfirmOrder(draftId, orderData) { /* Omitted for brevity but included in full code */ }
-
             function addSystemMessage(text) { addHtmlToCanvas(`<div class="message-bubble system">${text}</div>`); }
             function addHtmlToCanvas(html) {
                 const canvas = document.getElementById('chat-canvas');
@@ -440,4 +435,5 @@
     </script>
 </body>
 </html>
+" selected in the view on the right.
 
