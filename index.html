@@ -18,8 +18,8 @@
             --whatsapp-teal: #075E54; --whatsapp-teal-green-dark: #128C7E; --whatsapp-light-green: #25D366;
             --whatsapp-bg: #ECE5DD; --app-bg-color: #ffffff;
             --text-dark: #000000; --text-light: #667781; --border-color: #e9edef;
-            --outgoing-bg: #dcf8c6; --incoming-bg: #ffffff; --system-bg: #e1f2fb;
-            --large-radius: 12px; --small-radius: 7.5px; --shadow: 0 1px 2px rgba(0,0,0,0.1);
+            --outgoing-bg: #dcf8c6; --incoming-bg: #ffffff; --system-bg: #E1F3FB;
+            --large-radius: 12px; --small-radius: 7.5px; --shadow: 0 1px 1.5px rgba(0,0,0,0.1);
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body, #root { height: 100%; margin: 0; padding: 0; overflow: hidden; }
@@ -54,7 +54,7 @@
         .message-bubble { max-width: 80%; padding: 6px 9px; border-radius: var(--small-radius); margin-bottom: 8px; line-height: 1.4; position: relative; word-wrap: break-word; box-shadow: var(--shadow); }
         .message-bubble.outgoing { background: var(--outgoing-bg); margin-left: auto; }
         .message-bubble.incoming { background: var(--incoming-bg); margin-right: auto; }
-        .message-bubble.system { background: var(--system-bg); align-self: center; text-align: center; margin: 10px auto; font-size: 0.8rem; box-shadow: none; }
+        .message-bubble.system { background: var(--system-bg); align-self: center; text-align: center; margin: 10px auto; font-size: 0.8rem; box-shadow: none; padding: 8px 12px; border-radius: var(--small-radius); }
         
         .chat-footer { position: relative; padding: 5px 10px; background: #f0f2f5; flex-shrink: 0; display: flex; align-items: flex-end; gap: 5px; }
         .chat-footer .input-wrapper { background: #fff; border-radius: 20px; padding: 5px 5px 5px 10px; flex-grow: 1; display: flex; align-items: flex-end;}
@@ -64,11 +64,15 @@
 
         .attachment-menu { position: absolute; bottom: calc(100% + 5px); right: 10px; left: 10px; background: #fff; border-radius: var(--large-radius); box-shadow: var(--shadow); padding: 15px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; transition: transform 0.2s ease-out, opacity 0.2s ease-out; transform: translateY(10px); opacity: 0; pointer-events: none; z-index: 25; }
         .attachment-menu.visible { transform: translateY(0); opacity: 1; pointer-events: auto; }
+        .attachment-item { text-align: center; cursor: pointer; }
         .attachment-item .icon-wrapper { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 5px; color: white; font-size: 22px; }
         .attachment-item p { margin: 0; font-size: 0.75rem; color: var(--text-dark); }
         
         #spinner-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.8); display: none; align-items: center; justify-content: center; z-index: 1001; }
         #spinner-text { background-color: #fff; padding: 20px 30px; border-radius: var(--small-radius); box-shadow: var(--shadow); font-weight: 600; color: var(--text-dark); }
+        
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-overlay.visible { display: flex; }
     </style>
 </head>
 <body>
@@ -86,8 +90,40 @@
             let clientData = null, dashboardData = null, map = null;
             let orderDetails = {};
 
-            function renderLoginScreen() { /* Omitted for brevity, same as before */ }
-            async function handleLogin() { /* Omitted for brevity, same as before */ }
+            function renderLoginScreen() {
+                root.innerHTML = `
+                    <div class="login-screen">
+                        <div class="login-box">
+                            <h1>ח. סבן</h1>
+                            <p>מרכז הבקרה האישי</p>
+                            <input id="client-id-input" type="tel" placeholder="הקלד מספר לקוח" />
+                            <button id="login-btn">כניסה</button>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('login-btn').addEventListener('click', handleLogin);
+            }
+
+            async function handleLogin() {
+                const clientId = document.getElementById('client-id-input').value;
+                if (!clientId) return;
+                showSpinner('טוען נתונים...');
+                try {
+                    const response = await apiPost({ action: 'getDashboardData', clientId });
+                    if (response.success) {
+                        clientData = response.data.client;
+                        dashboardData = response.data.dashboard;
+                        renderDashboardScreen();
+                    } else {
+                        alert(response.error);
+                    }
+                } catch (e) {
+                    console.error("Login Error:", e);
+                    alert('שגיאת תקשורת.');
+                } finally {
+                    hideSpinner();
+                }
+            }
 
             function renderDashboardScreen() {
                 root.innerHTML = `
@@ -120,10 +156,11 @@
             
             function getGreeting() {
                 const hour = new Date().getHours();
-                if (hour >= 5 && hour < 12) return `בוקר טוב ${clientData.name.split(' ')[0]} ☀️`;
-                if (hour >= 12 && hour < 18) return `צהריים טובים ${clientData.name.split(' ')[0]} 👋`;
-                if (hour >= 18 && hour < 22) return `ערב טוב ${clientData.name.split(' ')[0]} 🌙`;
-                return `לילה טוב ${clientData.name.split(' ')[0]} 😴`;
+                const name = clientData.name.split(' ')[0];
+                if (hour >= 5 && hour < 12) return `בוקר טוב ${name} ☀️`;
+                if (hour >= 12 && hour < 18) return `צהריים טובים ${name} 👋`;
+                if (hour >= 18 && hour < 22) return `ערב טוב ${name} 🌙`;
+                return `לילה טוב ${name} 😴`;
             }
 
             function openChatView() {
@@ -140,7 +177,7 @@
                     <footer class="chat-footer">
                         <div class="attachment-menu" id="attachment-menu"></div>
                         <button class="footer-btn send-btn" id="send-btn">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.75.75 0 0 1-1.329.124l-3.178-4.995L.643 7.184a.75.75 0 0 1 .124-1.33L15.314.037a.5.5 0 0 1 .54.11ZM6.636 10.07l2.761 4.338L14.13 2.576 6.636 10.07Zm6.787-8.201L1.591 6.602l4.339 2.76 7.494-7.493Z"/></svg>
+                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.75.75 0 0 1-1.329.124l-3.178-4.995L.643 7.184a.75.75 0 0 1 .124-1.33L15.314.037a.5.5 0 0 1 .54.11ZM6.636 10.07l2.761 4.338L14.13 2.576 6.636 10.07Zm6.787-8.201L1.591 6.602l4.339 2.76 7.494-7.493Z"/></svg>
                         </button>
                         <div class="input-wrapper">
                             <textarea placeholder="הקלד הודעה..." id="message-input"></textarea>
@@ -182,7 +219,7 @@
                 if (!text) return;
                 addHtmlToCanvas(`<div class="message-bubble outgoing">${text}</div>`);
                 input.value = '';
-                // ... rest of the send logic
+                // Placeholder for send logic
             }
             
             function addSystemMessage(text) { addHtmlToCanvas(`<div class="message-bubble system">${text}</div>`); }
@@ -194,10 +231,54 @@
                 }
             }
 
-            function initMap() { /* Omitted for brevity, same as before */ }
-            function showSpinner(text) { /* Omitted for brevity, same as before */ }
-            function hideSpinner() { /* Omitted for brevity, same as before */ }
-            async function apiPost(body) { /* Omitted for brevity, same as before */ }
+            function initMap() {
+                if (map) map.remove(); 
+                map = L.map('map').setView([32.0853, 34.7818], 10); 
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '© OpenStreetMap'
+                }).addTo(map);
+
+                const projectMarkers = [];
+                if (dashboardData && dashboardData.projects) {
+                    dashboardData.projects.forEach(project => {
+                        const lat = project.lat || 32.0853 + (Math.random() - 0.5) * 0.1;
+                        const lon = project.lon || 34.7818 + (Math.random() - 0.5) * 0.1;
+                        
+                        const marker = L.marker([lat, lon]).addTo(map)
+                            .bindPopup(`<b>${project.name}</b><br>${project.address}`);
+                        projectMarkers.push(marker);
+                    });
+                }
+
+                if (projectMarkers.length > 0) {
+                    const group = new L.featureGroup(projectMarkers);
+                    map.fitBounds(group.getBounds().pad(0.1));
+                }
+                
+                setTimeout(() => {
+                    if (map) map.invalidateSize();
+                }, 400);
+            }
+
+            function showSpinner(text) { 
+                const spinnerOverlay = document.getElementById('spinner-overlay');
+                spinnerOverlay.firstElementChild.textContent = text;
+                spinnerOverlay.style.display = 'flex';
+            }
+            function hideSpinner() { document.getElementById('spinner-overlay').style.display = 'none'; }
+            
+            async function apiPost(body) {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    redirect: 'follow',
+                    body: JSON.stringify(body),
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                });
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                return response.json();
+            }
             
             renderLoginScreen();
         });
