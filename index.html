@@ -6,7 +6,7 @@
     <title>העוזר האישי להזמנות - ח.סבן</title>
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#0b72b9">
-    <link rel="icon" type="image/png" href="https://i.postimg.cc/tCpLp7B6/image.png">
+    <link rel="icon" type="image/png" sizes="any" href="https://i.postimg.cc/tCpLp7B6/image.png">
     <link rel="apple-touch-icon" href="https://i.postimg.cc/tCpLp7B6/image.png">
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
@@ -40,8 +40,9 @@
         .pinned-message { background: #fff; padding: 10px 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); z-index: 5; display: flex; align-items: center; justify-content: space-between; }
         .chat-canvas { flex-grow: 1; overflow-y: auto; padding: 15px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-repeat: repeat; }
         .message-bubble { display: block; max-width: 80%; padding: 8px 12px; border-radius: var(--small-radius); margin-bottom: 10px; line-height: 1.4; position: relative; }
-        .message-bubble.incoming { background: var(--incoming-bg); align-self: flex-end; border-top-left-radius: 0; box-shadow: 0 1px 1px rgba(0,0,0,0.05); }
-        .message-bubble.system { background: var(--system-bg); align-self: center; text-align: center; margin: 10px auto; }
+        .message-bubble.incoming { background: var(--incoming-bg); margin-right: auto; }
+        .message-bubble.outgoing { background: var(--outgoing-bg); margin-left: auto; }
+        .message-bubble.system { background: var(--system-bg); align-self: center; text-align: center; margin: 10px auto; font-size: 0.8rem; }
         
         .draft-bubble { background: #fff; border: 1px solid var(--border-color); padding: 15px; }
         .draft-bubble h3 { margin: 0 0 10px; font-size: 1.1rem; border-bottom: 1px solid #eee; padding-bottom: 5px; }
@@ -58,7 +59,7 @@
         .catalog-item-info { flex-grow: 1; }
         .catalog-item-add-btn { background: var(--brand-color); color: white; border: none; border-radius: 50%; width: 30px; height: 30px; font-size: 1.2rem; cursor: pointer; }
 
-        .chat-footer { display: flex; align-items: center; padding: 10px; background: #f1f1f1; position: relative; }
+        .chat-footer { display: flex; align-items: center; padding: 10px; background: #f1f1f1; position: relative; z-index: 20;}
         .chat-footer textarea { flex-grow: 1; border: none; padding: 12px 15px; border-radius: 20px; font-size: 1rem; resize: none; max-height: 100px; }
         .chat-footer .footer-btn { border: none; background: transparent; color: #555; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .chat-footer .send-btn { background-color: var(--brand-color); color: white; margin-right: 10px; }
@@ -93,7 +94,8 @@
             const API_URL = "https://script.google.com/macros/s/AKfycbzF7YbSOWDLiUwcEvWPK7w9lQQA5iv7OwooFh8sjj_VVfj-F_dpQR9xHBaNYS8IsV50/exec";
             let clientData = null;
             let selectedDeliverySlot = null;
-                        function renderLoginScreen() {
+            
+            function renderLoginScreen() {
                 root.innerHTML = `
                     <div class="login-screen">
                         <div class="login-box">
@@ -238,7 +240,7 @@
                 const text = input.value.trim();
                 if (!text) return;
                 
-                document.getElementById('chat-canvas').insertAdjacentHTML('beforeend', `<div class="message-bubble incoming">${text}</div>`);
+                document.getElementById('chat-canvas').insertAdjacentHTML('beforeend', `<div class="message-bubble outgoing">${text}</div>`);
                 input.value = ''; input.style.height = 'auto';
                 showSpinner('מנתח את ההזמנה...');
 
