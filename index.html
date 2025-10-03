@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>העוזר האישי להזמנות - ח.סבן</title>
-    <link id="manifest-link" rel="manifest">
+    <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#0b72b9">
     <link rel="apple-touch-icon" href="https://i.postimg.cc/2SbDgD1B/1.png">
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap" rel="stylesheet">
@@ -89,37 +89,10 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const root = document.getElementById('root');
-            // IMPORTANT: Replace with your deployed Google Apps Script URL
             const API_URL = "https://script.google.com/macros/s/AKfycbzF7YbSOWDLiUwcEvWPK7w9lQQA5iv7OwooFh8sjj_VVfj-F_dpQR9xHBaNYS8IsV50/exec";
             let clientData = null;
             let selectedDeliverySlot = null;
             
-            function setupManifest() {
-                const manifest = {
-                    "short_name": "ח. סבן",
-                    "name": "העוזר האישי להזמנות - ח. סבן",
-                    "icons": [
-                        {
-                            "src": "https://i.postimg.cc/2SbDgD1B/1.png",
-                            "type": "image/png",
-                            "sizes": "192x192"
-                        },
-                        {
-                            "src": "https://i.postimg.cc/2SbDgD1B/1.png",
-                            "type": "image/png",
-                            "sizes": "512x512"
-                        }
-                    ],
-                    "start_url": ".",
-                    "display": "standalone",
-                    "theme_color": "#0b72b9",
-                    "background_color": "#f7f7f7"
-                };
-                const manifestBlob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
-                const manifestURL = URL.createObjectURL(manifestBlob);
-                document.querySelector('#manifest-link').setAttribute('href', manifestURL);
-            }
-
             function renderLoginScreen() {
                 root.innerHTML = `
                     <div class="login-screen">
@@ -332,7 +305,6 @@
                 return response.json();
             }
             
-            setupManifest();
             renderLoginScreen();
         });
     </script>
