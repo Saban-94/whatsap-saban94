@@ -20,96 +20,65 @@
         html, body, #root { height: 100%; margin: 0; padding: 0; overflow: hidden; }
         body { font-family: 'Assistant', sans-serif; background-color: var(--bg-color); }
         
-        #app-container {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: var(--app-bg-color);
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-            position: relative;
-        }
-        
-        /* Login Screen */
-        .login-screen {
-            display: flex; align-items: center; justify-content: center;
-            height: 100%; padding: 20px; background: linear-gradient(135deg, var(--brand-color) 0%, #00a8e8 100%);
-        }
-        .login-box {
-            background: #fff; padding: 40px 30px; border-radius: var(--large-radius);
-            box-shadow: var(--shadow); text-align: center; width: 100%; max-width: 350px;
-        }
+        #app-container { display: flex; flex-direction: column; height: 100%; max-width: 600px; margin: 0 auto; background-color: var(--app-bg-color); box-shadow: 0 0 20px rgba(0,0,0,0.1); position: relative; }
+        .login-screen { display: flex; align-items: center; justify-content: center; height: 100%; padding: 20px; background: linear-gradient(135deg, var(--brand-color) 0%, #00a8e8 100%); }
+        .login-box { background: #fff; padding: 40px 30px; border-radius: var(--large-radius); box-shadow: var(--shadow); text-align: center; width: 100%; max-width: 350px; }
         .login-box h1 { font-size: 2.5rem; font-weight: 700; color: var(--brand-color); margin-bottom: 10px; }
         .login-box p { color: var(--text-light); margin-bottom: 30px; }
-        .login-box input {
-            width: 100%; padding: 15px; border-radius: var(--small-radius); border: 1px solid var(--border-color);
-            font-size: 1.2rem; text-align: center; margin-bottom: 20px;
-        }
-        .login-box button {
-            width: 100%; padding: 15px; border-radius: var(--small-radius); border: none;
-            background-color: var(--brand-color); color: #fff; font-size: 1.2rem; font-weight: 600; cursor: pointer; transition: transform 0.2s;
-        }
-        .login-box button:hover { transform: scale(1.05); }
-
-        /* Chat Screen */
-        .chat-header {
-            display: flex; align-items: center; padding: 10px 15px; background: #f1f1f1;
-            border-bottom: 1px solid var(--border-color);
-        }
+        .login-box input { width: 100%; padding: 15px; border-radius: var(--small-radius); border: 1px solid var(--border-color); font-size: 1.2rem; text-align: center; margin-bottom: 20px; }
+        .login-box button { width: 100%; padding: 15px; border-radius: var(--small-radius); border: none; background-color: var(--brand-color); color: #fff; font-size: 1.2rem; font-weight: 600; cursor: pointer; transition: transform 0.2s; }
+        
+        .chat-header { display: flex; align-items: center; padding: 10px 15px; background: #f1f1f1; border-bottom: 1px solid var(--border-color); z-index: 10; }
         .chat-header img { width: 45px; height: 45px; border-radius: 50%; margin-left: 15px; }
         .chat-header .info { flex-grow: 1; }
         .chat-header .info h2 { margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--text-dark); }
         .chat-header .info p { margin: 0; font-size: 0.8rem; color: var(--text-light); }
-
-        .chat-canvas {
-            flex-grow: 1; overflow-y: auto; padding: 15px;
-            background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');
-            background-repeat: repeat;
-        }
-        .message-bubble {
-            max-width: 80%; padding: 8px 12px; border-radius: var(--small-radius);
-            margin-bottom: 10px; line-height: 1.4; position: relative;
-        }
-        .message-bubble.outgoing { background: var(--outgoing-bg); align-self: flex-start; border-top-right-radius: 0; }
+        
+        .chat-canvas-container { flex-grow: 1; position: relative; overflow: hidden; display: flex; flex-direction: column; }
+        .pinned-message { background: #fff; padding: 10px 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); z-index: 5; display: flex; align-items: center; justify-content: space-between; }
+        .chat-canvas { flex-grow: 1; overflow-y: auto; padding: 15px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-repeat: repeat; }
+        .message-bubble { display: block; max-width: 80%; padding: 8px 12px; border-radius: var(--small-radius); margin-bottom: 10px; line-height: 1.4; position: relative; }
         .message-bubble.incoming { background: var(--incoming-bg); align-self: flex-end; border-top-left-radius: 0; box-shadow: 0 1px 1px rgba(0,0,0,0.05); }
-        .message-bubble.system { background: var(--system-bg); align-self: center; font-size: 0.8rem; color: #555; text-align: center; }
-        .message-bubble .timestamp { font-size: 0.7rem; color: var(--text-light); margin-top: 5px; text-align: left; }
-
-        /* Draft Bubble */
-        .draft-bubble {
-            background: #fff; border: 1px solid var(--border-color); padding: 15px; border-radius: var(--small-radius); margin: 10px 0;
-        }
+        .message-bubble.system { background: var(--system-bg); align-self: center; text-align: center; margin: 10px auto; }
+        
+        .draft-bubble { background: #fff; border: 1px solid var(--border-color); padding: 15px; }
         .draft-bubble h3 { margin: 0 0 10px; font-size: 1.1rem; border-bottom: 1px solid #eee; padding-bottom: 5px; }
         .draft-bubble ul { margin: 0; padding: 0 15px 0 0; }
-        .draft-bubble li { margin-bottom: 5px; }
         .draft-bubble .actions { margin-top: 15px; display: flex; gap: 10px; }
         .draft-bubble button { padding: 8px 15px; border-radius: var(--small-radius); border: none; cursor: pointer; font-weight: 600; }
-        .draft-bubble .confirm-btn { background-color: #25d366; color: white; }
-        .draft-bubble .cancel-btn { background-color: #e74c3c; color: white; }
+        .draft-bubble .confirm-btn { background-color: #25d366; color: white; } .draft-bubble .cancel-btn { background-color: #e74c3c; color: white; }
 
-        .chat-footer {
-            display: flex; align-items: center; padding: 10px; background: #f1f1f1;
-        }
-        .chat-footer textarea {
-            flex-grow: 1; border: none; padding: 12px 15px; border-radius: 20px;
-            font-size: 1rem; resize: none; max-height: 100px;
-        }
-        .chat-footer button {
-            border: none; background: var(--brand-color); color: white;
-            width: 45px; height: 45px; border-radius: 50%; margin-right: 10px;
-            cursor: pointer; display: flex; align-items: center; justify-content: center;
-        }
+        .catalog-bubble { padding: 0; overflow: hidden; max-height: 300px; display: flex; flex-direction: column; }
+        .catalog-bubble-header { padding: 10px; border-bottom: 1px solid var(--border-color); }
+        .catalog-bubble-header input { width: 100%; padding: 8px; border-radius: var(--small-radius); border: 1px solid var(--border-color); }
+        .catalog-bubble-list { overflow-y: auto; padding: 10px; }
+        .catalog-item { display: flex; align-items: center; margin-bottom: 10px; }
+        .catalog-item-info { flex-grow: 1; }
+        .catalog-item-add-btn { background: var(--brand-color); color: white; border: none; border-radius: 50%; width: 30px; height: 30px; font-size: 1.2rem; cursor: pointer; }
 
-        /* Spinner */
-        #spinner-overlay {
-            position: absolute; inset: 0; background: rgba(255,255,255,0.8);
-            display: none; align-items: center; justify-content: center; z-index: 100;
-        }
-        #spinner-text {
-             background-color: #fff; padding: 20px 30px; border-radius: var(--small-radius);
-             box-shadow: var(--shadow); font-weight: 600; color: var(--text-dark);
-        }
+        .chat-footer { display: flex; align-items: center; padding: 10px; background: #f1f1f1; position: relative; }
+        .chat-footer textarea { flex-grow: 1; border: none; padding: 12px 15px; border-radius: 20px; font-size: 1rem; resize: none; max-height: 100px; }
+        .chat-footer .footer-btn { border: none; background: transparent; color: #555; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .chat-footer .send-btn { background-color: var(--brand-color); color: white; margin-right: 10px; }
+
+        .attachment-menu { position: absolute; bottom: 100%; right: 10px; left: 10px; background: #fff; border-radius: var(--large-radius); box-shadow: var(--shadow); padding: 15px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; transition: transform 0.3s ease, opacity 0.3s ease; transform: translateY(20px); opacity: 0; pointer-events: none; }
+        .attachment-menu.visible { transform: translateY(0); opacity: 1; pointer-events: auto; }
+        .attachment-item { text-align: center; cursor: pointer; }
+        .attachment-item .icon-wrapper { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 5px; }
+        .attachment-item p { margin: 0; font-size: 0.8rem; color: var(--text-dark); }
+        
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+        .modal-overlay.visible { opacity: 1; pointer-events: auto; }
+        .calendar-modal { background: #fff; border-radius: var(--large-radius); width: 90%; max-width: 350px; padding: 20px; }
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; }
+        .calendar-grid div { padding: 10px 5px; cursor: pointer; border-radius: 50%; }
+        .calendar-grid .day-name { font-weight: 700; color: var(--text-light); }
+        .calendar-grid .day.selectable:hover { background: #eee; }
+        .calendar-grid .day.selected { background: var(--brand-color); color: #fff; }
+
+        #spinner-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.8); display: none; align-items: center; justify-content: center; z-index: 1001; }
+        #spinner-text { background-color: #fff; padding: 20px 30px; border-radius: var(--small-radius); box-shadow: var(--shadow); font-weight: 600; color: var(--text-dark); }
     </style>
 </head>
 <body>
@@ -120,8 +89,9 @@
         document.addEventListener('DOMContentLoaded', () => {
             const root = document.getElementById('root');
             // IMPORTANT: Replace with your deployed Google Apps Script URL
-            const API_URL = "https://script.google.com/macros/s/AKfycbzF7YbSOWDLiUwcEvWPK7w9lQQA5iv7OwooFh8sjj_VVfj-F_dpQR9xHBaNYS8IsV50/exec"; 
+            const API_URL = "https://script.google.com/macros/s/AKfycbzF7YbSOWDLiUwcEvWPK7w9lQQA5iv7OwooFh8sjj_VVfj-F_dpQR9xHBaNYS8IsV50/exec";
             let clientData = null;
+            let selectedDeliverySlot = null;
 
             function renderLoginScreen() {
                 root.innerHTML = `
@@ -151,7 +121,6 @@
                     }
                 } catch (e) {
                     alert('שגיאת תקשורת. ודא שהכתובת של ה-API נכונה ושהשרת פועל.');
-                    console.error(e);
                 } finally {
                     hideSpinner();
                 }
@@ -162,39 +131,115 @@
                     <div id="app-container">
                         <header class="chat-header">
                             <img src="${clientData.avatar || 'https://i.postimg.cc/rsxW32Jj/logo.png'}" alt="Avatar">
-                            <div class="info">
-                                <h2>${clientData.name}</h2>
-                                <p>מחובר</p>
-                            </div>
+                            <div class="info"><h2>${clientData.name}</h2><p>מחובר</p></div>
                         </header>
-                        <main class="chat-canvas" id="chat-canvas"></main>
+                        <div class="chat-canvas-container">
+                           <div class="pinned-message" id="pinned-message">
+                                <span>ברוך הבא! אני כאן כדי לסייע לך.</span>
+                                <button style="background:none;border:none;cursor:pointer;">&times;</button>
+                           </div>
+                           <main class="chat-canvas" id="chat-canvas"></main>
+                        </div>
                         <footer class="chat-footer">
-                             <button id="send-btn">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                            <button id="send-btn" class="footer-btn send-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                             </button>
-                            <textarea id="message-input" placeholder="הדבק כאן את רשימת המוצרים..." rows="1"></textarea>
+                            <textarea id="message-input" placeholder="הקלד או הדבק הזמנה..." rows="1"></textarea>
+                            <button id="attach-btn" class="footer-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+                            </button>
                         </footer>
+                        <div class="attachment-menu" id="attachment-menu"></div>
                     </div>
+                    <div class="modal-overlay" id="calendar-modal-overlay"></div>
                 `;
-                document.getElementById('send-btn').addEventListener('click', handleSendMessage);
-                document.getElementById('message-input').addEventListener('input', autoResizeTextarea);
                 
-                addMessageToCanvas({ sender: 'system', text: `ברוך הבא, ${clientData.name}! אני כאן כדי לעזור לך להפוך כל רשימה להזמנה מסודרת.` });
+                document.getElementById('send-btn').addEventListener('click', handleSendMessage);
+                document.getElementById('attach-btn').addEventListener('click', toggleAttachmentMenu);
+                document.getElementById('message-input').addEventListener('input', e => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; });
+                document.getElementById('pinned-message').querySelector('button').addEventListener('click', e => e.currentTarget.parentElement.style.display = 'none');
             }
 
-            function autoResizeTextarea(e) {
-                e.target.style.height = 'auto';
-                e.target.style.height = e.target.scrollHeight + 'px';
+            function toggleAttachmentMenu() {
+                const menu = document.getElementById('attachment-menu');
+                if (menu.classList.contains('visible')) {
+                    menu.classList.remove('visible');
+                    return;
+                }
+                menu.innerHTML = `
+                    <div class="attachment-item" data-action="catalog"><div class="icon-wrapper" style="background:#57b2f7;">...</div><p>קטלוג</p></div>
+                    <div class="attachment-item" data-action="file"><div class="icon-wrapper" style="background:#7c5df5;">...</div><p>מסמך</p></div>
+                    <div class="attachment-item" data-action="location"><div class="icon-wrapper" style="background:#25d366;">...</div><p>מיקום</p></div>
+                    <div class="attachment-item" data-action="calendar"><div class="icon-wrapper" style="background:#f572a1;">...</div><p>יומן</p></div>
+                `;
+                menu.classList.add('visible');
+                menu.querySelectorAll('.attachment-item').forEach(item => item.addEventListener('click', handleAttachmentAction));
+            }
+
+            async function handleAttachmentAction(e) {
+                const action = e.currentTarget.dataset.action;
+                toggleAttachmentMenu();
+                switch(action) {
+                    case 'catalog':
+                        showSpinner('טוען קטלוג...');
+                        const response = await apiPost({ action: 'getCatalog' });
+                        hideSpinner();
+                        if (response.success) renderCatalogBubble(response.data);
+                        break;
+                    case 'calendar':
+                        renderCalendarModal();
+                        break;
+                    // Other cases (file, location) can be implemented here
+                }
+            }
+
+            function renderCatalogBubble(products) {
+                 const bubbleId = `catalog-${Date.now()}`;
+                 let itemsHtml = products.map(p => `
+                    <div class="catalog-item" data-name="${p['שם מוצר']}">
+                        <div class="catalog-item-info"><strong>${p['שם מוצר']}</strong><br><small>${p['מק"ט']}</small></div>
+                        <button class="catalog-item-add-btn">+</button>
+                    </div>
+                 `).join('');
+                 
+                 const bubbleHtml = `
+                    <div class="message-bubble system catalog-bubble" id="${bubbleId}">
+                        <div class="catalog-bubble-header"><input type="text" placeholder="חיפוש בקטלוג..."/></div>
+                        <div class="catalog-bubble-list">${itemsHtml}</div>
+                    </div>`;
+
+                document.getElementById('chat-canvas').insertAdjacentHTML('beforeend', bubbleHtml);
+                const bubble = document.getElementById(bubbleId);
+
+                bubble.querySelector('input').addEventListener('input', (e) => {
+                    const searchTerm = e.target.value.toLowerCase();
+                    bubble.querySelectorAll('.catalog-item').forEach(item => {
+                        item.style.display = item.dataset.name.toLowerCase().includes(searchTerm) ? 'flex' : 'none';
+                    });
+                });
+
+                bubble.querySelectorAll('.catalog-item-add-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const productName = btn.parentElement.dataset.name;
+                        const input = document.getElementById('message-input');
+                        input.value += `1 x ${productName}\n`;
+                        input.focus();
+                    });
+                });
+            }
+            
+            function renderCalendarModal() {
+                 // Implementation of calendar modal would go here
+                 alert('יומן לקביעת הובלה - יפותח בקרוב!');
             }
 
             async function handleSendMessage() {
                 const input = document.getElementById('message-input');
                 const text = input.value.trim();
                 if (!text) return;
-
-                addMessageToCanvas({ sender: 'user', text });
-                input.value = '';
-                input.style.height = 'auto';
+                
+                document.getElementById('chat-canvas').insertAdjacentHTML('beforeend', `<div class="message-bubble incoming">${text}</div>`);
+                input.value = ''; input.style.height = 'auto';
                 showSpinner('מנתח את ההזמנה...');
 
                 try {
@@ -202,11 +247,10 @@
                     if (response.success && response.data.predictedItems.length > 0) {
                         createDraftBubble(response.data);
                     } else {
-                        addMessageToCanvas({ sender: 'system', text: 'לא הצלחתי לזהות מוצרים בהודעה ששלחת. אפשר לנסות שוב עם פירוט רב יותר?' });
+                        document.getElementById('chat-canvas').insertAdjacentHTML('beforeend', `<div class="message-bubble system">לא הצלחתי לזהות מוצרים.</div>`);
                     }
                 } catch(e) {
-                    console.error(e);
-                    addMessageToCanvas({ sender: 'system', text: 'אופס, קרתה שגיאה בניתוח ההודעה.' });
+                    document.getElementById('chat-canvas').insertAdjacentHTML('beforeend', `<div class="message-bubble system">שגיאה בניתוח ההודעה.</div>`);
                 } finally {
                     hideSpinner();
                 }
@@ -215,7 +259,7 @@
             function createDraftBubble(data) {
                 const draftId = `draft-${Date.now()}`;
                 const itemsHtml = data.predictedItems.map(item => `<li>${item.quantity} x ${item.name} (${item.sku})</li>`).join('');
-                const projectHtml = data.predictedProject ? `<p><strong>פרויקט:</strong> ${data.predictedProject}</p>` : '<p><strong>לא זוהה פרויקט משויך.</strong></p>';
+                const projectHtml = data.predictedProject ? `<p><strong>פרויקט:</strong> ${data.predictedProject}</p>` : '';
 
                 const bubbleHtml = `
                     <div class="message-bubble system draft-bubble" id="${draftId}">
@@ -223,97 +267,44 @@
                         ${projectHtml}
                         <ul>${itemsHtml}</ul>
                         <div class="actions">
-                            <button class="confirm-btn">אשר ושתף ב-WhatsApp</button>
+                            <button class="confirm-btn">אשר ושתף</button>
                             <button class="cancel-btn">בטל</button>
                         </div>
-                    </div>
-                `;
-                const canvas = document.getElementById('chat-canvas');
-                canvas.insertAdjacentHTML('beforeend', bubbleHtml);
-
+                    </div>`;
+                document.getElementById('chat-canvas').insertAdjacentHTML('beforeend', bubbleHtml);
                 const draftElement = document.getElementById(draftId);
                 draftElement.querySelector('.confirm-btn').addEventListener('click', () => handleConfirmOrder(draftId, data));
                 draftElement.querySelector('.cancel-btn').addEventListener('click', () => draftElement.remove());
-                scrollToBottom();
             }
 
             async function handleConfirmOrder(draftId, orderData) {
-                showSpinner('יוצר הזמנה וקישור...');
+                showSpinner('יוצר הזמנה...');
                 const draftElement = document.getElementById(draftId);
                 draftElement.innerHTML = 'מאשר הזמנה...';
-
+                
                 try {
-                    const response = await apiPost({ action: 'createOrder', orderData, clientId: clientData.id });
+                    const response = await apiPost({ action: 'createOrder', orderData, clientId: clientData.id, delivery: selectedDeliverySlot });
                     if (response.success) {
                         confetti({ particleCount: 150, spread: 90, origin: { y: 0.6 } });
                         draftElement.innerHTML = 'ההזמנה תועדה במערכת בהצלחה!';
-                        const whatsappUrl = generateWhatsappLink(response.data.formattedOrder);
-                        window.open(whatsappUrl, '_blank');
+                        window.open(`https://wa.me/972508860896?text=${encodeURIComponent(response.data.formattedOrder)}`, '_blank');
                     } else {
-                        draftElement.innerHTML = `שגיאה בתיעוד ההזמנה: ${response.error}`;
+                         draftElement.innerHTML = `שגיאה בתיעוד: ${response.error}`;
                     }
-                } catch(e) {
-                    console.error(e);
-                    draftElement.innerHTML = 'שגיאה בתיעוד ההזמנה.';
                 } finally {
                     hideSpinner();
+                    selectedDeliverySlot = null; // Reset slot after order
                 }
             }
             
-            function generateWhatsappLink(orderText) {
-                const phoneNumber = "972508860896";
-                const encodedText = encodeURIComponent(orderText);
-                return `https://wa.me/${phoneNumber}?text=${encodedText}`;
-            }
-
-            function addMessageToCanvas({ sender, text }) {
-                const canvas = document.getElementById('chat-canvas');
-                const bubble = document.createElement('div');
-                let bubbleClass = 'message-bubble';
-                if(sender === 'user') bubbleClass += ' incoming';
-                else if (sender === 'system') bubbleClass += ' system';
-                else bubbleClass += ' outgoing'; 
-                
-                bubble.className = bubbleClass;
-                bubble.textContent = text;
-                canvas.appendChild(bubble);
-                scrollToBottom();
-            }
-
-            function showSpinner(text) {
-                const overlay = document.getElementById('spinner-overlay');
-                overlay.querySelector('#spinner-text').textContent = text;
-                overlay.style.display = 'flex';
-            }
-            function hideSpinner() {
-                document.getElementById('spinner-overlay').style.display = 'none';
-            }
-            function scrollToBottom() {
-                const canvas = document.getElementById('chat-canvas');
-                if (canvas) canvas.scrollTop = canvas.scrollHeight;
-            }
-
+            function showSpinner(text) { document.getElementById('spinner-text').textContent = text; document.getElementById('spinner-overlay').style.display = 'flex'; }
+            function hideSpinner() { document.getElementById('spinner-overlay').style.display = 'none'; }
             async function apiPost(body) {
-                if (API_URL === "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE") {
-                    // This error is a safeguard to remind the developer to deploy the script.
-                    throw new Error("Please set your Google Apps Script URL in the API_URL constant.");
-                }
-                // Using redirect: 'follow' is important for Apps Script web apps.
-                const response = await fetch(API_URL, { 
-                    method: 'POST', 
-                    redirect: 'follow',
-                    body: JSON.stringify(body), 
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
+                const response = await fetch(API_URL, { method: 'POST', redirect: 'follow', body: JSON.stringify(body), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 return response.json();
             }
             
-            // Initial render
             renderLoginScreen();
         });
     </script>
