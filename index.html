@@ -48,6 +48,8 @@
         .draft-bubble ul { margin: 10px 0; padding: 0 15px 0 0; }
         .draft-bubble .details p { margin: 5px 0; font-size: 0.9rem; }
         .draft-bubble .actions button { padding: 8px 15px; border-radius: var(--small-radius); border: none; cursor: pointer; font-weight: 600; }
+        .draft-bubble .confirm-btn { background-color: #25d366; color: white; } .draft-bubble .cancel-btn { background-color: #e74c3c; color: white; }
+
         
         .catalog-bubble { padding: 0; overflow: hidden; max-height: 40vh; display: flex; flex-direction: column; background: #fff; border-radius: var(--small-radius); }
         .catalog-bubble-header input { width: 100%; padding: 8px; border-radius: var(--small-radius); border: 1px solid var(--border-color); }
@@ -83,6 +85,9 @@
         .time-slots button { padding: 12px; border: 1px solid var(--border-color); border-radius: var(--small-radius); background: #fff; cursor: pointer; }
         .transport-options { display: flex; flex-direction: column; gap: 10px; }
         .transport-options button { padding: 15px; font-size: 1rem; }
+
+        #spinner-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.8); display: none; align-items: center; justify-content: center; z-index: 1001; }
+        #spinner-text { background-color: #fff; padding: 20px 30px; border-radius: var(--small-radius); box-shadow: var(--shadow); font-weight: 600; color: var(--text-dark); }
     </style>
 </head>
 <body>
@@ -100,8 +105,43 @@
             let clientData = null;
             let orderDetails = { fileLink: null, deliverySlot: null, location: null, transportType: null };
             
-            function renderLoginScreen() { /* Omitted for brevity */ }
-            async function handleLogin() { /* Omitted for brevity */ }
+            function renderLoginScreen() {
+                root.innerHTML = `
+                    <div class="login-screen">
+                        <div class="login-box">
+                            <h1>ח. סבן</h1>
+                            <p>העוזר האישי שלך להזמנות</p>
+                            <input id="client-id-input" type="tel" placeholder="הקלד מספר לקוח" />
+                            <button id="login-btn">כניסה</button>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('login-btn').addEventListener('click', handleLogin);
+            }
+
+            async function handleLogin() {
+                const clientIdInput = document.getElementById('client-id-input');
+                const clientId = clientIdInput.value;
+                if (!clientId) {
+                    alert('נא להזין מספר לקוח.');
+                    return;
+                }
+                showSpinner('מאמת נתונים...');
+                try {
+                    const response = await apiPost({ action: 'login', clientId });
+                    if (response.success) {
+                        clientData = response.data;
+                        renderChatScreen();
+                    } else {
+                        alert(response.error || 'מספר לקוח לא נמצא.');
+                    }
+                } catch (e) {
+                    console.error("Login error:", e);
+                    alert('שגיאת תקשורת. אנא נסה שוב מאוחר יותר.');
+                } finally {
+                    hideSpinner();
+                }
+            }
 
             function renderChatScreen() {
                 root.innerHTML = `
@@ -132,6 +172,7 @@
                 document.getElementById('send-btn').addEventListener('click', handleSendMessage);
                 document.getElementById('attach-btn').addEventListener('click', toggleAttachmentMenu);
                 document.getElementById('file-input').addEventListener('change', handleFileUpload);
+                addSystemMessage("ברוך הבא! אני העוזר האישי שלך להזמנות. תוכל להקליד הזמנה, או להשתמש בכפתור הסיכה (📎) כדי להוסיף פרטים.");
             }
 
             function toggleAttachmentMenu() {
@@ -172,7 +213,7 @@
                             orderDetails.fileLink = response.data.fileUrl;
                             addSystemMessage(`✅ הקובץ "${file.name}" צורף בהצלחה.`);
                         } else {
-                            addSystemMessage(`❌ שגיאה בהעלאת הקובץ.`);
+                            addSystemMessage(`❌ שגיאה בהעלאת הקובץ: ${response.error}`);
                         }
                     } catch { addSystemMessage('❌ שגיאת תקשורת בהעלאת קובץ.'); } 
                     finally { hideSpinner(); }
@@ -285,7 +326,30 @@
                 document.getElementById('modal-container').classList.remove('visible');
             }
 
-            async function handleSendMessage() { /* Omitted for brevity */ }
+            async function handleSendMessage() {
+                const input = document.getElementById('message-input');
+                const text = input.value.trim();
+                if (!text) return;
+
+                addHtmlToCanvas(`<div class="message-bubble outgoing">${text}</div>`);
+                input.value = '';
+                input.style.height = 'auto';
+
+                showSpinner('מנתח את ההזמנה...');
+                try {
+                    const response = await apiPost({ action: 'predictOrder', text });
+                    if (response.success && response.data.predictedItems.length > 0) {
+                        createDraftBubble(response.data);
+                    } else {
+                        addSystemMessage('לא הצלחתי לזהות פריטים בהודעה. אפשר לנסות שוב?');
+                    }
+                } catch (e) {
+                    console.error("Prediction error:", e);
+                    addSystemMessage('אופס, חלה שגיאה בניתוח ההודעה.');
+                } finally {
+                    hideSpinner();
+                }
+            }
 
             function createDraftBubble(data) {
                 const draftId = `draft-${Date.now()}`;
@@ -348,9 +412,7 @@
                 return response.json();
             }
             
-            // Simplified init for brevity
             renderLoginScreen();
-            // Full implementation of other functions like renderCatalogBubble, etc. would be here
         });
     </script>
 </body>
