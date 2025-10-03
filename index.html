@@ -98,14 +98,48 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM ELEMENTS & STATE ---
             const root = document.getElementById('root');
             const chatView = document.getElementById('chat-view');
             const orderDetailsView = document.getElementById('order-details-view');
             const API_URL = "https://script.google.com/macros/s/AKfycbyEtlNgRighnTbSI64_o62j1Lt5hxSF8To4wNEJ1Y2nC_Lrg5Ynb6Noe2e3C4n_uohE/exec";
+            
             let clientData = null, dashboardData = null;
-            let orderDetails = {};
+            let orderDetails = { fileLink: null, deliverySlot: null, location: null, transportType: null };
 
-            // --- CORE APP LOGIC ---
+            // --- API & UTILITY FUNCTIONS ---
+
+            function showSpinner(text) { 
+                const spinnerOverlay = document.getElementById('spinner-overlay');
+                spinnerOverlay.firstElementChild.textContent = text;
+                spinnerOverlay.style.display = 'flex';
+            }
+            function hideSpinner() { 
+                document.getElementById('spinner-overlay').style.display = 'none'; 
+            }
+            
+            async function apiPost(body) {
+                const response = await fetch(API_URL, {
+                    method: 'POST', redirect: 'follow',
+                    body: JSON.stringify(body),
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                });
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                return response.json();
+            }
+
+            function addHtmlToCanvas(html) {
+                const canvas = document.getElementById('chat-canvas');
+                if(canvas) {
+                    canvas.insertAdjacentHTML('beforeend', html);
+                    canvas.scrollTop = canvas.scrollHeight;
+                }
+            }
+            function addSystemMessage(text) { 
+                addHtmlToCanvas(`<div class="message-bubble system">${text}</div>`); 
+            }
+
+            // --- LOGIN & DASHBOARD LOGIC ---
 
             function renderLoginScreen() {
                 root.innerHTML = `<div class="login-screen"><div class="login-box"><h1>ח. סבן</h1><p>מרכז הבקרה האישי</p><input id="client-id-input" type="tel" placeholder="הקלד מספר לקוח" /><button id="login-btn">כניסה</button></div></div>`;
@@ -156,7 +190,47 @@
                 });
             }
 
-            // --- CHAT VIEW LOGIC ---
+            // --- ORDER DETAILS VIEW LOGIC ---
+
+            function openOrderDetailsView(order) {
+                orderDetailsView.innerHTML = `
+                    <header class="order-details-header">
+                        <button id="close-details-btn" class="back-btn">➤</button>
+                        <div class="info"><h2>פרטי הזמנה</h2><p>${order.project}</p></div>
+                    </header>
+                    <div class="order-details-content">
+                        <p><strong>סטטוס:</strong> ${order.status}</p>
+                        <p><strong>פריטים:</strong> ${order.items}</p>
+                        <p><strong>כתובת:</strong> ${order.address || 'לא צוינה'}</p>
+                        <div id="order-map"></div>
+                    </div>
+                `;
+                orderDetailsView.classList.add('open');
+                document.getElementById('close-details-btn').addEventListener('click', () => orderDetailsView.classList.remove('open'));
+                
+                setTimeout(() => initOrderMap(order), 50);
+            }
+
+            function initOrderMap(order) {
+                const lat = order.lat || 32.0853;
+                const lon = order.lon || 34.7818;
+                let map = L.map('order-map').setView([lat, lon], 15);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+                let icon = L.marker([lat, lon]);
+                if (order.status === 'בדרך') {
+                     const truckIcon = L.divIcon({
+                        html: '🚚', className: 'map-truck-icon', 
+                        iconSize: [40, 40], iconAnchor: [20, 20]
+                    });
+                    icon = L.marker([lat, lon], { icon: truckIcon });
+                }
+                
+                icon.addTo(map).bindPopup(`<b>${order.project}</b><br>${order.address}`).openPopup();
+                setTimeout(() => map.invalidateSize(), 400);
+            }
+
+            // --- CHAT VIEW LOGIC (FULL) ---
 
             function getGreeting() {
                 const hour = new Date().getHours();
@@ -277,72 +351,42 @@
                     addSystemMessage('אופס, חלה שגיאה בניתוח ההודעה.');
                 } finally { hideSpinner(); }
             }
-            
-            function addSystemMessage(text) { addHtmlToCanvas(`<div class="message-bubble system">${text}</div>`); }
-            function addHtmlToCanvas(html) {
-                const canvas = document.getElementById('chat-canvas');
-                if(canvas) {
-                    canvas.insertAdjacentHTML('beforeend', html);
-                    canvas.scrollTop = canvas.scrollHeight;
-                }
-            }
 
-            function showSpinner(text) { 
-                const spinnerOverlay = document.getElementById('spinner-overlay');
-                spinnerOverlay.firstElementChild.textContent = text;
-                spinnerOverlay.style.display = 'flex';
-            }
-            function hideSpinner() { document.getElementById('spinner-overlay').style.display = 'none'; }
-            
-            async function apiPost(body) {
-                const response = await fetch(API_URL, {
-                    method: 'POST', redirect: 'follow',
-                    body: JSON.stringify(body),
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-                });
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                return response.json();
-            }
-            
-            // --- FULL MODAL AND DRAFT FUNCTIONS ---
-            function openOrderDetailsView(order) {
-                orderDetailsView.innerHTML = `
-                    <header class="order-details-header">
-                        <button id="close-details-btn" class="back-btn">➤</button>
-                        <div class="info"><h2>פרטי הזמנה</h2><p>${order.project}</p></div>
-                    </header>
-                    <div class="order-details-content">
-                        <p><strong>סטטוס:</strong> ${order.status}</p>
-                        <p><strong>פריטים:</strong> ${order.items}</p>
-                        <p><strong>כתובת:</strong> ${order.address || 'לא צוינה'}</p>
-                        <div id="order-map"></div>
-                    </div>
-                `;
-                orderDetailsView.classList.add('open');
-                document.getElementById('close-details-btn').addEventListener('click', () => orderDetailsView.classList.remove('open'));
+            function createDraftBubble(data) {
+                const draftId = `draft-${Date.now()}`;
+                const { predictedItems, unidentifiedItems } = data;
+                let itemsHtml = predictedItems.map(item => `<li>${item.quantity} x ${item.name} (${item.sku || 'לא ידוע'})</li>`).join('');
+                itemsHtml += unidentifiedItems.map(item => `<li class="unidentified">${item.raw} (לא זוהה)</li>`).join('');
                 
-                setTimeout(() => initOrderMap(order), 50);
+                let title = "טיוטת הזמנה מוכנה לאישור";
+                if(unidentifiedItems.length > 0 && predictedItems.length > 0) {
+                    title = "זיהיתי חלק מהפריטים. נא לאשר את הטיוטה:";
+                } else if (unidentifiedItems.length > 0 && predictedItems.length == 0) {
+                    title = "לא זיהיתי את הפריטים. האם לשלוח לצוות לבדיקה?";
+                }
+
+                const bubbleHtml = `<div class="message-bubble system draft-bubble" id="${draftId}"><h3>${title}</h3><ul>${itemsHtml}</ul><div class="actions"><button class="confirm-btn">אשר ושתף</button><button class="cancel-btn">בטל</button></div></div>`;
+                addHtmlToCanvas(bubbleHtml);
+                const draftElement = document.getElementById(draftId);
+                draftElement.querySelector('.confirm-btn').onclick = () => handleConfirmOrder(draftId, data);
+                draftElement.querySelector('.cancel-btn').onclick = () => draftElement.remove();
             }
 
-            function initOrderMap(order) {
-                const lat = order.lat || 32.0853;
-                const lon = order.lon || 34.7818;
-                let map = L.map('order-map').setView([lat, lon], 15);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-
-                let icon = L.marker([lat, lon]); // Default icon
-                if (order.status === 'בדרך') {
-                     const truckIcon = L.divIcon({
-                        html: '🚚',
-                        className: 'map-truck-icon', // You can style this class for better appearance
-                        iconSize: [40, 40],
-                        iconAnchor: [20, 20]
-                    });
-                    icon = L.marker([lat, lon], { icon: truckIcon });
+            async function handleConfirmOrder(draftId, orderData) {
+                showSpinner('יוצר הזמנה...');
+                const draftElement = document.getElementById(draftId);
+                draftElement.innerHTML = 'מאשר הזמנה...';
+                try {
+                    const response = await apiPost({ action: 'createOrder', orderData, clientId: clientData.id, ...orderDetails });
+                    if (response.success) {
+                        confetti({ particleCount: 150, spread: 90, origin: { y: 0.6 } });
+                        draftElement.innerHTML = 'ההזמנה תועדה ונשלחה בהצלחה!';
+                        window.open(`https://wa.me/972508860896?text=${encodeURIComponent(response.data.formattedOrder)}`, '_blank');
+                    } else { draftElement.innerHTML = `שגיאה בתיעוד: ${response.error}`; }
+                } finally {
+                    hideSpinner();
+                    orderDetails = { fileLink: null, deliverySlot: null, location: null, transportType: null };
                 }
-                
-                icon.addTo(map).bindPopup(`<b>${order.project}</b><br>${order.address}`).openPopup();
-                setTimeout(() => map.invalidateSize(), 400);
             }
 
             function closeModal() { document.getElementById('modal-container').classList.remove('visible'); }
@@ -392,43 +436,6 @@
                 });
                 modalContainer.classList.add('visible');
                 modalContainer.onclick = (e) => { if (e.target === modalContainer) closeModal(); };
-            }
-
-            function createDraftBubble(data) {
-                const draftId = `draft-${Date.now()}`;
-                const { predictedItems, unidentifiedItems } = data;
-                let itemsHtml = predictedItems.map(item => `<li>${item.quantity} x ${item.name} (${item.sku || 'לא ידוע'})</li>`).join('');
-                itemsHtml += unidentifiedItems.map(item => `<li class="unidentified">${item.raw} (לא זוהה)</li>`).join('');
-                
-                let title = "טיוטת הזמנה מוכנה לאישור";
-                if(unidentifiedItems.length > 0 && predictedItems.length > 0) {
-                    title = "זיהיתי חלק מהפריטים. נא לאשר את הטיוטה:";
-                } else if (unidentifiedItems.length > 0 && predictedItems.length == 0) {
-                    title = "לא זיהיתי את הפריטים. האם לשלוח לצוות לבדיקה?";
-                }
-
-                const bubbleHtml = `<div class="message-bubble system draft-bubble" id="${draftId}"><h3>${title}</h3><ul>${itemsHtml}</ul><div class="actions"><button class="confirm-btn">אשר ושתף</button><button class="cancel-btn">בטל</button></div></div>`;
-                addHtmlToCanvas(bubbleHtml);
-                const draftElement = document.getElementById(draftId);
-                draftElement.querySelector('.confirm-btn').onclick = () => handleConfirmOrder(draftId, data);
-                draftElement.querySelector('.cancel-btn').onclick = () => draftElement.remove();
-            }
-
-            async function handleConfirmOrder(draftId, orderData) {
-                showSpinner('יוצר הזמנה...');
-                const draftElement = document.getElementById(draftId);
-                draftElement.innerHTML = 'מאשר הזמנה...';
-                try {
-                    const response = await apiPost({ action: 'createOrder', orderData, clientId: clientData.id, ...orderDetails });
-                    if (response.success) {
-                        confetti({ particleCount: 150, spread: 90, origin: { y: 0.6 } });
-                        draftElement.innerHTML = 'ההזמנה תועדה ונשלחה בהצלחה!';
-                        window.open(`https://wa.me/972508860896?text=${encodeURIComponent(response.data.formattedOrder)}`, '_blank');
-                    } else { draftElement.innerHTML = `שגיאה בתיעוד: ${response.error}`; }
-                } finally {
-                    hideSpinner();
-                    orderDetails = { fileLink: null, deliverySlot: null, location: null, transportType: null };
-                }
             }
             
             // Initial call
