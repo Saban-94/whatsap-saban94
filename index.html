@@ -98,55 +98,29 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // --- DOM ELEMENTS & STATE ---
             const root = document.getElementById('root');
             const chatView = document.getElementById('chat-view');
             const orderDetailsView = document.getElementById('order-details-view');
-            const API_URL = "https://script.google.com/macros/s/AKfycbyEtlNgRighnTbSI64_o62j1Lt5hxSF8To4wNEJ1Y2nC_Lrg5Ynb6Noe2e3C4n_uohE/exec";
+            const API_URL = "https://script.google.com/macros/s/AKfycbzlM584h5BPKakpKLAriFM03zRNkUHf0NzyWYGmNefaogWboKfxeixjHIDPDTD_oyge/exec";
             
             let clientData = null, dashboardData = null;
             let orderDetails = { fileLink: null, deliverySlot: null, location: null, transportType: null };
 
-            // --- API & UTILITY FUNCTIONS ---
+            // --- ALL FUNCTIONS DECLARED HERE FOR SCOPE ---
+            let handleLogin, renderDashboardScreen, openChatView, closeChatView, handleSendMessage,
+                toggleAttachmentMenu, handleAttachmentAction, handleFileUpload, handleLocationAttach,
+                renderCalendarModal, renderTransportChoice, createDraftBubble, handleConfirmOrder,
+                openOrderDetailsView, initOrderMap, showSpinner, hideSpinner, apiPost, 
+                addHtmlToCanvas, addSystemMessage, getGreeting, closeModal;
 
-            function showSpinner(text) { 
-                const spinnerOverlay = document.getElementById('spinner-overlay');
-                spinnerOverlay.firstElementChild.textContent = text;
-                spinnerOverlay.style.display = 'flex';
-            }
-            function hideSpinner() { 
-                document.getElementById('spinner-overlay').style.display = 'none'; 
-            }
-            
-            async function apiPost(body) {
-                const response = await fetch(API_URL, {
-                    method: 'POST', redirect: 'follow',
-                    body: JSON.stringify(body),
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-                });
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                return response.json();
-            }
+            // --- CORE APP LOGIC ---
 
-            function addHtmlToCanvas(html) {
-                const canvas = document.getElementById('chat-canvas');
-                if(canvas) {
-                    canvas.insertAdjacentHTML('beforeend', html);
-                    canvas.scrollTop = canvas.scrollHeight;
-                }
-            }
-            function addSystemMessage(text) { 
-                addHtmlToCanvas(`<div class="message-bubble system">${text}</div>`); 
-            }
-
-            // --- LOGIN & DASHBOARD LOGIC ---
-
-            function renderLoginScreen() {
+            renderLoginScreen = function() {
                 root.innerHTML = `<div class="login-screen"><div class="login-box"><h1>ח. סבן</h1><p>מרכז הבקרה האישי</p><input id="client-id-input" type="tel" placeholder="הקלד מספר לקוח" /><button id="login-btn">כניסה</button></div></div>`;
                 document.getElementById('login-btn').addEventListener('click', handleLogin);
             }
 
-            async function handleLogin() {
+            handleLogin = async function() {
                 const clientId = document.getElementById('client-id-input').value;
                 if (!clientId) return;
                 showSpinner('טוען נתונים...');
@@ -161,7 +135,7 @@
                 finally { hideSpinner(); }
             }
 
-            function renderDashboardScreen() {
+            renderDashboardScreen = function() {
                 let feedHtml = dashboardData.activeOrders.map((order, index) => `
                     <div class="feed-item" data-order-index="${index}">
                         <strong>הזמנה לפרויקט ${order.project}</strong><br>
@@ -190,49 +164,9 @@
                 });
             }
 
-            // --- ORDER DETAILS VIEW LOGIC ---
-
-            function openOrderDetailsView(order) {
-                orderDetailsView.innerHTML = `
-                    <header class="order-details-header">
-                        <button id="close-details-btn" class="back-btn">➤</button>
-                        <div class="info"><h2>פרטי הזמנה</h2><p>${order.project}</p></div>
-                    </header>
-                    <div class="order-details-content">
-                        <p><strong>סטטוס:</strong> ${order.status}</p>
-                        <p><strong>פריטים:</strong> ${order.items}</p>
-                        <p><strong>כתובת:</strong> ${order.address || 'לא צוינה'}</p>
-                        <div id="order-map"></div>
-                    </div>
-                `;
-                orderDetailsView.classList.add('open');
-                document.getElementById('close-details-btn').addEventListener('click', () => orderDetailsView.classList.remove('open'));
-                
-                setTimeout(() => initOrderMap(order), 50);
-            }
-
-            function initOrderMap(order) {
-                const lat = order.lat || 32.0853;
-                const lon = order.lon || 34.7818;
-                let map = L.map('order-map').setView([lat, lon], 15);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-
-                let icon = L.marker([lat, lon]);
-                if (order.status === 'בדרך') {
-                     const truckIcon = L.divIcon({
-                        html: '🚚', className: 'map-truck-icon', 
-                        iconSize: [40, 40], iconAnchor: [20, 20]
-                    });
-                    icon = L.marker([lat, lon], { icon: truckIcon });
-                }
-                
-                icon.addTo(map).bindPopup(`<b>${order.project}</b><br>${order.address}`).openPopup();
-                setTimeout(() => map.invalidateSize(), 400);
-            }
-
             // --- CHAT VIEW LOGIC (FULL) ---
 
-            function getGreeting() {
+            getGreeting = function() {
                 const hour = new Date().getHours();
                 const name = clientData.name.split(' ')[0];
                 if (hour >= 5 && hour < 12) return `בוקר טוב ${name} ☀️`;
@@ -241,7 +175,7 @@
                 return `לילה טוב ${name} 😴`;
             }
 
-            function openChatView() {
+            openChatView = function() {
                 chatView.innerHTML = `
                     <header class="chat-header">
                          <button id="close-chat-btn" class="back-btn">➤</button>
@@ -270,11 +204,11 @@
                 addSystemMessage(getGreeting());
             }
 
-            function closeChatView() {
+            closeChatView = function() {
                 chatView.classList.remove('open');
             }
 
-            function toggleAttachmentMenu() {
+            toggleAttachmentMenu = function() {
                 let menu = document.getElementById('attachment-menu');
                 menu.classList.toggle('visible');
                 if (menu.classList.contains('visible')) {
@@ -288,7 +222,7 @@
                 }
             }
             
-            function handleAttachmentAction(e) {
+            handleAttachmentAction = function(e) {
                 const action = e.currentTarget.dataset.action;
                 toggleAttachmentMenu();
                 switch(action) {
@@ -299,7 +233,7 @@
                 }
             }
 
-            function handleFileUpload(event) {
+            handleFileUpload = function(event) {
                 const file = event.target.files[0];
                 if (!file) return;
                 const reader = new FileReader();
@@ -318,7 +252,7 @@
                 reader.readAsDataURL(file);
             }
 
-            function handleLocationAttach() {
+            handleLocationAttach = function() {
                 if (!navigator.geolocation) return addSystemMessage("שירותי מיקום לא נתמכים בדפדפן.");
                 showSpinner('מאתר מיקום...');
                 navigator.geolocation.getCurrentPosition(
@@ -331,7 +265,7 @@
                 );
             }
 
-            async function handleSendMessage() {
+            handleSendMessage = async function() {
                 const input = document.getElementById('message-input');
                 const text = input.value.trim();
                 if (!text) return;
@@ -341,18 +275,22 @@
                 showSpinner('מנתח את ההזמנה...');
                 try {
                     const response = await apiPost({ action: 'predictOrder', text });
-                    if (response.success && (response.data.predictedItems.length > 0 || response.data.unidentifiedItems.length > 0)) {
-                        createDraftBubble(response.data);
+                    if (response.success && response.data && (response.data.predictedItems || response.data.unidentifiedItems)) {
+                        if (response.data.predictedItems.length > 0 || response.data.unidentifiedItems.length > 0) {
+                            createDraftBubble(response.data);
+                        } else {
+                            addSystemMessage('לא הצלחתי לזהות פריטים בהודעה. אנא בדוק את ההודעה ונסה שוב.');
+                        }
                     } else {
-                        addSystemMessage('לא הצלחתי לזהות פריטים בהודעה. אנא בדוק את ההודעה ונסה שוב.');
+                         addSystemMessage(response.error || 'אופס, חלה שגיאה בניתוח ההודעה.');
                     }
                 } catch (e) {
                     console.error("Prediction error:", e);
-                    addSystemMessage('אופס, חלה שגיאה בניתוח ההודעה.');
+                    addSystemMessage('אופס, חלה שגיאת תקשורת.');
                 } finally { hideSpinner(); }
             }
-
-            function createDraftBubble(data) {
+            
+            createDraftBubble = function(data) {
                 const draftId = `draft-${Date.now()}`;
                 const { predictedItems, unidentifiedItems } = data;
                 let itemsHtml = predictedItems.map(item => `<li>${item.quantity} x ${item.name} (${item.sku || 'לא ידוע'})</li>`).join('');
@@ -372,7 +310,7 @@
                 draftElement.querySelector('.cancel-btn').onclick = () => draftElement.remove();
             }
 
-            async function handleConfirmOrder(draftId, orderData) {
+            handleConfirmOrder = async function(draftId, orderData) {
                 showSpinner('יוצר הזמנה...');
                 const draftElement = document.getElementById(draftId);
                 draftElement.innerHTML = 'מאשר הזמנה...';
@@ -389,9 +327,11 @@
                 }
             }
 
-            function closeModal() { document.getElementById('modal-container').classList.remove('visible'); }
+            closeModal = function() { 
+                document.getElementById('modal-container').classList.remove('visible'); 
+            }
 
-            function renderCalendarModal(date = new Date()) {
+            renderCalendarModal = function(date = new Date()) {
                 const modalContainer = document.getElementById('modal-container');
                 let selectedDate = null;
                 function render() {
@@ -424,7 +364,7 @@
                 modalContainer.onclick = (e) => { if (e.target === modalContainer) closeModal(); };
             }
 
-            function renderTransportChoice() {
+            renderTransportChoice = function() {
                 const modalContainer = document.getElementById('modal-container');
                 modalContainer.innerHTML = `<div class="modal-content"><h3>בחר סוג הובלה</h3><div class="transport-options"><button data-type="פריקה ידנית">פריקה ידנית</button><button data-type="הובלת מנוף">הובלת מנוף</button></div></div>`;
                 modalContainer.querySelectorAll('button').forEach(btn => {
@@ -437,7 +377,7 @@
                 modalContainer.classList.add('visible');
                 modalContainer.onclick = (e) => { if (e.target === modalContainer) closeModal(); };
             }
-            
+
             // Initial call
             renderLoginScreen();
         });
