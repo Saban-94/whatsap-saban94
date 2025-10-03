@@ -181,45 +181,7 @@
                 setTimeout(() => map.invalidateSize(), 400);
             }
             
-            function getGreeting() { /* ... full function ... */ }
-            function openChatView() { /* ... full function ... */ }
-            function closeChatView() { chatView.classList.remove('open'); }
-            function toggleAttachmentMenu() { /* ... full function ... */ }
-            function handleAttachmentAction(e) { /* ... full function ... */ }
-            function handleFileUpload(event) { /* ... full function ... */ }
-            function handleLocationAttach() { /* ... full function ... */ }
-            async function handleSendMessage() { /* ... full function ... */ }
-            function createDraftBubble(data) { /* ... full function ... */ }
-            async function handleConfirmOrder(draftId, orderData) { /* ... full function ... */ }
-            function addSystemMessage(text) { addHtmlToCanvas(`<div class="message-bubble system">${text}</div>`); }
-            function addHtmlToCanvas(html) {
-                const canvas = document.getElementById('chat-canvas');
-                if(canvas) {
-                    canvas.insertAdjacentHTML('beforeend', html);
-                    canvas.scrollTop = canvas.scrollHeight;
-                }
-            }
-            function showSpinner(text) { 
-                const spinner = document.getElementById('spinner-overlay');
-                spinner.querySelector('#spinner-text').textContent = text;
-                spinner.style.display = 'flex';
-            }
-            function hideSpinner() { document.getElementById('spinner-overlay').style.display = 'none'; }
-            async function apiPost(body) {
-                const response = await fetch(API_URL, {
-                    method: 'POST', redirect: 'follow',
-                    body: JSON.stringify(body),
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-                });
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                return response.json();
-            }
-            
-            renderLoginScreen();
-
-            // --- ALL HELPER FUNCTIONS IN FULL ---
-            
-            getGreeting = function() {
+            function getGreeting() {
                 const hour = new Date().getHours();
                 const name = clientData.name.split(' ')[0];
                 if (hour >= 5 && hour < 12) return `בוקר טוב ${name} ☀️`;
@@ -228,7 +190,7 @@
                 return `לילה טוב ${name} 😴`;
             }
 
-            openChatView = function() {
+            function openChatView() {
                 chatView.innerHTML = `
                     <header class="chat-header">
                          <button id="close-chat-btn" class="back-btn">➤</button>
@@ -257,7 +219,11 @@
                 addSystemMessage(getGreeting());
             }
 
-            toggleAttachmentMenu = function() {
+            function closeChatView() {
+                chatView.classList.remove('open');
+            }
+
+            function toggleAttachmentMenu() {
                 let menu = document.getElementById('attachment-menu');
                 menu.classList.toggle('visible');
                 if (menu.classList.contains('visible')) {
@@ -270,8 +236,8 @@
                     menu.querySelectorAll('.attachment-item').forEach(item => item.addEventListener('click', handleAttachmentAction));
                 }
             }
-
-            handleAttachmentAction = function(e) {
+            
+            function handleAttachmentAction(e) {
                 const action = e.currentTarget.dataset.action;
                 toggleAttachmentMenu();
                 switch(action) {
@@ -282,7 +248,7 @@
                 }
             }
 
-            handleFileUpload = function(event) {
+            function handleFileUpload(event) {
                 const file = event.target.files[0];
                 if (!file) return;
                 const reader = new FileReader();
@@ -301,7 +267,7 @@
                 reader.readAsDataURL(file);
             }
 
-            handleLocationAttach = function() {
+            function handleLocationAttach() {
                 if (!navigator.geolocation) return addSystemMessage("שירותי מיקום לא נתמכים בדפדפן.");
                 showSpinner('מאתר מיקום...');
                 navigator.geolocation.getCurrentPosition(
@@ -314,7 +280,7 @@
                 );
             }
 
-            handleSendMessage = async function() {
+            async function handleSendMessage() {
                 const input = document.getElementById('message-input');
                 const text = input.value.trim();
                 if (!text) return;
@@ -334,6 +300,37 @@
                     addSystemMessage('אופס, חלה שגיאה בניתוח ההודעה.');
                 } finally { hideSpinner(); }
             }
+            
+            function addSystemMessage(text) { addHtmlToCanvas(`<div class="message-bubble system">${text}</div>`); }
+            function addHtmlToCanvas(html) {
+                const canvas = document.getElementById('chat-canvas');
+                if(canvas) {
+                    canvas.insertAdjacentHTML('beforeend', html);
+                    canvas.scrollTop = canvas.scrollHeight;
+                }
+            }
+
+            function showSpinner(text) { 
+                const spinnerOverlay = document.getElementById('spinner-overlay');
+                spinnerOverlay.firstElementChild.textContent = text;
+                spinnerOverlay.style.display = 'flex';
+            }
+            function hideSpinner() { document.getElementById('spinner-overlay').style.display = 'none'; }
+            
+            async function apiPost(body) {
+                const response = await fetch(API_URL, {
+                    method: 'POST', redirect: 'follow',
+                    body: JSON.stringify(body),
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                });
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                return response.json();
+            }
+            
+            renderLoginScreen();
+
+            // --- ALL HELPER FUNCTIONS IN FULL ---
+            function closeModal() { document.getElementById('modal-container').classList.remove('visible'); }
 
             function renderCalendarModal(date = new Date()) {
                 const modalContainer = document.getElementById('modal-container');
@@ -382,7 +379,7 @@
                 modalContainer.onclick = (e) => { if (e.target === modalContainer) closeModal(); };
             }
 
-            createDraftBubble = function(data) {
+            function createDraftBubble(data) {
                 const draftId = `draft-${Date.now()}`;
                 const itemsHtml = data.predictedItems.map(item => `<li>${item.quantity} x ${item.name} (${item.sku || 'לא ידוע'})</li>`).join('');
                 let detailsHtml = '';
@@ -397,7 +394,7 @@
                 draftElement.querySelector('.cancel-btn').onclick = () => draftElement.remove();
             }
 
-            handleConfirmOrder = async function(draftId, orderData) {
+            async function handleConfirmOrder(draftId, orderData) {
                 showSpinner('יוצר הזמנה...');
                 const draftElement = document.getElementById(draftId);
                 draftElement.innerHTML = 'מאשר הזמנה...';
