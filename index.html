@@ -98,6 +98,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM ELEMENTS & STATE ---
             const root = document.getElementById('root');
             const chatView = document.getElementById('chat-view');
             const orderDetailsView = document.getElementById('order-details-view');
@@ -106,14 +107,13 @@
             let clientData = null, dashboardData = null;
             let orderDetails = { fileLink: null, deliverySlot: null, location: null, transportType: null };
 
-            // --- ALL FUNCTIONS DECLARED HERE FOR SCOPE ---
-            
+            // --- API & UTILITY FUNCTIONS ---
+
             function showSpinner(text) { 
                 const spinnerOverlay = document.getElementById('spinner-overlay');
                 spinnerOverlay.firstElementChild.textContent = text;
                 spinnerOverlay.style.display = 'flex';
             }
-
             function hideSpinner() { 
                 document.getElementById('spinner-overlay').style.display = 'none'; 
             }
@@ -135,14 +135,14 @@
                     canvas.scrollTop = canvas.scrollHeight;
                 }
             }
-
             function addSystemMessage(text) { 
                 addHtmlToCanvas(`<div class="message-bubble system">${text}</div>`); 
             }
-
             function closeModal() { 
                 document.getElementById('modal-container').classList.remove('visible'); 
             }
+
+            // --- LOGIN & DASHBOARD LOGIC ---
 
             async function handleLogin() {
                 const clientId = document.getElementById('client-id-input').value;
@@ -188,6 +188,8 @@
                 });
             }
             
+            // --- ORDER DETAILS VIEW LOGIC ---
+
             function openOrderDetailsView(order) {
                 orderDetailsView.innerHTML = `
                     <header class="order-details-header">
@@ -225,6 +227,8 @@
                 icon.addTo(map).bindPopup(`<b>${order.project}</b><br>${order.address}`).openPopup();
                 setTimeout(() => map.invalidateSize(), 400);
             }
+
+            // --- CHAT VIEW LOGIC (FULL) ---
 
             function getGreeting() {
                 const hour = new Date().getHours();
@@ -435,6 +439,7 @@
                  root.innerHTML = `<div class="login-screen"><div class="login-box"><h1>ח. סבן</h1><p>מרכז הבקרה האישי</p><input id="client-id-input" type="tel" placeholder="הקלד מספר לקוח" /><button id="login-btn">כניסה</button></div></div>`;
                 document.getElementById('login-btn').addEventListener('click', handleLogin);
             }
+
             renderLoginScreen();
         });
     </script>
