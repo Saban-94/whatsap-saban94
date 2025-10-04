@@ -98,7 +98,6 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // --- DOM ELEMENTS & STATE ---
             const root = document.getElementById('root');
             const chatView = document.getElementById('chat-view');
             const orderDetailsView = document.getElementById('order-details-view');
@@ -107,18 +106,19 @@
             let clientData = null, dashboardData = null;
             let orderDetails = { fileLink: null, deliverySlot: null, location: null, transportType: null };
 
-            // --- API & UTILITY FUNCTIONS ---
-
-            function showSpinner(text) { 
+            // --- ALL FUNCTIONS DECLARED HERE FOR SCOPE ---
+            
+            const showSpinner = (text) => { 
                 const spinnerOverlay = document.getElementById('spinner-overlay');
                 spinnerOverlay.firstElementChild.textContent = text;
                 spinnerOverlay.style.display = 'flex';
-            }
-            function hideSpinner() { 
+            };
+
+            const hideSpinner = () => { 
                 document.getElementById('spinner-overlay').style.display = 'none'; 
-            }
+            };
             
-            async function apiPost(body) {
+            const apiPost = async (body) => {
                 const response = await fetch(API_URL, {
                     method: 'POST', redirect: 'follow',
                     body: JSON.stringify(body),
@@ -126,25 +126,25 @@
                 });
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 return response.json();
-            }
+            };
 
-            function addHtmlToCanvas(html) {
+            const addHtmlToCanvas = (html) => {
                 const canvas = document.getElementById('chat-canvas');
                 if(canvas) {
                     canvas.insertAdjacentHTML('beforeend', html);
                     canvas.scrollTop = canvas.scrollHeight;
                 }
-            }
-            function addSystemMessage(text) { 
+            };
+
+            const addSystemMessage = (text) => { 
                 addHtmlToCanvas(`<div class="message-bubble system">${text}</div>`); 
-            }
-            function closeModal() { 
+            };
+
+            const closeModal = () => { 
                 document.getElementById('modal-container').classList.remove('visible'); 
-            }
+            };
 
-            // --- LOGIN & DASHBOARD LOGIC ---
-
-            async function handleLogin() {
+            const handleLogin = async () => {
                 const clientId = document.getElementById('client-id-input').value;
                 if (!clientId) return;
                 showSpinner('טוען נתונים...');
@@ -157,9 +157,9 @@
                     } else { alert(response.error); }
                 } catch (e) { console.error("Login Error:", e); alert('שגיאת תקשורת.'); } 
                 finally { hideSpinner(); }
-            }
+            };
 
-            function renderDashboardScreen() {
+            const renderDashboardScreen = () => {
                 let feedHtml = dashboardData.activeOrders.map((order, index) => `
                     <div class="feed-item" data-order-index="${index}">
                         <strong>הזמנה לפרויקט ${order.project}</strong><br>
@@ -186,11 +186,9 @@
                         openOrderDetailsView(dashboardData.activeOrders[orderIndex]);
                     });
                 });
-            }
+            };
             
-            // --- ORDER DETAILS VIEW LOGIC ---
-
-            function openOrderDetailsView(order) {
+            const openOrderDetailsView = (order) => {
                 orderDetailsView.innerHTML = `
                     <header class="order-details-header">
                         <button id="close-details-btn" class="back-btn">➤</button>
@@ -207,9 +205,9 @@
                 document.getElementById('close-details-btn').addEventListener('click', () => orderDetailsView.classList.remove('open'));
                 
                 setTimeout(() => initOrderMap(order), 50);
-            }
+            };
 
-            function initOrderMap(order) {
+            const initOrderMap = (order) => {
                 const lat = order.lat || 32.0853;
                 const lon = order.lon || 34.7818;
                 let map = L.map('order-map').setView([lat, lon], 15);
@@ -226,20 +224,18 @@
                 
                 icon.addTo(map).bindPopup(`<b>${order.project}</b><br>${order.address}`).openPopup();
                 setTimeout(() => map.invalidateSize(), 400);
-            }
+            };
 
-            // --- CHAT VIEW LOGIC (FULL) ---
-
-            function getGreeting() {
+            const getGreeting = () => {
                 const hour = new Date().getHours();
                 const name = clientData.name.split(' ')[0];
                 if (hour >= 5 && hour < 12) return `בוקר טוב ${name} ☀️`;
                 if (hour >= 12 && hour < 18) return `צהריים טובים ${name} 👋`;
                 if (hour >= 18 && hour < 22) return `ערב טוב ${name} 🌙`;
                 return `לילה טוב ${name} 😴`;
-            }
+            };
 
-            function openChatView() {
+            const openChatView = () => {
                 chatView.innerHTML = `
                     <header class="chat-header">
                          <button id="close-chat-btn" class="back-btn">➤</button>
@@ -266,13 +262,13 @@
                 document.getElementById('file-input').addEventListener('change', handleFileUpload);
                 chatView.classList.add('open');
                 addSystemMessage(getGreeting());
-            }
+            };
 
-            function closeChatView() {
+            const closeChatView = () => {
                 chatView.classList.remove('open');
-            }
+            };
 
-            function toggleAttachmentMenu() {
+            const toggleAttachmentMenu = () => {
                 let menu = document.getElementById('attachment-menu');
                 menu.classList.toggle('visible');
                 if (menu.classList.contains('visible')) {
@@ -284,9 +280,9 @@
                     `;
                     menu.querySelectorAll('.attachment-item').forEach(item => item.addEventListener('click', handleAttachmentAction));
                 }
-            }
+            };
             
-            function handleAttachmentAction(e) {
+            const handleAttachmentAction = (e) => {
                 const action = e.currentTarget.dataset.action;
                 toggleAttachmentMenu();
                 switch(action) {
@@ -295,9 +291,9 @@
                     case 'calendar': renderCalendarModal(); break;
                     case 'transport': renderTransportChoice(); break;
                 }
-            }
+            };
 
-            function handleFileUpload(event) {
+            const handleFileUpload = (event) => {
                 const file = event.target.files[0];
                 if (!file) return;
                 const reader = new FileReader();
@@ -314,9 +310,9 @@
                     finally { hideSpinner(); }
                 };
                 reader.readAsDataURL(file);
-            }
+            };
 
-            function handleLocationAttach() {
+            const handleLocationAttach = () => {
                 if (!navigator.geolocation) return addSystemMessage("שירותי מיקום לא נתמכים בדפדפן.");
                 showSpinner('מאתר מיקום...');
                 navigator.geolocation.getCurrentPosition(
@@ -327,9 +323,9 @@
                     },
                     () => { hideSpinner(); addSystemMessage(`❌ לא ניתן היה לאתר את מיקומך.`); }
                 );
-            }
+            };
 
-            async function handleSendMessage() {
+            const handleSendMessage = async () => {
                 const input = document.getElementById('message-input');
                 const text = input.value.trim();
                 if (!text) return;
@@ -348,9 +344,9 @@
                     console.error("Prediction error:", e);
                     addSystemMessage('אופס, חלה שגיאת תקשורת.');
                 } finally { hideSpinner(); }
-            }
+            };
             
-            function createDraftBubble(data) {
+            const createDraftBubble = (data) => {
                 const draftId = `draft-${Date.now()}`;
                 const { predictedItems, unidentifiedItems } = data;
                 let itemsHtml = predictedItems.map(item => `<li>${item.quantity} x ${item.name} (${item.sku || 'לא ידוע'})</li>`).join('');
@@ -368,9 +364,9 @@
                 const draftElement = document.getElementById(draftId);
                 draftElement.querySelector('.confirm-btn').onclick = () => handleConfirmOrder(draftId, data);
                 draftElement.querySelector('.cancel-btn').onclick = () => draftElement.remove();
-            }
+            };
 
-            async function handleConfirmOrder(draftId, orderData) {
+            const handleConfirmOrder = async (draftId, orderData) => {
                 showSpinner('יוצר הזמנה...');
                 const draftElement = document.getElementById(draftId);
                 draftElement.innerHTML = 'מאשר הזמנה...';
@@ -385,9 +381,9 @@
                     hideSpinner();
                     orderDetails = { fileLink: null, deliverySlot: null, location: null, transportType: null };
                 }
-            }
+            };
 
-            function renderCalendarModal(date = new Date()) {
+            const renderCalendarModal = (date = new Date()) => {
                 const modalContainer = document.getElementById('modal-container');
                 let selectedDate = null;
                 function render() {
@@ -418,9 +414,9 @@
                 render();
                 modalContainer.classList.add('visible');
                 modalContainer.onclick = (e) => { if (e.target === modalContainer) closeModal(); };
-            }
+            };
 
-            function renderTransportChoice() {
+            const renderTransportChoice = () => {
                 const modalContainer = document.getElementById('modal-container');
                 modalContainer.innerHTML = `<div class="modal-content"><h3>בחר סוג הובלה</h3><div class="transport-options"><button data-type="פריקה ידנית">פריקה ידנית</button><button data-type="הובלת מנוף">הובלת מנוף</button></div></div>`;
                 modalContainer.querySelectorAll('button').forEach(btn => {
@@ -432,7 +428,7 @@
                 });
                 modalContainer.classList.add('visible');
                 modalContainer.onclick = (e) => { if (e.target === modalContainer) closeModal(); };
-            }
+            };
             
             // --- INITIALIZATION ---
             function renderLoginScreen() {
