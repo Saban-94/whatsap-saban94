@@ -268,7 +268,7 @@
                 addSystemMessage(getGreeting());
 
                 const qResponse = await apiPost({ action: 'getQuickQuestions' });
-                if(qResponse.success && qResponse.data.length > 0) {
+                if(qResponse.success && qResponse.data && qResponse.data.length > 0) {
                     qResponse.data.forEach(q => {
                         const qBubble = `<div class="message-bubble system quick-question">${q}</div>`;
                         addHtmlToCanvas(qBubble);
