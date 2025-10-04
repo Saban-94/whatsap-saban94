@@ -103,29 +103,24 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM ELEMENTS & STATE ---
             const root = document.getElementById('root');
             const chatView = document.getElementById('chat-view');
             const orderDetailsView = document.getElementById('order-details-view');
-            const API_URL = "https://script.google.com/macros/s/AKfycbyEtlNgRighnTbSI64_o62j1Lt5hxSF8To4wNEJ1Y2nC_Lrg5Ynb6Noe2e3C4n_uohE/exec";
+            const API_URL = "https://script.google.com/macros/s/AKfycbzB75CrkvItrUSdMvvwkRrrABFP4hjWnPQpcIXrHrpImESGWRoR2QYOdM5klsTVG3t-/exec";
             
             let clientData = null, dashboardData = null;
             let orderDetails = { fileLink: null, deliverySlot: null, location: null, transportType: null };
 
-            // --- ALL FUNCTIONS DECLARED HERE FOR SCOPE ---
-            
+            // --- UTILITY FUNCTIONS ---
             const showSpinner = (text) => { 
                 const spinnerOverlay = document.getElementById('spinner-overlay');
-                if(spinnerOverlay) {
-                    spinnerOverlay.firstElementChild.textContent = text;
-                    spinnerOverlay.style.display = 'flex';
-                }
+                spinnerOverlay.firstElementChild.textContent = text;
+                spinnerOverlay.style.display = 'flex';
             };
 
             const hideSpinner = () => { 
-                const spinnerOverlay = document.getElementById('spinner-overlay');
-                if(spinnerOverlay) {
-                    spinnerOverlay.style.display = 'none'; 
-                }
+                document.getElementById('spinner-overlay').style.display = 'none'; 
             };
             
             const apiPost = async (body) => {
@@ -155,9 +150,50 @@
                 if(modalContainer) modalContainer.classList.remove('visible'); 
             };
 
+            // --- RENDER & EVENT BINDING FUNCTIONS ---
+
+            const bindDashboardEvents = () => {
+                const fab = document.querySelector('.fab-chat-btn');
+                if (fab) fab.addEventListener('click', openChatView);
+                
+                document.querySelectorAll('.feed-item').forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        const orderIndex = e.currentTarget.dataset.orderIndex;
+                        openOrderDetailsView(dashboardData.activeOrders[orderIndex]);
+                    });
+                });
+            };
+
+            const bindChatEvents = async () => {
+                document.getElementById('close-chat-btn').addEventListener('click', closeChatView);
+                document.getElementById('send-btn').addEventListener('click', handleSendMessage);
+                document.getElementById('attach-btn').addEventListener('click', toggleAttachmentMenu);
+                document.getElementById('file-input').addEventListener('change', handleFileUpload);
+                
+                addSystemMessage(getGreeting());
+
+                try {
+                    const qResponse = await apiPost({ action: 'getQuickQuestions' });
+                    if(qResponse.success && qResponse.data && qResponse.data.length > 0) {
+                        qResponse.data.forEach(q => {
+                            addHtmlToCanvas(`<div class="message-bubble system quick-question">${q}</div>`);
+                        });
+                        document.querySelectorAll('.quick-question').forEach(btn => {
+                            btn.addEventListener('click', () => {
+                                document.getElementById('message-input').value = btn.textContent;
+                                handleSendMessage();
+                            });
+                        });
+                    }
+                } catch (e) {
+                    console.error("Failed to get quick questions:", e);
+                }
+            };
+
+            // --- VIEW LOGIC ---
+
             const handleLogin = async () => {
                 const clientIdInput = document.getElementById('client-id-input');
-                if (!clientIdInput) return;
                 const clientId = clientIdInput.value;
                 if (!clientId) return;
                 showSpinner('טוען נתונים...');
@@ -192,13 +228,7 @@
                             </button>
                         </div>
                     </div>`;
-                document.querySelector('.fab-chat-btn').addEventListener('click', openChatView);
-                document.querySelectorAll('.feed-item').forEach(item => {
-                    item.addEventListener('click', (e) => {
-                        const orderIndex = e.currentTarget.dataset.orderIndex;
-                        openOrderDetailsView(dashboardData.activeOrders[orderIndex]);
-                    });
-                });
+                bindDashboardEvents();
             };
             
             const openOrderDetailsView = (order) => { /* ... same as before ... */ };
@@ -212,10 +242,11 @@
             const handleLocationAttach = () => { /* ... same as before ... */ };
             const handleAttachmentAction = (e) => { /* ... same as before ... */ };
             const toggleAttachmentMenu = () => { /* ... same as before ... */ };
-            const closeChatView = () => { /* ... same as before ... */ };
+            const closeChatView = () => { chatView.classList.remove('open'); };
 
             const handleSendMessage = async () => {
                 const input = document.getElementById('message-input');
+                if (!input) return;
                 const text = input.value.trim();
                 if (!text) return;
                 addHtmlToCanvas(`<div class="message-bubble outgoing">${text}</div>`);
@@ -264,29 +295,12 @@
                         </div>
                     </footer>
                 `;
-                document.getElementById('close-chat-btn').addEventListener('click', closeChatView);
-                document.getElementById('send-btn').addEventListener('click', handleSendMessage);
-                document.getElementById('attach-btn').addEventListener('click', toggleAttachmentMenu);
-                document.getElementById('file-input').addEventListener('change', handleFileUpload);
                 chatView.classList.add('open');
-                addSystemMessage(getGreeting());
-
-                const qResponse = await apiPost({ action: 'getQuickQuestions' });
-                if(qResponse.success && qResponse.data && qResponse.data.length > 0) {
-                    qResponse.data.forEach(q => {
-                        addHtmlToCanvas(`<div class="message-bubble system quick-question">${q}</div>`);
-                    });
-                    document.querySelectorAll('.quick-question').forEach(btn => {
-                        btn.addEventListener('click', () => {
-                            document.getElementById('message-input').value = btn.textContent;
-                            handleSendMessage();
-                        });
-                    });
-                }
+                bindChatEvents();
             };
             
             // --- INITIALIZATION ---
-            function renderLoginScreen() {
+            const renderLoginScreen = () => {
                  root.innerHTML = `<div class="login-screen">
                     <div class="login-avatar-container" id="login-avatar">
                         <img src="https://i.postimg.cc/tCpLp7B6/image.png" alt="Logo">
@@ -328,4 +342,3 @@
 </body>
 </html>
 
--
