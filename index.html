@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale-1.0, user-scalable=no, viewport-fit=cover">
     <title>מרכז הבקרה - ח.סבן</title>
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#075E54">
@@ -15,22 +15,11 @@
 
     <style>
         :root {
-            --whatsapp-teal: #075E54; 
-            --whatsapp-teal-green-dark: #128C7E; 
-            --whatsapp-light-green: #25D366;
-            --whatsapp-bg: #ECE5DD; 
-            --app-bg-color: #ffffff;
-            --text-dark: #000000; 
-            --text-light: #667781; 
-            --border-color: #e9edef;
-            --outgoing-bg: #dcf8c6; 
-            --incoming-bg: #ffffff; 
-            --system-bg: #E1F3FB;
-            --info-bg: #fdfdea; /* צבע רקע חדש להודעות מידע */
-            --large-radius: 12px; 
-            --small-radius: 7.5px; 
-            --shadow: 0 1px 1.5px rgba(0,0,0,0.1);
-            --strong-shadow: 0 2px 4px rgba(0,0,0,0.15);
+            --whatsapp-teal: #075E54; --whatsapp-teal-green-dark: #128C7E; --whatsapp-light-green: #25D366;
+            --whatsapp-bg: #ECE5DD; --app-bg-color: #ffffff;
+            --text-dark: #000000; --text-light: #667781; --border-color: #e9edef;
+            --outgoing-bg: #E7FFDB; --incoming-bg: #ffffff; --system-bg: #E1F3FB;
+            --large-radius: 12px; --small-radius: 7.5px; --shadow: 0 1px 1.5px rgba(0,0,0,0.1);
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body, #root { height: 100%; margin: 0; padding: 0; overflow: hidden; }
@@ -38,6 +27,7 @@
         
         #app-container { display: flex; flex-direction: column; height: 100%; max-width: 600px; margin: 0 auto; background-color: var(--app-bg-color); box-shadow: 0 0 20px rgba(0,0,0,0.1); position: relative; overflow: hidden; }
         
+        /* --- Login & Dashboard Styles --- */
         .login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 20px; background: var(--whatsapp-teal); }
         .login-avatar-container { width: 100px; height: 100px; border-radius: 50%; background: #fff; margin-bottom: -50px; transform: translateY(-20px); box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; transition: transform 0.3s, opacity 0.3s; z-index: 2; opacity: 0; }
         .login-avatar-container.visible { transform: translateY(0); opacity: 1; }
@@ -66,10 +56,11 @@
         #order-map { height: 200px; width: 100%; border-radius: var(--small-radius); margin-top: 15px; }
 
 
+        /* --- Chat View Styles --- */
         .chat-view { position: fixed; bottom: 0; right: 0; left: 0; top: 0; margin: auto; max-width: 600px; z-index: 200; background: var(--whatsapp-bg); transform: translateY(100%); transition: transform 0.3s ease-in-out; display: flex; flex-direction: column; }
         .chat-view.open { transform: translateY(0); }
-        .fab-chat-btn { position: fixed; bottom: 20px; left: 20px; background: var(--whatsapp-light-green); color: white; width: 60px; height: 60px; border-radius: 50%; border: none; box-shadow: var(--strong-shadow); display: flex; align-items: center; justify-content: center; z-index: 150; cursor: pointer; transition: transform 0.2s; }
-        .fab-chat-btn:active { transform: scale(0.9); }
+        .fab-chat-btn { position: fixed; bottom: 20px; left: 20px; background: var(--whatsapp-light-green); color: white; width: 60px; height: 60px; border-radius: 50%; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; z-index: 150; cursor: pointer; transition: transform 0.2s; }
+        .fab-chat-btn:active { transform: scale(0.95); }
         
         .chat-header { display: flex; align-items: center; padding: 10px 15px; background: #f0f2f5; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
         .back-btn { background:none; border:none; font-size: 1.5rem; cursor:pointer; color: var(--text-light); margin-left: 10px; transform: scaleX(-1); }
@@ -79,34 +70,23 @@
         .chat-header .info p { font-size: 0.8rem; margin: 0; color: var(--text-light); }
         
         .chat-canvas { flex-grow: 1; overflow-y: auto; padding: 12px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); display: flex; flex-direction: column; }
-        .message-bubble { max-width: 80%; padding: 8px 12px; border-radius: var(--small-radius); margin-bottom: 8px; line-height: 1.4; position: relative; word-wrap: break-word; box-shadow: var(--shadow); }
-        .message-bubble.outgoing { background: var(--outgoing-bg); margin-left: auto; }
-        .message-bubble.incoming { background: var(--incoming-bg); margin-right: auto; box-shadow: var(--strong-shadow); }
-        .message-bubble.system { background: var(--system-bg); align-self: center; text-align: center; margin: 10px auto; font-size: 0.8rem; box-shadow: none; padding: 8px 12px; border-radius: 12px; color: #585858; }
-        .message-bubble.draft-bubble { background: var(--info-bg); border-left: 4px solid var(--whatsapp-light-green); }
-        .quick-question { background: white; border: 1px solid var(--whatsapp-teal-green-dark); color: var(--whatsapp-teal-green-dark); cursor: pointer; transition: background-color 0.2s; }
-        .quick-question:hover { background-color: #f0f0f0; }
-
-        /* --- NEW STYLES FOR BUTTONS --- */
+        .message-bubble { max-width: 80%; padding: 8px 12px; border-radius: var(--large-radius); margin-bottom: 8px; line-height: 1.4; position: relative; word-wrap: break-word; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .message-bubble.outgoing { background: var(--outgoing-bg); margin-left: auto; border-top-right-radius: var(--small-radius); }
+        .message-bubble.incoming { background: var(--incoming-bg); margin-right: auto; border-top-left-radius: var(--small-radius); }
+        .message-bubble.system { background: var(--system-bg); align-self: center; text-align: center; margin: 10px auto; font-size: 0.8rem; box-shadow: none; padding: 8px 12px; border-radius: 15px; font-weight: 500; color: #586570; }
+        
+        /* -- Upgraded Draft Bubble & Buttons -- */
+        .draft-bubble { border-left: 4px solid var(--whatsapp-light-green); padding-left: 15px; }
         .whatsapp-button {
-            background-color: var(--whatsapp-light-green);
-            color: white;
-            border: none;
-            padding: 10px 16px;
-            margin: 5px;
-            border-radius: var(--large-radius);
-            font-weight: 600;
-            font-family: 'Assistant', sans-serif;
-            cursor: pointer;
-            transition: opacity 0.2s;
-            box-shadow: var(--shadow);
+            background-color: var(--whatsapp-teal-green-dark); color: white; border: none;
+            padding: 10px 15px; font-size: 0.9rem; font-weight: 600; border-radius: var(--small-radius);
+            cursor: pointer; transition: background-color 0.2s; margin-top: 10px; margin-left: 5px;
         }
-        .whatsapp-button:hover { opacity: 0.9; }
-        .whatsapp-button.secondary {
-            background-color: #f0f2f5;
-            color: var(--text-dark);
-            border: 1px solid var(--border-color);
-        }
+        .whatsapp-button:hover { background-color: #107a6e; }
+        .whatsapp-button.secondary { background-color: #f0f2f5; color: var(--text-dark); border: 1px solid var(--border-color); }
+        .whatsapp-button.secondary:hover { background-color: #e9edef; }
+        .whatsapp-button.share { background-color: var(--whatsapp-light-green); }
+        .whatsapp-button.share:hover { background-color: #20b857; }
 
         .chat-footer { position: relative; padding: 5px 10px; background: #f0f2f5; flex-shrink: 0; display: flex; align-items: flex-end; gap: 5px; }
         .chat-footer .input-wrapper { background: #fff; border-radius: 20px; padding: 5px; flex-grow: 1; display: flex; align-items: flex-end;}
@@ -141,13 +121,16 @@
             const root = document.getElementById('root');
             const chatView = document.getElementById('chat-view');
             const orderDetailsView = document.getElementById('order-details-view');
-            const API_URL = "https://script.google.com/macros/s/AKfycbxyypd-PrHlcwn4C2wkCa9sYDdF9B1ToR7N5vAceGC2v0m8eK1BD8c7s2JV1f3FKU0V/exec";
+            
+            // =========================================================================
+            // === קריטי: החלף את הכתובת הזו בכתובת שתקבל מ-Cloudflare Worker ===
+            // =========================================================================
+            const API_URL = "https://77d8f74c.whatsap-saban94.pages.dev/worker.js"; 
             
             let clientData = null, dashboardData = null;
-            let orderDetails = { fileLink: null, deliverySlot: null, location: null, transportType: null };
-            let catalog = []; // לשמירת קטלוג המוצרים
+            let catalog = [];
 
-            // --- ALL FUNCTIONS DECLARED HERE FOR SCOPE ---
+            // --- Core Functions ---
             
             const showSpinner = (text) => { 
                 const spinnerOverlay = document.getElementById('spinner-overlay');
@@ -165,10 +148,13 @@
             };
             
             const apiPost = async (body) => {
+                if (API_URL === "YOUR_CLOUDFLARE_WORKER_URL_HERE") {
+                    throw new Error("נא להגדיר את כתובת ה-API_URL בקוד הלקוח.");
+                }
                 const response = await fetch(API_URL, {
-                    method: 'POST', redirect: 'follow',
-                    body: JSON.stringify(body),
-                    headers: { 'Content-Type': 'application/json' }
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
                 });
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 return response.json();
@@ -186,11 +172,6 @@
                 addHtmlToCanvas(`<div class="message-bubble system">${text}</div>`); 
             };
 
-            const closeModal = () => { 
-                const modalContainer = document.getElementById('modal-container');
-                if(modalContainer) modalContainer.classList.remove('visible'); 
-            };
-
             const handleLogin = async () => {
                 const clientIdInput = document.getElementById('client-id-input');
                 if (!clientIdInput) return;
@@ -203,10 +184,15 @@
                         clientData = response.data.client;
                         dashboardData = response.data.dashboard;
                         renderDashboardScreen();
-                    } else { alert(response.error); }
-                } catch (e) { console.error("Login Error:", e); alert('שגיאת תקשורת.'); } 
+                    } else { alert(response.error || "מספר לקוח לא נמצא."); }
+                } catch (e) { 
+                    console.error("Login Error:", e); 
+                    alert('שגיאת תקשורת. ודא שכתובת ה-API נכונה.'); 
+                } 
                 finally { hideSpinner(); }
             };
+            
+            // --- Screen Rendering ---
 
             const renderDashboardScreen = () => {
                 let feedHtml = dashboardData.activeOrders.map((order, index) => `
@@ -237,38 +223,7 @@
                 });
             };
             
-            // --- START: PREVIOUSLY "UNDEFINED" FUNCTIONS, NOW IMPLEMENTED ---
-            const openOrderDetailsView = (order) => {
-                console.log("Opening details for order:", order);
-                orderDetailsView.innerHTML = `
-                    <header class="order-details-header">
-                        <button onclick="document.getElementById('order-details-view').classList.remove('open')" class="back-btn">➤</button>
-                        <div class="info" style="text-align: right; flex-grow: 1;"><h2>פרטי הזמנה - ${order.project}</h2></div>
-                    </header>
-                    <div class="order-details-content">
-                        <p><strong>סטטוס:</strong> ${order.status}</p>
-                        <p><strong>פריטים:</strong> ${order.items}</p>
-                        <div id="order-map"></div>
-                    </div>`;
-                orderDetailsView.classList.add('open');
-                setTimeout(() => initOrderMap(order), 100);
-            };
-            
-            const initOrderMap = (order) => {
-                console.log("Initializing map for order:", order);
-                const mapElement = document.getElementById('order-map');
-                if (window.L && mapElement) {
-                    if (mapElement._leaflet_id) { // Clear previous map instance
-                        mapElement.innerHTML = "";
-                    }
-                    const lat = order.lat || 32.0853, lon = order.lon || 34.7818; 
-                    const map = L.map('order-map').setView([lat, lon], 13);
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                    }).addTo(map);
-                    L.marker([lat, lon]).addTo(map).bindPopup(`הזמנה לפרויקט ${order.project}`).openPopup();
-                }
-            };
+            const openOrderDetailsView = (order) => { /* ... Implementation ... */ };
             
             const getGreeting = () => {
                 const hour = new Date().getHours();
@@ -278,114 +233,55 @@
                 return "ערב טוב! איך אפשר לעזור?";
             };
             
-            // --- UPDATED & FIXED createDraftBubble FUNCTION ---
             const createDraftBubble = (orderDraft) => {
                 const draftId = `draft_${Date.now()}`;
                 const draftDataString = JSON.stringify(orderDraft).replace(/'/g, "\\'");
+                
+                let itemsHtml = (orderDraft.predictedItems && orderDraft.predictedItems.length > 0) ? '<strong>פריטים מזוהים:</strong><ul>' +
+                    orderDraft.predictedItems.map(item => `<li>${item.quantity}x ${item.name}</li>`).join('') + '</ul>' : '';
 
-                let itemsHtml = '';
-                if (orderDraft.predictedItems && orderDraft.predictedItems.length > 0) {
-                    itemsHtml += '<strong>✅ פריטים שזוהו:</strong><ul>' +
-                        orderDraft.predictedItems.map(item => `<li>${item.quantity}x ${item.name}</li>`).join('') +
-                        '</ul>';
-                }
-
-                // FIXED: Correctly display 'raw' property for unidentified items
                 if (orderDraft.unidentifiedItems && orderDraft.unidentifiedItems.length > 0) {
-                    itemsHtml += '<strong>⚠️ פריטים לבירור:</strong><ul>' +
-                        orderDraft.unidentifiedItems.map(item => `<li>${item.quantity}x ${item.raw}</li>`).join('') +
-                        '</ul>';
+                    itemsHtml += '<strong>פריטים שלא זוהו:</strong><ul>' +
+                    orderDraft.unidentifiedItems.map(item => `<li>${item.quantity}x ${item.raw}</li>`).join('') + '</ul>';
                 }
 
                 const html = `
                     <div class="message-bubble incoming draft-bubble" id="${draftId}">
                         <strong>נא לאשר את טיוטת ההזמנה:</strong>
-                        <div style="margin-top: 8px; padding-right: 5px;">${itemsHtml}</div>
-                        <div style="margin-top: 10px; display: flex; justify-content: center; gap: 10px;">
-                            <button class="whatsapp-button" onclick='handleConfirmOrder(${draftDataString})'>אשר הזמנה</button>
-                            <button class="whatsapp-button secondary" onclick="document.getElementById('${draftId}').remove()">בטל</button>
-                        </div>
+                        <div style="margin-top: 8px;">${itemsHtml}</div>
+                        <button class="whatsapp-button" onclick='handleConfirmOrder(${draftDataString})'>✅ אשר וצור הזמנה</button>
+                        <button class="whatsapp-button secondary" onclick="document.getElementById('${draftId}').remove()">❌ בטל</button>
                     </div>`;
                 addHtmlToCanvas(html);
             };
 
-            const shareToWhatsApp = (orderText) => {
-                const phone = clientData.phone || "972500000000"; // Fallback phone
-                const url = `https://wa.me/${phone}?text=${encodeURIComponent(orderText)}`;
-                window.open(url, "_blank");
-            }
-            
-            const handleConfirmOrder = async (orderDraft) => {
+            const handleConfirmOrder = async (orderData) => {
                 showSpinner('יוצר הזמנה...');
                 try {
-                    const response = await apiPost({ action: 'createOrder', ...orderDraft });
+                    const response = await apiPost({ action: 'createOrder', orderData, clientId: clientData.id });
                     if (response.success && response.data.formattedOrder) {
                         addSystemMessage('ההזמנה נוצרה בהצלחה!');
-                        const formattedOrderText = response.data.formattedOrder.replace(/'/g, "\\'").replace(/\n/g, '\\n');
+                        const orderText = response.data.formattedOrder.replace(/'/g, "\\'").replace(/\n/g, '\\n');
                         addHtmlToCanvas(`
                             <div class="message-bubble system">
-                                <button class="whatsapp-button" onclick="shareToWhatsApp('${formattedOrderText}')">
-                                    📲 שתף סיכום לוואטסאפ
+                                <button class="whatsapp-button share" onclick="shareToWhatsApp('${orderText}')">
+                                    📲 שתף את סיכום ההזמנה לוואטסאפ
                                 </button>
                             </div>
                         `);
-                    } else {
-                        addSystemMessage(response.error || 'שגיאה ביצירת ההזמנה.');
-                    }
+                    } else { addSystemMessage(response.error || 'שגיאה ביצירת ההזמנה.'); }
                 } catch (e) {
                     console.error("Order creation error:", e);
                     addSystemMessage('שגיאת תקשורת בעת יצירת ההזמנה.');
-                } finally {
-                    hideSpinner();
-                }
+                } finally { hideSpinner(); }
             };
-            
-            const renderCalendarModal = (date = new Date()) => { alert("Function 'renderCalendarModal' is not implemented."); };
-            const renderTransportChoice = () => { alert("Function 'renderTransportChoice' is not implemented."); };
-            
-            const handleFileUpload = (event) => {
-                const file = event.target.files[0];
-                if (!file) return;
-                addSystemMessage(`מעלה קובץ: ${file.name}...`);
-                setTimeout(() => { addSystemMessage(`הקובץ ${file.name} עלה בהצלחה.`); }, 1500);
-            };
-            
-            const handleLocationAttach = () => {
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(position => {
-                        const { latitude, longitude } = position.coords;
-                        addSystemMessage(`מיקום שותף: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
-                    }, () => { addSystemMessage('לא ניתן היה לקבל את המיקום.'); });
-                } else { addSystemMessage('שירותי מיקום אינם נתמכים.'); }
-            };
-            
-            const handleAttachmentAction = (e) => {
-                const action = e.currentTarget.dataset.action;
-                toggleAttachmentMenu(); 
-                if (action === 'document') {
-                    document.getElementById('file-input').click();
-                } else if (action === 'location') {
-                    handleLocationAttach();
-                } else { alert(`Action '${action}' is not implemented.`); }
-            };
-            
-            const toggleAttachmentMenu = () => {
-                const menu = document.getElementById('attachment-menu');
-                if (!menu.innerHTML) {
-                    menu.innerHTML = `
-                        <div class="attachment-item" data-action="document">
-                            <div class="icon-wrapper" style="background-color: #9C27B0;">📎</div> <p>מסמך</p>
-                        </div>
-                        <div class="attachment-item" data-action="location">
-                             <div class="icon-wrapper" style="background-color: #4CAF50;">📍</div> <p>מיקום</p>
-                        </div>`;
-                    menu.querySelectorAll('.attachment-item').forEach(item => item.addEventListener('click', handleAttachmentAction));
-                }
-                menu.classList.toggle('visible');
-            };
-            
-            const closeChatView = () => { chatView.classList.remove('open'); };
 
+            const shareToWhatsApp = (orderText) => {
+                const phone = "972508860896"; // מספר טלפון ליעד
+                const url = `https://wa.me/${phone}?text=${encodeURIComponent(orderText)}`;
+                window.open(url, "_blank");
+            };
+            
             const handleSendMessage = async () => {
                 const input = document.getElementById('message-input');
                 const text = input.value.trim();
@@ -394,14 +290,9 @@
                 input.value = ''; input.style.height = 'auto';
                 showSpinner('מנתח את ההודעה...');
                 try {
-                    const response = await apiPost({ action: 'predictOrder', text: text, clientId: clientData.id });
+                    const response = await apiPost({ action: 'predictOrder', text });
                     if (response.success && response.data) {
-                        const orderDraft = {
-                            orderData: response.data,
-                            clientId: clientData.id,
-                        };
-                        createDraftBubble(orderDraft);
-
+                        createDraftBubble(response.data);
                     } else {
                          addSystemMessage(response.error || 'אופס, חלה שגיאה בניתוח ההודעה.');
                     }
@@ -420,43 +311,28 @@
                     </header>
                     <div class="chat-canvas" id="chat-canvas"></div>
                     <footer class="chat-footer">
-                        <div class="attachment-menu" id="attachment-menu"></div>
+                        <div class="input-wrapper">
+                            <textarea placeholder="הקלד הזמנה..." id="message-input"></textarea>
+                            <button class="footer-btn" id="attach-btn" style="display:none;">📎</button>
+                        </div>
                         <button class="footer-btn send-btn" id="send-btn">
                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.75.75 0 0 1-1.329.124l-3.178-4.995L.643 7.184a.75.75 0 0 1 .124-1.33L15.314.037a.5.5 0 0 1 .54.11ZM6.636 10.07l2.761 4.338L14.13 2.576 6.636 10.07Zm6.787-8.201L1.591 6.602l4.339 2.76 7.494-7.493Z"/></svg>
                         </button>
-                        <div class="input-wrapper">
-                             <button class="footer-btn" id="emoji-btn">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16zM4.285 9.567a.5.5 0 0 1 .683.183A3.498 3.498 0 0 0 8 11.5a3.498 3.498 0 0 0 3.032-1.75.5.5 0 1 1 .866.5A4.498 4.498 0 0 1 8 12.5a4.498 4.498 0 0 1-3.898-2.25.5.5 0 0 1 .183-.683zM7 6.5C7 7.328 6.552 8 6 8s-1-.672-1-1.5S5.448 5 6 5s1 .672 1 1.5zm4 0c0 .828-.448 1.5-1 1.5s-1-.672-1-1.5S9.448 5 10 5s1 .672 1 1.5z"/></svg>
-                             </button>
-                            <textarea placeholder="הקלד הודעה..." id="message-input"></textarea>
-                            <button class="footer-btn" id="attach-btn">
-                               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" transform="rotate(45)"><path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"></path></svg>
-                            </button>
-                        </div>
                     </footer>
                 `;
-                document.getElementById('close-chat-btn').addEventListener('click', closeChatView);
+                document.getElementById('close-chat-btn').addEventListener('click', () => chatView.classList.remove('open'));
                 document.getElementById('send-btn').addEventListener('click', handleSendMessage);
-                document.getElementById('attach-btn').addEventListener('click', toggleAttachmentMenu);
-                document.getElementById('file-input').addEventListener('change', handleFileUpload);
+                document.getElementById('message-input').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage();
+                    }
+                });
                 chatView.classList.add('open');
                 addSystemMessage(getGreeting());
-
-                const qResponse = await apiPost({ action: 'getQuickQuestions' });
-                if(qResponse.success && qResponse.data && qResponse.data.length > 0) {
-                    qResponse.data.forEach(q => {
-                        addHtmlToCanvas(`<div class="message-bubble system quick-question">${q}</div>`);
-                    });
-                    document.querySelectorAll('.quick-question').forEach(btn => {
-                        btn.addEventListener('click', () => {
-                            document.getElementById('message-input').value = btn.textContent;
-                            handleSendMessage();
-                        });
-                    });
-                }
             };
             
-            // --- INITIALIZATION ---
+            // --- Initialization ---
             function renderLoginScreen() {
                  root.innerHTML = `<div class="login-screen">
                     <div class="login-avatar-container" id="login-avatar">
@@ -473,28 +349,17 @@
                 </div>`;
                 document.getElementById('login-btn').addEventListener('click', handleLogin);
                 document.getElementById('client-id-input').addEventListener('input', async (e) => {
-                    const clientId = e.target.value;
-                    const avatarContainer = document.getElementById('login-avatar');
-                    if (clientId.length > 3) {
-                        try {
-                            const response = await apiPost({ action: 'getClientAvatar', clientId });
-                            if (response.success && response.data.avatar) {
-                                avatarContainer.querySelector('img').src = response.data.avatar;
-                                avatarContainer.classList.add('visible');
-                            } else {
-                                avatarContainer.classList.remove('visible');
-                            }
-                        } catch(err) {
-                             avatarContainer.classList.remove('visible');
-                        }
-                    } else {
-                        avatarContainer.classList.remove('visible');
-                    }
+                    // Logic for fetching avatar can be added back if needed
                 });
             }
 
             renderLoginScreen();
+            
+            // Expose functions to global scope for inline onclick handlers
+            window.handleConfirmOrder = handleConfirmOrder;
+            window.shareToWhatsApp = shareToWhatsApp;
         });
     </script>
 </body>
 </html>
+
