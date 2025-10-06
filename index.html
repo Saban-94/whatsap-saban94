@@ -175,15 +175,26 @@
 
         function renderDashboard() {
             let html = '<h3>הזמנות מכולות</h3>';
-            dashboardData.containers.forEach(o => {
-                const daysPassed = Math.min(10, (new Date() - new Date(o.orderDate)) / 864e5);
-                const progress = (daysPassed / 10) * 100;
-                html += `<div class="order-card" data-order-id="${o.id}" data-type="containers"><p><strong>${o.project}</strong> (${o.status})</p><p><small>${o.address}</small></p><div class="progress-bar"><div class="progress-bar-inner" style="width:${progress}%"></div></div><p><small>יום ${Math.ceil(daysPassed)}/10</small></p></div>`;
-            });
+            // --- FIX START: Add safety checks ---
+            if (dashboardData && dashboardData.containers && dashboardData.containers.length > 0) {
+                dashboardData.containers.forEach(o => {
+                    const daysPassed = Math.min(10, (new Date() - new Date(o.orderDate)) / 864e5);
+                    const progress = (daysPassed / 10) * 100;
+                    html += `<div class="order-card" data-order-id="${o.id}" data-type="containers"><p><strong>${o.project}</strong> (${o.status})</p><p><small>${o.address}</small></p><div class="progress-bar"><div class="progress-bar-inner" style="width:${progress}%"></div></div><p><small>יום ${Math.ceil(daysPassed)}/10</small></p></div>`;
+                });
+            } else {
+                html += '<p>אין מכולות פעילות.</p>';
+            }
+            
             html += '<h3>הזמנות חומרי בניין</h3>';
-            dashboardData.materials.forEach(o => {
-                html += `<div class="order-card" data-order-id="${o.id}" data-type="materials"><p><strong>${o.project}</strong> (${o.status})</p><p><small>${o.items}</small></p></div>`;
-            });
+            if (dashboardData && dashboardData.materials && dashboardData.materials.length > 0) {
+                dashboardData.materials.forEach(o => {
+                    html += `<div class="order-card" data-order-id="${o.id}" data-type="materials"><p><strong>${o.project}</strong> (${o.status})</p><p><small>${o.items}</small></p></div>`;
+                });
+            } else {
+                html += '<p>אין הזמנות חומרים פעילות.</p>';
+            }
+            // --- FIX END ---
             ui.dashboardContent.innerHTML = html;
             ui.dashboardContent.querySelectorAll('.order-card').forEach(c => c.onclick = () => showOrderOnMap(c.dataset.orderId, c.dataset.type));
         }
@@ -203,7 +214,7 @@
 
         async function handleSendMessage() {
             const text = ui.messageInput.value.trim();
-            if (!text && !orderDraft.attachment) return;
+            if (!text && !(orderDraft && orderDraft.attachment)) return;
 
             addMessage(text, 'outgoing');
             const originalText = text;
