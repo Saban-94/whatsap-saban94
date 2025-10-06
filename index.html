@@ -118,6 +118,7 @@
                 return await response.json();
             } catch (error) {
                 console.error("API Call Error:", error);
+                // --- FIX: Always return a structured error object ---
                 return { success: false, error: error.message };
             }
         }
@@ -126,10 +127,15 @@
             ui.loginBtn.disabled = true;
             ui.loginBtn.textContent = 'מתחבר...';
             const clientId = ui.clientIdInput.value.trim();
-            if (!clientId) return;
+            if (!clientId) {
+                ui.loginBtn.disabled = false;
+                ui.login-button.textContent = 'כניסה';
+                return;
+            }
             
             const response = await apiPost({ action: 'getDashboardData', clientId });
 
+            // This code is now safe because 'response' will never be undefined
             if (response && response.success) {
                 clientData = response.data.client;
                 dashboardData = response.data.dashboard;
@@ -145,10 +151,8 @@
 
         function renderDashboard() {
             let ordersHtml = '<h4>הזמנות אחרונות</h4>';
-            // --- FIX: Robust check for the unified 'orders' array ---
             if (dashboardData && Array.isArray(dashboardData.orders) && dashboardData.orders.length > 0) {
                  dashboardData.orders.forEach(o => {
-                    // Make sure 'o' is a valid object
                     if (o) {
                        ordersHtml += `<div class="order-card"><h4>${o.project || 'הזמנה כללית'}</h4><p><strong>סטטוס:</strong> ${o.status || 'אין'}</p><p>${o.items || 'אין פירוט'}</p></div>`;
                     }
@@ -191,7 +195,6 @@
             const messageInput = document.getElementById('message-input');
             messageInput.onkeypress = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } };
             
-            // Add initial greeting
             const hour = new Date().getHours();
             const greeting = hour < 12 ? 'בוקר טוב' : hour < 18 ? 'צהריים טובים' : 'ערב טוב';
             addMessageToCanvas(`${greeting}, ${clientData.name}! איך אפשר לעזור?`, 'incoming');
@@ -214,7 +217,7 @@
         
         function addMessageToCanvas(html, type) {
             const canvas = document.getElementById('chat-canvas');
-            if (!canvas) return; // Safety check
+            if (!canvas) return; 
             const bubble = document.createElement('div');
             bubble.className = `message-bubble ${type}`;
             bubble.innerHTML = html;
