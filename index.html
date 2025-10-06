@@ -129,7 +129,8 @@
             const clientId = ui.clientIdInput.value.trim();
             if (!clientId) {
                 ui.loginBtn.disabled = false;
-                ui.login-button.textContent = 'כניסה';
+                // --- FIX: Corrected the typo from ui.login-button to ui.loginBtn ---
+                ui.loginBtn.textContent = 'כניסה';
                 return;
             }
             
