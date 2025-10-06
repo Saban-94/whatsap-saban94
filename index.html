@@ -7,9 +7,6 @@
     <!-- Icons and Fonts -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- LeafletJS for Maps -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <!-- Web App Manifest -->
     <link rel="manifest" href="./manifest.json">
     
@@ -65,6 +62,8 @@
 
         /* Dashboard Cards */
         .order-card { background: #fff; padding: 15px; margin-bottom: 10px; border-radius: var(--radius); box-shadow: 0 1px 1px rgba(0,0,0,0.05); cursor: pointer; border-right: 5px solid var(--wa-teal-green); }
+        .order-card h4 { margin: 0 0 5px 0; }
+        .order-card p { margin: 0; font-size: 0.9rem; color: var(--wa-text-secondary); }
 
         /* Chat Bubbles & Footer */
         .message-bubble { max-width: 85%; padding: 8px 12px; border-radius: 8px; line-height: 1.5; word-wrap: break-word; box-shadow: 0 1px 1px rgba(0,0,0,0.1); position: relative; margin-bottom: 10px; }
@@ -74,6 +73,7 @@
         .chat-input-wrapper { flex-grow: 1; background: #fff; border-radius: 24px; display: flex; align-items: center; padding: 0 10px; }
         .chat-input { flex-grow: 1; border: none; background: transparent; font-size: 1rem; resize: none; padding: 12px 5px; max-height: 100px; outline: none; }
         .send-button { background-color: var(--wa-teal-green); color: #fff; border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border: none; flex-shrink: 0; font-size: 1.2rem; }
+
     </style>
 </head>
 <body>
@@ -94,10 +94,7 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // --- התיקון הקריטי ---
-        // ודא שהכתובת כאן היא הכתובת המדויקת של ה-Worker שלך מ-Cloudflare
         const API_URL = "https://saban-proxy.hsaban2025.workers.dev/";
-
         let clientData = null, dashboardData = null;
 
         const screens = { login: document.getElementById('login-screen'), dashboard: document.getElementById('dashboard-screen'), chat: document.getElementById('chat-screen') };
@@ -126,6 +123,8 @@
         }
 
         async function handleLogin() {
+            ui.loginBtn.disabled = true;
+            ui.loginBtn.textContent = 'מתחבר...';
             const clientId = ui.clientIdInput.value.trim();
             if (!clientId) return;
             
@@ -140,16 +139,22 @@
                 const errorMessage = response ? response.error : 'תקלה לא צפויה בתקשורת';
                 alert(`כניסה נכשלה: ${errorMessage || 'אנא בדוק את מספר הלקוח.'}`);
             }
+            ui.loginBtn.disabled = false;
+            ui.loginBtn.textContent = 'כניסה';
         }
 
         function renderDashboard() {
-            let ordersHtml = '<h3>הזמנות אחרונות</h3>';
-            if (dashboardData && Array.isArray(dashboardData.materials) && dashboardData.materials.length > 0) {
-                 dashboardData.materials.forEach(o => {
-                    ordersHtml += `<div class="order-card"><p><strong>${o.project || 'הזמנה כללית'}</strong> (${o.status || 'אין סטטוס'})</p><p><small>${o.items || 'אין פירוט'}</small></p></div>`;
+            let ordersHtml = '<h4>הזמנות אחרונות</h4>';
+            // --- FIX: Robust check for the unified 'orders' array ---
+            if (dashboardData && Array.isArray(dashboardData.orders) && dashboardData.orders.length > 0) {
+                 dashboardData.orders.forEach(o => {
+                    // Make sure 'o' is a valid object
+                    if (o) {
+                       ordersHtml += `<div class="order-card"><h4>${o.project || 'הזמנה כללית'}</h4><p><strong>סטטוס:</strong> ${o.status || 'אין'}</p><p>${o.items || 'אין פירוט'}</p></div>`;
+                    }
                 });
             } else {
-                ordersHtml += '<p>אין הזמנות פעילות.</p>';
+                ordersHtml += '<p>אין הזמנות פעילות כרגע.</p>';
             }
             
             screens.dashboard.innerHTML = `
@@ -183,7 +188,13 @@
 
             document.getElementById('back-to-dashboard-btn').onclick = () => navigateTo('dashboard');
             document.getElementById('send-btn').onclick = handleSendMessage;
-            document.getElementById('message-input').onkeypress = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } };
+            const messageInput = document.getElementById('message-input');
+            messageInput.onkeypress = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } };
+            
+            // Add initial greeting
+            const hour = new Date().getHours();
+            const greeting = hour < 12 ? 'בוקר טוב' : hour < 18 ? 'צהריים טובים' : 'ערב טוב';
+            addMessageToCanvas(`${greeting}, ${clientData.name}! איך אפשר לעזור?`, 'incoming');
         }
 
         async function handleSendMessage() {
@@ -195,7 +206,7 @@
 
             const response = await apiPost({ action: 'createOrderFromText', text, clientId: clientData.id });
             if(response && response.success) {
-                 addMessageToCanvas(`הזמנה ${response.data.orderId} נוצרה!`, 'incoming');
+                 addMessageToCanvas(`הזמנה ${response.data.orderId} נוצרה בהצלחה!`, 'incoming');
             } else {
                  addMessageToCanvas(`שגיאה ביצירת ההזמנה.`, 'system');
             }
@@ -203,6 +214,7 @@
         
         function addMessageToCanvas(html, type) {
             const canvas = document.getElementById('chat-canvas');
+            if (!canvas) return; // Safety check
             const bubble = document.createElement('div');
             bubble.className = `message-bubble ${type}`;
             bubble.innerHTML = html;
