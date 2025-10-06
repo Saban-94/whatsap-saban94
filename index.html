@@ -7,6 +7,9 @@
     <!-- Icons and Fonts -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- LeafletJS for Maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <!-- Web App Manifest -->
     <link rel="manifest" href="./manifest.json">
     
@@ -64,29 +67,39 @@
         .order-card { background: #fff; padding: 15px; margin-bottom: 10px; border-radius: var(--radius); box-shadow: 0 1px 1px rgba(0,0,0,0.05); cursor: pointer; border-right: 5px solid var(--wa-teal-green); }
         .order-card h4 { margin: 0 0 5px 0; }
         .order-card p { margin: 0; font-size: 0.9rem; color: var(--wa-text-secondary); }
+        .progress-bar { width: 100%; background-color: #e9ecef; border-radius: 5px; height: 8px; overflow: hidden; margin-top: 8px; }
+        .progress-bar-fill { height: 100%; background-color: var(--wa-light-green); transition: width 0.5s ease-in-out; }
 
         /* Chat Bubbles & Footer */
         .message-bubble { max-width: 85%; padding: 8px 12px; border-radius: 8px; line-height: 1.5; word-wrap: break-word; box-shadow: 0 1px 1px rgba(0,0,0,0.1); position: relative; margin-bottom: 10px; }
         .message-bubble.outgoing { background: var(--wa-outgoing-bubble); margin-left: auto; }
         .message-bubble.incoming { background: var(--wa-incoming-bubble); margin-right: auto; }
-        .chat-footer { padding: 8px; background: var(--wa-header-bg); display: flex; align-items: flex-end; gap: 8px; }
+        .attachment-preview { max-width: 100%; border-radius: 8px; margin-top: 5px; cursor: pointer; display: block; }
+        .map-preview { height: 150px; border-radius: 8px; }
+
+        .chat-footer { padding: 8px; background: var(--wa-header-bg); display: flex; align-items: flex-end; gap: 8px; position: relative; }
         .chat-input-wrapper { flex-grow: 1; background: #fff; border-radius: 24px; display: flex; align-items: center; padding: 0 10px; }
         .chat-input { flex-grow: 1; border: none; background: transparent; font-size: 1rem; resize: none; padding: 12px 5px; max-height: 100px; outline: none; }
+        .attach-button { background: transparent; border: none; cursor: pointer; font-size: 1.5rem; color: var(--wa-text-secondary); padding: 10px; }
         .send-button { background-color: var(--wa-teal-green); color: #fff; border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border: none; flex-shrink: 0; font-size: 1.2rem; }
 
+        /* Attachment Menu */
+        #attachment-menu {
+            position: absolute; bottom: 100%; right: 10px; left: 10px;
+            background: #fff; border-radius: var(--radius); box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            padding: 15px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;
+            transform: translateY(10px); opacity: 0; pointer-events: none; transition: all 0.2s ease-out;
+        }
+        #attachment-menu.visible { transform: translateY(0); opacity: 1; pointer-events: auto; }
+        .attachment-item { text-align: center; cursor: pointer; }
+        .attachment-item .icon-wrapper { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 5px; color: white; font-size: 20px; }
+        .attachment-item p { margin: 0; font-size: 0.8rem; color: var(--wa-text-primary); }
     </style>
 </head>
 <body>
     <div id="app-container">
         <!-- Login Screen -->
-        <div id="login-screen" class="screen active">
-             <div class="login-box">
-                <img src="https://i.postimg.cc/tCpLp7B6/image.png" alt="לוגו" class="logo">
-                <h2>ח. סבן - מרכז הבקרה</h2>
-                <input type="text" id="client-id-input" class="login-input" placeholder="הקלד מספר לקוח">
-                <button id="login-btn" class="login-button">כניסה</button>
-            </div>
-        </div>
+        <div id="login-screen" class="screen active"></div>
         <!-- Dashboard & Chat Screens (will be populated dynamically) -->
         <div id="dashboard-screen" class="screen"></div>
         <div id="chat-screen" class="screen"></div>
@@ -95,10 +108,9 @@
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         const API_URL = "https://saban-proxy.hsaban2025.workers.dev/";
-        let clientData = null, dashboardData = null;
+        let clientData = null, dashboardData = null, map;
 
         const screens = { login: document.getElementById('login-screen'), dashboard: document.getElementById('dashboard-screen'), chat: document.getElementById('chat-screen') };
-        const ui = { loginBtn: document.getElementById('login-btn'), clientIdInput: document.getElementById('client-id-input') };
 
         function navigateTo(screenName) {
             Object.values(screens).forEach(s => s.classList.remove('active'));
@@ -108,46 +120,49 @@
         async function apiPost(body) {
             try {
                 const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(body)
                 });
-                if (!response.ok) {
-                    throw new Error(`שגיאת שרת (HTTP ${response.status})`);
-                }
+                if (!response.ok) throw new Error(`שגיאת שרת (HTTP ${response.status})`);
                 return await response.json();
             } catch (error) {
                 console.error("API Call Error:", error);
-                // --- FIX: Always return a structured error object ---
                 return { success: false, error: error.message };
             }
         }
-
-        async function handleLogin() {
-            ui.loginBtn.disabled = true;
-            ui.loginBtn.textContent = 'מתחבר...';
-            const clientId = ui.clientIdInput.value.trim();
-            if (!clientId) {
-                ui.loginBtn.disabled = false;
-                // --- FIX: Corrected the typo from ui.login-button to ui.loginBtn ---
-                ui.loginBtn.textContent = 'כניסה';
-                return;
-            }
-            
-            const response = await apiPost({ action: 'getDashboardData', clientId });
-
-            // This code is now safe because 'response' will never be undefined
-            if (response && response.success) {
-                clientData = response.data.client;
-                dashboardData = response.data.dashboard;
-                renderDashboard();
-                navigateTo('dashboard');
-            } else {
-                const errorMessage = response ? response.error : 'תקלה לא צפויה בתקשורת';
-                alert(`כניסה נכשלה: ${errorMessage || 'אנא בדוק את מספר הלקוח.'}`);
-            }
-            ui.loginBtn.disabled = false;
-            ui.loginBtn.textContent = 'כניסה';
+        
+        function renderLogin() {
+            screens.login.innerHTML = `
+                <div class="login-box">
+                    <img src="https://i.postimg.cc/tCpLp7B6/image.png" alt="לוגו" class="logo">
+                    <h2>ח. סבן - מרכז הבקרה</h2>
+                    <input type="text" id="client-id-input" class="login-input" placeholder="הקלד מספר לקוח">
+                    <button id="login-btn" class="login-button">כניסה</button>
+                </div>`;
+            const loginBtn = document.getElementById('login-btn');
+            const clientIdInput = document.getElementById('client-id-input');
+            loginBtn.onclick = async () => {
+                loginBtn.disabled = true;
+                loginBtn.textContent = 'מתחבר...';
+                const clientId = clientIdInput.value.trim();
+                if (!clientId) {
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = 'כניסה';
+                    return;
+                }
+                const response = await apiPost({ action: 'getDashboardData', clientId });
+                if (response && response.success) {
+                    clientData = response.data.client;
+                    dashboardData = response.data.dashboard;
+                    renderDashboard();
+                    navigateTo('dashboard');
+                } else {
+                    alert(`כניסה נכשלה: ${response.error || 'אנא בדוק את מספר הלקוח.'}`);
+                }
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'כניסה';
+            };
+            clientIdInput.onkeypress = (e) => { if (e.key === 'Enter') loginBtn.click(); };
         }
 
         function renderDashboard() {
@@ -161,7 +176,6 @@
             } else {
                 ordersHtml += '<p>אין הזמנות פעילות כרגע.</p>';
             }
-            
             screens.dashboard.innerHTML = `
                 <header class="app-header">
                     <img src="${clientData.avatar || 'https://i.postimg.cc/rsxW32Jj/logo.png'}" alt="Avatar" class="avatar">
@@ -185,49 +199,128 @@
                 </header>
                 <div id="chat-canvas" class="app-content"></div>
                 <footer class="chat-footer">
+                    <div id="attachment-menu">
+                        <div class="attachment-item" id="attach-file"><div class="icon-wrapper" style="background: #007bff;"><i class="fa-solid fa-file"></i></div><p>מסמך</p></div>
+                        <div class="attachment-item" id="attach-location"><div class="icon-wrapper" style="background: #28a745;"><i class="fa-solid fa-location-dot"></i></div><p>מיקום</p></div>
+                    </div>
                     <div class="chat-input-wrapper">
+                         <button id="attach-btn" class="attach-button"><i class="fa-solid fa-paperclip"></i></button>
+                         <input type="file" id="file-input" hidden>
                          <textarea id="message-input" class="chat-input" placeholder="הקלד הודעה..."></textarea>
                     </div>
                     <button id="send-btn" class="send-button"><i class="fa-solid fa-paper-plane"></i></button>
                 </footer>`;
-
+            
+            // Event Listeners for Chat
             document.getElementById('back-to-dashboard-btn').onclick = () => navigateTo('dashboard');
             document.getElementById('send-btn').onclick = handleSendMessage;
-            const messageInput = document.getElementById('message-input');
-            messageInput.onkeypress = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } };
+            document.getElementById('message-input').onkeypress = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } };
             
+            const attachmentMenu = document.getElementById('attachment-menu');
+            document.getElementById('attach-btn').onclick = () => attachmentMenu.classList.toggle('visible');
+            document.getElementById('attach-file').onclick = () => {
+                document.getElementById('file-input').click();
+                attachmentMenu.classList.remove('visible');
+            };
+            document.getElementById('file-input').onchange = handleFileSelect;
+            document.getElementById('attach-location').onclick = () => {
+                handleLocationSend();
+                attachmentMenu.classList.remove('visible');
+            };
+
+            // Greeting message
             const hour = new Date().getHours();
             const greeting = hour < 12 ? 'בוקר טוב' : hour < 18 ? 'צהריים טובים' : 'ערב טוב';
-            addMessageToCanvas(`${greeting}, ${clientData.name}! איך אפשר לעזור?`, 'incoming');
+            addMessage({ html: `${greeting} ${clientData.name}! איך אפשר לעזור?`, type: 'incoming' });
         }
 
         async function handleSendMessage() {
             const input = document.getElementById('message-input');
             const text = input.value.trim();
             if (!text) return;
-            addMessageToCanvas(text, 'outgoing');
+            addMessage({ html: text, type: 'outgoing' });
             input.value = '';
 
+            addMessage({ html: 'מעבד בקשה...', type: 'system', id: 'thinking' });
             const response = await apiPost({ action: 'createOrderFromText', text, clientId: clientData.id });
+            document.getElementById('thinking')?.remove();
+
             if(response && response.success) {
-                 addMessageToCanvas(`הזמנה ${response.data.orderId} נוצרה בהצלחה!`, 'incoming');
+                 addMessage({ html: `הזמנה ${response.data.orderId} נוצרה בהצלחה!`, type: 'incoming' });
             } else {
-                 addMessageToCanvas(`שגיאה ביצירת ההזמנה.`, 'system');
+                 addMessage({ html: `שגיאה ביצירת ההזמנה.`, type: 'system' });
             }
         }
         
-        function addMessageToCanvas(html, type) {
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const base64 = e.target.result.split(',')[1];
+                const isImage = file.type.startsWith('image/');
+                const previewHtml = isImage ? `<img src="${e.target.result}" class="attachment-preview">` : `<i class="fa-solid fa-file"></i> ${file.name}`;
+                addMessage({ html: previewHtml, type: 'outgoing' });
+                
+                const progressMsg = addMessage({ html: `<p>מעלה קובץ: ${file.name}</p><div class="progress-bar"><div class="progress-bar-fill" id="upload-progress"></div></div>`, type: 'system'});
+                document.getElementById('upload-progress').style.width = '100%';
+
+                const response = await apiPost({ action: 'uploadFile', payload: { fileName: file.name, mimeType: file.type, data: base64, clientId: clientData.id } });
+                
+                progressMsg.remove();
+                if (response.success) {
+                    addMessage({ html: `✅ הקובץ <a href="${response.data.fileUrl}" target="_blank">${response.data.fileName}</a> עלה בהצלחה.`, type: 'system' });
+                } else {
+                    addMessage({ html: `❌ שגיאה בהעלאת הקובץ.`, type: 'system' });
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleLocationSend() {
+            addMessage({ html: 'מאתר מיקום...', type: 'system' });
+            if (!navigator.geolocation) {
+                return addMessage({ html: 'שירותי מיקום לא נתמכים בדפדפן.', type: 'system' });
+            }
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                const { latitude, longitude } = position.coords;
+                const mapId = `map-${Date.now()}`;
+                const mapHtml = `<div id="${mapId}" class="map-preview"></div>`;
+                addMessage({ html: mapHtml, type: 'outgoing' });
+
+                setTimeout(() => {
+                    const map = L.map(mapId).setView([latitude, longitude], 16);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+                    L.marker([latitude, longitude]).addTo(map);
+                }, 100);
+
+                addMessage({ html: `תודה על העדכון! מעכשיו כל הזמנה חדשה תעודכן לכתובת זו. האם לאשר?<br><button id="confirm-loc-btn">כן, אשר</button>`, type: 'incoming' });
+                document.getElementById('confirm-loc-btn').onclick = async () => {
+                    const response = await apiPost({ action: 'updateClientAddress', clientId: clientData.id, lat: latitude, lon: longitude });
+                    if(response.success){
+                        addMessage({ html: '✅ המיקום עודכן בהצלחה!', type: 'system' });
+                    } else {
+                        addMessage({ html: 'שגיאה בעדכון המיקום.', type: 'system' });
+                    }
+                };
+            }, () => addMessage({ html: 'לא ניתן היה לקבל את המיקום.', type: 'system' }));
+        }
+
+        function addMessage({ html, type, id }) {
             const canvas = document.getElementById('chat-canvas');
-            if (!canvas) return; 
+            if (!canvas) return;
             const bubble = document.createElement('div');
             bubble.className = `message-bubble ${type}`;
+            if(id) bubble.id = id;
             bubble.innerHTML = html;
             canvas.appendChild(bubble);
             canvas.scrollTop = canvas.scrollHeight;
+            return bubble;
         }
 
-        ui.loginBtn.onclick = handleLogin;
-        ui.clientIdInput.onkeypress = (e) => { if (e.key === 'Enter') handleLogin(); };
+        // Initial render
+        renderLogin();
+        navigateTo('login');
     });
     </script>
 </body>
