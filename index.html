@@ -141,7 +141,26 @@
             screens[screenName].classList.add('active');
         }
 
-        async function apiPost(body) { /* ... same working apiPost ... */ }
+        // --- FIX: Re-implemented apiPost function ---
+        async function apiPost(body) {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error("API HTTP Error:", errorText);
+                    throw new Error(`שגיאת שרת (HTTP ${response.status})`);
+                }
+                return await response.json();
+            } catch (error) {
+                console.error("API Call Error:", error);
+                // Return a consistent error format
+                return { success: false, error: error.message };
+            }
+        }
 
         async function handleLogin() {
             const clientId = ui.clientIdInput.value.trim();
@@ -153,16 +172,30 @@
                 // Update both headers
                 [ui.dashboardAvatar, ui.chatAvatar].forEach(el => el.src = clientData.avatar || 'https://i.postimg.cc/rsxW32Jj/logo.png');
                 [ui.dashboardName, ui.chatName].forEach(el => el.textContent = clientData.name);
-                renderDashboard();
+                
+                // --- FIX: Added try-catch for safety ---
+                try {
+                    renderDashboard();
+                } catch(e) {
+                    console.error("Error rendering dashboard:", e);
+                    ui.dashboardContent.innerHTML = "<p>אירעה שגיאה בהצגת הנתונים.</p>";
+                }
                 navigateTo('dashboard');
-            } else { alert('כניסה נכשלה.'); }
+            } else { 
+                alert(`כניסה נכשלה: ${response.error || 'אנא בדוק את מספר הלקוח.'}`);
+            }
         }
 
+        // --- FIX: Made renderDashboard more robust ---
         function renderDashboard() {
             let html = '<h3>הזמנות אחרונות</h3>';
-            if (dashboardData && dashboardData.orders && dashboardData.orders.length > 0) {
+            // Check if dashboardData and dashboardData.orders exist and is an array
+            if (dashboardData && Array.isArray(dashboardData.orders) && dashboardData.orders.length > 0) {
                 dashboardData.orders.forEach(o => {
-                    html += `<div class="order-card" data-order-id="${o.id}"><p><strong>${o.project || 'הזמנה כללית'}</strong> (${o.status})</p><p><small>${o.items}</small></p></div>`;
+                    // Check if 'o' is a valid object before accessing properties
+                    if (o) {
+                        html += `<div class="order-card" data-order-id="${o.id || ''}"><p><strong>${o.project || 'הזמנה כללית'}</strong> (${o.status || 'אין סטטוס'})</p><p><small>${o.items || 'אין פירוט'}</small></p></div>`;
+                    }
                 });
             } else {
                 html += '<p>אין הזמנות פעילות.</p>';
@@ -170,7 +203,22 @@
             ui.dashboardContent.innerHTML = html;
         }
 
-        async function handleSendMessage() { /* ... same working handleSendMessage ... */ }
+        // --- FIX: Re-implemented handleSendMessage function ---
+        async function handleSendMessage() {
+            const text = ui.messageInput.value.trim();
+            if (!text) return;
+            addMessage({ html: text, type: 'outgoing' });
+            ui.messageInput.value = '';
+            
+            const response = await apiPost({ action: 'createOrderFromText', text, clientId: clientData.id });
+            if(response.success) {
+                 addMessage({ html: `הזמנה ${response.data.orderId} נוצרה!`, type: 'incoming' });
+                 const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(response.data.formattedOrder)}`;
+                 addMessage({ html: `<a href="${whatsappUrl}" target="_blank" style="color:blue;">שתף סיכום הזמנה לוואטסאפ</a>`, type: 'system' });
+            } else {
+                 addMessage({ html: `שגיאה ביצירת ההזמנה: ${response.error}`, type: 'system' });
+            }
+        }
         
         function handleFileSelect(event) {
             const file = event.target.files[0];
@@ -193,7 +241,7 @@
                         addMessage({ html: `הזמנה ${orderResponse.data.orderId} נוצרה מהקובץ.`, type: 'incoming' });
                     }
                 } else {
-                    addMessage({ html: '❌ שגיאה בהעלאת הקובץ.', type: 'system' });
+                    addMessage({ html: `❌ שגיאה בהעלאת הקובץ: ${response.error}`, type: 'system' });
                 }
             };
             reader.readAsDataURL(file);
