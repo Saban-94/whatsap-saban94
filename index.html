@@ -69,37 +69,20 @@
         .progress-bar { width: 100%; background-color: #e9ecef; border-radius: 5px; height: 8px; overflow: hidden; }
         .progress-bar-fill { height: 100%; background-color: var(--wa-light-green); transition: width 0.5s ease-in-out; }
 
-        /* Chat Bubbles */
+        /* Chat Bubbles & Footer */
         .message-bubble { max-width: 85%; padding: 8px 12px; border-radius: 8px; line-height: 1.5; word-wrap: break-word; box-shadow: 0 1px 1px rgba(0,0,0,0.1); position: relative; margin-bottom: 10px; }
         .message-bubble.outgoing { background: var(--wa-outgoing-bubble); margin-left: auto; }
         .message-bubble.incoming { background: var(--wa-incoming-bubble); margin-right: auto; }
-        .message-bubble.system { background: var(--wa-system-bubble); text-align: center; align-self: center; font-size: 0.85rem; }
-        .attachment-preview { max-width: 100%; border-radius: 8px; margin-top: 5px; cursor: pointer; display: block; }
-        .map-bubble { height: 200px; width: 100%; border-radius: var(--radius); }
-        .confirmation-buttons { display: flex; gap: 10px; margin-top: 10px; }
-        
-        /* Chat Footer */
-        .chat-footer { padding: 8px; background: var(--wa-header-bg); display: flex; align-items: flex-end; gap: 8px; position: relative; }
+        .chat-footer { padding: 8px; background: var(--wa-header-bg); display: flex; align-items: flex-end; gap: 8px; }
         .chat-input-wrapper { flex-grow: 1; background: #fff; border-radius: 24px; display: flex; align-items: center; padding: 0 10px; }
         .chat-input { flex-grow: 1; border: none; background: transparent; font-size: 1rem; resize: none; padding: 12px 5px; max-height: 100px; outline: none; }
-        .attach-button { background: transparent; border: none; cursor: pointer; font-size: 1.5rem; color: var(--wa-text-secondary); padding: 10px; }
         .send-button { background-color: var(--wa-teal-green); color: #fff; border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border: none; flex-shrink: 0; font-size: 1.2rem; }
 
-        /* Attachment Menu */
-        #attachment-menu { position: absolute; bottom: 100%; left: 8px; right: 8px; background: #fff; border-radius: var(--radius); box-shadow: 0 -2px 10px rgba(0,0,0,0.1); padding: 15px; display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 15px; transform: translateY(10px) scale(0.95); opacity: 0; pointer-events: none; transition: all 0.2s ease-out; }
-        #attachment-menu.active { transform: translateY(0) scale(1); opacity: 1; pointer-events: auto; }
-        .attachment-item { text-align: center; cursor: pointer; }
-        .attachment-item .icon-wrapper { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; color: white; font-size: 20px; }
-
-        /* Progress Modal */
-        #progress-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 1000; }
-        .progress-content { background: #fff; padding: 20px 30px; border-radius: var(--radius); text-align: center; }
-        #progress-label { margin-bottom: 15px; }
     </style>
 </head>
 <body>
     <div id="app-container">
-        <!-- Screens -->
+        <!-- Login Screen -->
         <div id="login-screen" class="screen active">
              <div class="login-box">
                 <img src="https://i.postimg.cc/tCpLp7B6/image.png" alt="לוגו" class="logo">
@@ -108,47 +91,9 @@
                 <button id="login-btn" class="login-button">כניסה</button>
             </div>
         </div>
-        <div id="dashboard-screen" class="screen">
-            <header class="app-header">
-                <img id="dashboard-avatar" src="" alt="Avatar" class="avatar">
-                <div class="header-info"><div id="dashboard-name" class="client-name"></div><div class="client-status"><div class="status-dot"></div>מחובר</div></div>
-            </header>
-            <div id="dashboard-content" class="app-content"></div>
-            <button id="fab-chat-btn" class="fab"><i class="fa-solid fa-comment-dots"></i></button>
-        </div>
-        <div id="chat-screen" class="screen">
-            <header class="app-header">
-                <img id="chat-avatar" src="" alt="Avatar" class="avatar">
-                <div class="header-info"><div id="chat-name" class="client-name"></div><div class="client-status"><div class="status-dot"></div>מחובר</div></div>
-                <button id="back-to-dashboard-btn" style="background:none;border:none;font-size:1.5rem;transform:scaleX(-1);">➡️</button>
-            </header>
-            <div id="chat-canvas" class="app-content"></div>
-            <footer class="chat-footer">
-                <div id="attachment-menu">
-                    <div class="attachment-item" id="attach-file-btn">
-                        <div class="icon-wrapper" style="background-color: #5865F2;"><i class="fa-solid fa-file-lines"></i></div>
-                        <p>מסמך</p>
-                    </div>
-                    <div class="attachment-item" id="attach-location-btn">
-                        <div class="icon-wrapper" style="background-color: #57F287;"><i class="fa-solid fa-location-dot"></i></div>
-                        <p>מיקום</p>
-                    </div>
-                </div>
-                <div class="chat-input-wrapper">
-                    <button id="attach-btn" class="attach-button"><i class="fa-solid fa-paperclip"></i></button>
-                    <input type="file" id="file-input" hidden accept="image/*,application/pdf,.doc,.docx">
-                    <textarea id="message-input" class="chat-input" placeholder="הקלד הודעה..."></textarea>
-                </div>
-                <button id="send-btn" class="send-button"><i class="fa-solid fa-paper-plane"></i></button>
-            </footer>
-        </div>
-    </div>
-    <!-- Modals -->
-    <div id="progress-modal">
-        <div class="progress-content">
-            <p id="progress-label">מעלה קובץ...</p>
-            <div class="progress-bar" style="width: 200px;"><div id="progress-bar-fill" class="progress-bar-fill" style="width: 0%;"></div></div>
-        </div>
+        <!-- Dashboard & Chat Screens -->
+        <div id="dashboard-screen" class="screen"></div>
+        <div id="chat-screen" class="screen"></div>
     </div>
 
     <script>
@@ -156,142 +101,119 @@
         const API_URL = "https://saban-proxy.hsaban2025.workers.dev/";
         let clientData = null, dashboardData = null;
 
-        const ui = {
-            loginBtn: document.getElementById('login-btn'), clientIdInput: document.getElementById('client-id-input'),
-            screens: { login: document.getElementById('login-screen'), dashboard: document.getElementById('dashboard-screen'), chat: document.getElementById('chat-screen') },
-            dashboardAvatar: document.getElementById('dashboard-avatar'), dashboardName: document.getElementById('dashboard-name'), dashboardContent: document.getElementById('dashboard-content'),
-            chatAvatar: document.getElementById('chat-avatar'), chatName: document.getElementById('chat-name'),
-            fabChatBtn: document.getElementById('fab-chat-btn'), backToDashboardBtn: document.getElementById('back-to-dashboard-btn'),
-            chatCanvas: document.getElementById('chat-canvas'), sendBtn: document.getElementById('send-btn'),
-            messageInput: document.getElementById('message-input'), attachBtn: document.getElementById('attach-btn'),
-            fileInput: document.getElementById('file-input'),
-            attachmentMenu: document.getElementById('attachment-menu'), attachFileBtn: document.getElementById('attach-file-btn'), attachLocationBtn: document.getElementById('attach-location-btn'),
-            progressModal: document.getElementById('progress-modal'), progressLabel: document.getElementById('progress-label'), progressBarFill: document.getElementById('progress-bar-fill'),
-        };
+        const screens = { login: document.getElementById('login-screen'), dashboard: document.getElementById('dashboard-screen'), chat: document.getElementById('chat-screen') };
+        const ui = { loginBtn: document.getElementById('login-btn'), clientIdInput: document.getElementById('client-id-input') };
 
         function navigateTo(screenName) {
-            Object.values(ui.screens).forEach(s => s.classList.remove('active'));
-            ui.screens[screenName].classList.add('active');
+            Object.values(screens).forEach(s => s.classList.remove('active'));
+            screens[screenName].classList.add('active');
         }
 
-        async function apiPost(body) { /* ... same working apiPost ... */ }
+        async function apiPost(body) {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                if (!response.ok) {
+                    throw new Error(`שגיאת שרת (HTTP ${response.status})`);
+                }
+                return await response.json();
+            } catch (error) {
+                console.error("API Call Error:", error);
+                return { success: false, error: error.message };
+            }
+        }
 
         async function handleLogin() {
             const clientId = ui.clientIdInput.value.trim();
             if (!clientId) return;
+            
             const response = await apiPost({ action: 'getDashboardData', clientId });
+
+            // --- FIX: Robust check for response object ---
             if (response && response.success) {
                 clientData = response.data.client;
                 dashboardData = response.data.dashboard;
-                [ui.dashboardAvatar, ui.chatAvatar].forEach(el => el.src = clientData.avatar || 'https://i.postimg.cc/rsxW32Jj/logo.png');
-                [ui.dashboardName, ui.chatName].forEach(el => el.textContent = clientData.name);
                 renderDashboard();
                 navigateTo('dashboard');
-            } else { alert(`כניסה נכשלה: ${response.error || 'אנא בדוק את מספר הלקוח.'}`); }
+            } else {
+                const errorMessage = response ? response.error : 'תקלה לא צפויה בתקשורת';
+                alert(`כניסה נכשלה: ${errorMessage || 'אנא בדוק את מספר הלקוח.'}`);
+            }
         }
 
         function renderDashboard() {
-             let html = '<h3>הזמנות מכולות</h3>';
-            if (dashboardData && Array.isArray(dashboardData.containers) && dashboardData.containers.length > 0) {
-                 dashboardData.containers.forEach(o => {
-                    const daysPassed = Math.min(10, (new Date() - new Date(o.startDate)) / 864e5);
-                    const progress = Math.round((daysPassed / 10) * 100);
-                    html += `<div class="order-card"><p><strong>${o.project}</strong> (${o.status})</p><div class="progress-bar-container"><small>ימי שכירות: יום ${Math.ceil(daysPassed)} מתוך 10</small><div class="progress-bar"><div class="progress-bar-fill" style="width:${progress}%"></div></div></div></div>`;
-                });
-            } else {
-                html += '<p>אין מכולות פעילות.</p>';
-            }
-            html += '<h3>הזמנות חומרים</h3>';
-             if (dashboardData && Array.isArray(dashboardData.materials) && dashboardData.materials.length > 0) {
+            let ordersHtml = '<h3>הזמנות אחרונות</h3>';
+            if (dashboardData && Array.isArray(dashboardData.materials) && dashboardData.materials.length > 0) {
                  dashboardData.materials.forEach(o => {
-                    html += `<div class="order-card"><p><strong>${o.project}</strong> (${o.status})</p><p><small>${o.items}</small></p></div>`;
+                    ordersHtml += `<div class="order-card"><p><strong>${o.project || 'הזמנה כללית'}</strong> (${o.status || 'אין סטטוס'})</p><p><small>${o.items || 'אין פירוט'}</small></p></div>`;
                 });
             } else {
-                html += '<p>אין הזמנות חומרים פעילות.</p>';
+                ordersHtml += '<p>אין הזמנות פעילות.</p>';
             }
-            ui.dashboardContent.innerHTML = html;
-        }
-
-        async function handleSendMessage() { /* ... same working handleSendMessage ... */ }
-        
-        function handleFileSelect(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                const base64 = e.target.result.split(',')[1];
-                const isImage = file.type.startsWith('image/');
-                const previewHtml = isImage ? `<img src="${e.target.result}" class="attachment-preview">` : `<i class="fa-solid fa-file"></i> ${file.name}`;
-                addMessage({ html: previewHtml, type: 'outgoing' });
-                
-                showProgress(`מעלה ${file.name}...`);
-
-                const response = await apiPost({ action: 'uploadFile', payload: { fileName: file.name, mimeType: file.type, data: base64, clientId: clientData.id } });
-                
-                hideProgress();
-                if (response.success) {
-                    addMessage({ html: '✅ הקובץ הועלה ונוצרה הזמנה.', type: 'system' });
-                    await apiPost({ action: 'createOrderFromAttachment', attachment: response.data, clientId: clientData.id });
-                } else {
-                    addMessage({ html: `❌ שגיאה בהעלאת הקובץ: ${response.error}`, type: 'system' });
-                }
+            
+            screens.dashboard.innerHTML = `
+                <header class="app-header">
+                    <img src="${clientData.avatar || 'https://i.postimg.cc/rsxW32Jj/logo.png'}" alt="Avatar" class="avatar">
+                    <div class="header-info"><div class="client-name">${clientData.name}</div><div class="client-status"><div class="status-dot"></div>מחובר</div></div>
+                </header>
+                <div class="app-content">${ordersHtml}</div>
+                <button id="fab-chat-btn" class="fab"><i class="fa-solid fa-comment-dots"></i></button>
+            `;
+            document.getElementById('fab-chat-btn').onclick = () => {
+                renderChat();
+                navigateTo('chat');
             };
-            reader.readAsDataURL(file);
         }
         
-        function handleLocationSend() {
-            ui.attachmentMenu.classList.remove('active');
-            addMessage({ html: 'מאתר מיקום...', type: 'system' });
-            navigator.geolocation.getCurrentPosition(async (pos) => {
-                const { latitude, longitude } = pos.coords;
-                const mapId = `map-${Date.now()}`;
-                const locationHtml = `<div id="${mapId}" class="map-bubble"></div><p>האם לעדכן את המיקום הזה ככתובת קבועה להזמנות?</p><div class="confirmation-buttons"><button class="login-button" onclick="confirmLocationUpdate(${latitude}, ${longitude})">✅ כן, אשר</button><button class="login-button" style="background:#aaa;">❌ לא</button></div>`;
-                addMessage({ html: locationHtml, type: 'incoming' });
-                setTimeout(() => {
-                    const map = L.map(mapId).setView([latitude, longitude], 16);
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-                    L.marker([latitude, longitude]).addTo(map);
-                }, 100);
-            }, () => {
-                addMessage({ html: 'לא ניתן היה לאתר את המיקום.', type: 'system' });
-            });
+        function renderChat() {
+            screens.chat.innerHTML = `
+                <header class="app-header">
+                    <img src="${clientData.avatar || 'https://i.postimg.cc/rsxW32Jj/logo.png'}" alt="Avatar" class="avatar">
+                    <div class="header-info"><div class="client-name">${clientData.name}</div><div class="client-status"><div class="status-dot"></div>מחובר</div></div>
+                    <button id="back-to-dashboard-btn" style="background:none;border:none;font-size:1.5rem;transform:scaleX(-1);">➡️</button>
+                </header>
+                <div id="chat-canvas" class="app-content"></div>
+                <footer class="chat-footer">
+                    <div class="chat-input-wrapper">
+                         <textarea id="message-input" class="chat-input" placeholder="הקלד הודעה..."></textarea>
+                    </div>
+                    <button id="send-btn" class="send-button"><i class="fa-solid fa-paper-plane"></i></button>
+                </footer>`;
+
+            document.getElementById('back-to-dashboard-btn').onclick = () => navigateTo('dashboard');
+            document.getElementById('send-btn').onclick = handleSendMessage;
+            document.getElementById('message-input').onkeypress = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } };
+        }
+
+        async function handleSendMessage() {
+            const input = document.getElementById('message-input');
+            const text = input.value.trim();
+            if (!text) return;
+            addMessageToCanvas(text, 'outgoing');
+            input.value = '';
+
+            const response = await apiPost({ action: 'createOrderFromText', text, clientId: clientData.id });
+            if(response && response.success) {
+                 addMessageToCanvas(`הזמנה ${response.data.orderId} נוצרה!`, 'incoming');
+            } else {
+                 addMessageToCanvas(`שגיאה ביצירת ההזמנה.`, 'system');
+            }
         }
         
-        window.confirmLocationUpdate = async (lat, lon) => {
-            await apiPost({ action: 'updateClientAddress', clientId: clientData.id, lat, lon });
-            addMessage({ html: '✅ תודה! הכתובת עודכנה.', type: 'system' });
+        function addMessageToCanvas(html, type) {
+            const canvas = document.getElementById('chat-canvas');
+            const bubble = document.createElement('div');
+            bubble.className = `message-bubble ${type}`;
+            bubble.innerHTML = html;
+            canvas.appendChild(bubble);
+            canvas.scrollTop = canvas.scrollHeight;
         }
 
-        function showProgress(label) {
-            ui.progressLabel.textContent = label;
-            ui.progressBarFill.style.width = '0%';
-            ui.progressModal.style.display = 'flex';
-            // Simulate progress animation
-            let width = 0;
-            const interval = setInterval(() => {
-                width += 10;
-                ui.progressBarFill.style.width = `${width}%`;
-                if (width >= 100) clearInterval(interval);
-            }, 150);
-        }
-
-        function hideProgress() {
-            ui.progressBarFill.style.width = '100%';
-            setTimeout(() => { ui.progressModal.style.display = 'none'; }, 500);
-        }
-        
-        function addMessage({ html, type }) { /* ... same working addMessage ... */ }
-
-        // Event Listeners
         ui.loginBtn.onclick = handleLogin;
-        ui.fabChatBtn.onclick = () => navigateTo('chat');
-        ui.backToDashboardBtn.onclick = () => navigateTo('dashboard');
-        ui.attachBtn.onclick = () => ui.attachmentMenu.classList.toggle('active');
-        ui.attachFileBtn.onclick = () => { ui.fileInput.click(); ui.attachmentMenu.classList.remove('active'); };
-        ui.attachLocationBtn.onclick = handleLocationSend;
-        ui.fileInput.onchange = handleFileSelect;
-        ui.sendBtn.onclick = handleSendMessage;
-        ui.messageInput.onkeypress = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } };
+        ui.clientIdInput.onkeypress = (e) => { if (e.key === 'Enter') handleLogin(); };
     });
     </script>
 </body>
