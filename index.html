@@ -5,135 +5,261 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>מרכז הבקרה - ח.סבן</title>
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="manifest" href="./manifest.json">
+    
+    <!-- OneSignal Integration -->
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({
+          appId: "546472ac-f9ab-4c6c-beb2-e41c72af9849",
+          safari_web_id: "web.onesignal.auto.195e7e66-9dea-4e11-b56c-b4a654da5ab7",
+          notifyButton: {
+            enable: true,
+          },
+        });
+      });
+    </script>
+
     <style>
         :root {
-            --whatsapp-teal: #075E54; --whatsapp-teal-green-dark: #128C7E; --whatsapp-light-green: #25D366;
-            --whatsapp-bg: #E5DDD5; --app-bg-color: #ffffff;
-            --text-dark: #000000; --text-light: #667781; --border-color: #e9edef;
-            --outgoing-bg: #DCF8C6; --incoming-bg: #FFFFFF; --system-bg: #E1F3FB;
-            --draft-bg: #FFF9C4; --draft-border: #FFEB3B;
-            --radius-md: 8px; --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --primary-color: #005a4b; --secondary-color: #00a884; --accent-color: #f0b90b;
+            --bg-light: #f7f7f7; --bg-dark: #131a21; --text-light: #ffffff; --text-dark: #333333;
+            --outgoing-bg: #e6ffde; --incoming-bg: #ffffff; --system-bg: #fff5c3;
+            --radius-md: 12px; --shadow-sm: 0 2px 4px rgba(0,0,0,0.05); --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; font-family: 'Assistant', sans-serif; }
+        html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; font-family: 'Assistant', sans-serif; background-color: var(--bg-light); }
         
-        #app-container { display: flex; flex-direction: column; height: 100%; max-width: 600px; margin: 0 auto; background-color: var(--app-bg-color); box-shadow: 0 0 20px rgba(0,0,0,0.1); position: relative; overflow: hidden; }
+        #app-container { display: flex; flex-direction: column; height: 100%; max-width: 600px; margin: 0 auto; background-color: #fff; box-shadow: var(--shadow-md); position: relative; overflow: hidden; }
         
-        .screen { display: none; flex-direction: column; height: 100%; }
+        .screen { display: none; flex-direction: column; height: 100%; animation: fadeIn 0.3s ease-in-out; }
         .screen.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        .chat-view { background: var(--whatsapp-bg); }
-        .chat-header { display: flex; align-items: center; padding: 10px 15px; background: #f0f2f5; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
-        .chat-header h2 { font-size: 1.1rem; font-weight: 600; margin: 0; }
-        
-        .chat-canvas { flex-grow: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+        /* Login Screen Styling */
+        #login-screen {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: var(--text-light);
+            justify-content: center;
+            align-items: center;
+            padding: 20px; text-align: center;
+        }
+        .login-box { background: rgba(255,255,255,0.1); padding: 40px; border-radius: 16px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); width: 90%; max-width: 400px; }
+        .login-box img.logo { width: 100px; height: 100px; border-radius: 50%; margin-bottom: 20px; box-shadow: var(--shadow-md); }
+        .login-box h1 { margin: 0 0 10px; font-size: 2rem; }
+        .login-box p { margin: 0 0 30px; opacity: 0.8; }
+        .login-input { width: 100%; padding: 15px; font-size: 1.1rem; border-radius: var(--radius-md); border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.2); color: var(--text-light); margin-bottom: 20px; text-align: center; }
+        .login-input::placeholder { color: rgba(255,255,255,0.6); }
+        .fancy-button { padding: 15px 20px; border-radius: var(--radius-md); border: none; cursor: pointer; font-weight: 700; font-size: 1.1rem; transition: all 0.2s; background-color: var(--accent-color); color: var(--text-dark); width: 100%; }
+        .fancy-button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.2); }
+
+        /* Dashboard & Chat General */
+        .app-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #fff; border-bottom: 1px solid #eee; flex-shrink: 0; }
+        .app-header h2 { font-size: 1.2rem; margin: 0; }
+        .app-content { flex-grow: 1; overflow-y: auto; background-color: var(--bg-light); padding: 15px; }
+
+        /* Dashboard Styling */
+        .dashboard-section { margin-bottom: 20px; }
+        .dashboard-section h3 { margin: 0 0 10px; padding-bottom: 5px; border-bottom: 2px solid var(--secondary-color); }
+        .order-card { background: #fff; padding: 15px; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; margin-bottom: 10px; border-left: 5px solid var(--primary-color); }
+        .order-card[data-type="containers"] { border-left-color: var(--accent-color); }
+        .order-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+        .order-card p { margin: 0 0 5px; }
+        .progress-bar { width: 100%; background-color: #eee; border-radius: 4px; height: 8px; margin-top: 10px; overflow: hidden; }
+        .progress-bar-inner { height: 100%; background: linear-gradient(90deg, var(--secondary-color), var(--primary-color)); width: 0%; transition: width 0.5s; }
+
+        /* Order Details View & Map */
+        #details-modal { position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
+        .details-content { background: #fff; width: 90%; max-width: 500px; border-radius: var(--radius-md); display: flex; flex-direction: column; max-height: 90vh; animation: zoomIn 0.3s; }
+        @keyframes zoomIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        #map { width: 100%; height: 250px; border-radius: var(--radius-md) var(--radius-md) 0 0; background-color: #eee; }
+        .details-info { padding: 20px; overflow-y: auto; }
+
+        /* Chat Styling */
+        .chat-canvas { display: flex; flex-direction: column; gap: 8px; }
         .message-bubble { max-width: 85%; padding: 8px 12px; border-radius: var(--radius-md); line-height: 1.4; word-wrap: break-word; box-shadow: var(--shadow-sm); }
         .message-bubble.outgoing { background: var(--outgoing-bg); margin-left: auto; }
         .message-bubble.incoming { background: var(--incoming-bg); margin-right: auto; }
-        .message-bubble.system { background: var(--system-bg); align-self: center; text-align: center; }
-        .message-bubble.draft-bubble { background: var(--draft-bg); border-left: 4px solid var(--draft-border); padding: 12px; }
-        .draft-bubble h3 { margin: 0 0 10px; font-size: 1rem; }
-        .draft-bubble ul { margin: 0; padding-right: 20px; }
-        .draft-bubble .actions { margin-top: 12px; display: flex; gap: 8px; }
-
-        .whatsapp-button { padding: 8px 16px; border-radius: var(--radius-md); border: none; cursor: pointer; font-weight: 600; transition: background-color 0.2s, transform 0.1s; }
-        .whatsapp-button:active { transform: scale(0.98); }
-        .whatsapp-button.primary { background-color: var(--whatsapp-light-green); color: white; }
-        .whatsapp-button.secondary { background-color: #f0f2f5; color: var(--text-dark); }
-        
-        .chat-footer { padding: 8px; background: #f0f2f5; flex-shrink: 0; display: flex; align-items: center; gap: 8px; }
-        .chat-footer textarea { flex-grow: 1; border: none; background: #fff; font-size: 1rem; resize: none; padding: 10px; border-radius: var(--radius-md); }
+        .message-bubble.draft-bubble { background: #fffde7; border-left: 4px solid var(--accent-color); }
+        .chat-footer { padding: 8px; background: #f0f2f5; flex-shrink: 0; display: flex; align-items: flex-end; gap: 8px; }
+        .chat-input { flex-grow: 1; border: none; background: #fff; font-size: 1rem; resize: none; padding: 10px; border-radius: var(--radius-md); max-height: 120px; }
+        .icon-button { background: transparent; border: none; cursor: pointer; padding: 8px; font-size: 1.5rem; color: var(--text-dark); }
+        .send-button { background-color: var(--primary-color); color: white; border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; }
     </style>
 </head>
 <body>
     <div id="app-container">
         
-        <!-- Login Screen -->
-        <div id="login-screen" class="screen active" style="justify-content: center; align-items: center; padding: 20px;">
-            <h1>כניסה למערכת</h1>
-            <input type="text" id="client-id-input" placeholder="הקלד מספר לקוח" style="padding: 10px; font-size: 1rem; width: 80%; margin-bottom: 10px;">
-            <button id="login-btn" class="whatsapp-button primary">כניסה</button>
+        <div id="login-screen" class="screen active">
+            <div class="login-box">
+                <img src="https://i.postimg.cc/tCpLp7B6/image.png" alt="לוגו ח. סבן" class="logo">
+                <h1>מרכז הבקרה</h1>
+                <p>ניהול הזמנות ופניות</p>
+                <input type="text" id="client-id-input" class="login-input" placeholder="הקלד מספר לקוח">
+                <button id="login-btn" class="fancy-button">כניסה למערכת</button>
+            </div>
         </div>
 
-        <!-- Chat Screen -->
-        <div id="chat-screen" class="screen chat-view">
-            <header class="chat-header">
-                <h2 id="chat-header-title">העוזר האישי להזמנות</h2>
+        <div id="dashboard-screen" class="screen">
+            <header class="app-header">
+                <h2 id="dashboard-header-title">לוח בקרה</h2>
             </header>
-            <div class="chat-canvas" id="chat-canvas"></div>
+            <div id="dashboard-content" class="app-content"></div>
+            <button id="fab-chat-btn" class="fancy-button" style="position: fixed; bottom: 20px; left: 20px; width: 60px; height: 60px; border-radius: 50%; padding: 0; font-size: 1.8rem; z-index: 10;">💬</button>
+        </div>
+
+        <div id="chat-screen" class="screen">
+            <header class="app-header">
+                 <h2 id="chat-header-title">העוזר האישי</h2>
+                 <button id="back-to-dashboard-btn" class="icon-button" style="font-size: 1.2rem;">חזרה ➡️</button>
+            </header>
+            <div id="chat-canvas" class="app-content chat-canvas"></div>
             <footer class="chat-footer">
-                <textarea id="message-input" placeholder="הקלד הזמנה..."></textarea>
-                <button id="send-btn" class="whatsapp-button primary">שלח</button>
+                <button id="attach-btn" class="icon-button">📎</button>
+                <input type="file" id="file-input" hidden accept="image/*,video/*,audio/*,.pdf,.doc,.docx">
+                <textarea id="message-input" class="chat-input" placeholder="הקלד הזמנה..."></textarea>
+                <button id="send-btn" class="send-button">➤</button>
             </footer>
         </div>
+
     </div>
+    <div id="details-modal"></div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const API_URL = "https://saban-proxy.hsaban2025.workers.dev/";
-            let clientData = null;
-            let orderDraft = null;
-
+            let clientData = null, dashboardData = null, orderDraft = null, map = null;
+            
             const screens = {
                 login: document.getElementById('login-screen'),
+                dashboard: document.getElementById('dashboard-screen'),
                 chat: document.getElementById('chat-screen'),
             };
-
             const ui = {
                 loginBtn: document.getElementById('login-btn'),
                 clientIdInput: document.getElementById('client-id-input'),
+                dashboardHeader: document.getElementById('dashboard-header-title'),
+                dashboardContent: document.getElementById('dashboard-content'),
+                fabChatBtn: document.getElementById('fab-chat-btn'),
+                backToDashboardBtn: document.getElementById('back-to-dashboard-btn'),
+                chatCanvas: document.getElementById('chat-canvas'),
                 sendBtn: document.getElementById('send-btn'),
                 messageInput: document.getElementById('message-input'),
-                chatCanvas: document.getElementById('chat-canvas'),
-                chatHeaderTitle: document.getElementById('chat-header-title'),
+                attachBtn: document.getElementById('attach-btn'),
+                fileInput: document.getElementById('file-input'),
+                detailsModal: document.getElementById('details-modal'),
             };
 
             function navigateTo(screenName) {
                 Object.values(screens).forEach(s => s.classList.remove('active'));
                 screens[screenName].classList.add('active');
             }
-            
+
             async function apiPost(body) {
+                ui.loginBtn.disabled = true; // Prevent multiple clicks
                 try {
                     const response = await fetch(API_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(body)
                     });
-                    if (!response.ok) throw new Error(`שגיאת שרת: ${response.status}`);
-                    return response.json();
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return await response.json();
                 } catch (error) {
                     console.error("API Error:", error);
-                    addSystemMessage(`שגיאת תקשורת: ${error.message}`);
-                    return { success: false, error: error.message };
+                    alert(`שגיאת תקשורת: ${error.message}`);
+                    return { success: false };
+                } finally {
+                    ui.loginBtn.disabled = false;
                 }
             }
-
-            function addMessage(text, type) {
-                const bubble = document.createElement('div');
-                bubble.className = `message-bubble ${type}`;
-                bubble.innerHTML = text; // Use innerHTML to render formatted text
-                ui.chatCanvas.appendChild(bubble);
-                ui.chatCanvas.scrollTop = ui.chatCanvas.scrollHeight;
-            }
-            
-            function addSystemMessage(text) { addMessage(text, 'system'); }
 
             async function handleLogin() {
-                const clientId = ui.clientIdInput.value;
+                const clientId = ui.clientIdInput.value.trim();
                 if (!clientId) return;
-                
-                addSystemMessage('מאמת נתונים...');
-                const response = await apiPost({ action: 'getDashboardData', clientId });
 
-                if (response.success) {
+                const response = await apiPost({ action: 'getDashboardData', clientId });
+                if (response && response.success) {
                     clientData = response.data.client;
-                    ui.chatHeaderTitle.textContent = `שלום, ${clientData.name}`;
-                    navigateTo('chat');
-                    addSystemMessage('איך אפשר לעזור היום? ניתן להקליד את רשימת המוצרים.');
-                } else {
-                    alert(response.error || 'כניסה נכשלה');
-                }
+                    dashboardData = response.data.dashboard;
+                    ui.dashboardHeader.textContent = `שלום, ${clientData.name}`;
+                    renderDashboard();
+                    navigateTo('dashboard');
+                } else { alert('כניסה נכשלה. אנא בדוק את מספר הלקוח.'); }
+            }
+
+            function renderDashboard() {
+                let html = '<div class="dashboard-section"><h3>הזמנות מכולות</h3>';
+                if (dashboardData.containers && dashboardData.containers.length > 0) {
+                    dashboardData.containers.forEach(order => {
+                        const orderDate = new Date(order.orderDate);
+                        const daysPassed = Math.min(10, (new Date() - orderDate) / (1000 * 60 * 60 * 24));
+                        const progress = (daysPassed / 10) * 100;
+                        html += `
+                            <div class="order-card" data-order-id="${order.id}" data-order-type="containers" data-type="containers">
+                                <p><strong>${order.project}</strong> (${order.status})</p>
+                                <p><small>${order.address}</small></p>
+                                <div class="progress-bar"><div class="progress-bar-inner" style="width: ${progress}%;"></div></div>
+                                <p><small>יום ${Math.ceil(daysPassed)} מתוך 10 ימי שכירות</small></p>
+                            </div>`;
+                    });
+                } else { html += '<p>אין מכולות פעילות.</p>'; }
+
+                html += '</div><div class="dashboard-section"><h3>הזמנות חומרי בניין</h3>';
+                 if (dashboardData.materials && dashboardData.materials.length > 0) {
+                    dashboardData.materials.forEach(order => {
+                        html += `
+                            <div class="order-card" data-order-id="${order.id}" data-order-type="materials" data-type="materials">
+                                <p><strong>${order.project}</strong> (${order.status})</p>
+                                <p><small>${order.items}</small></p>
+                            </div>`;
+                    });
+                } else { html += '<p>אין הזמנות חומרים פעילות.</p>'; }
+
+                html += '</div>';
+                ui.dashboardContent.innerHTML = html;
+                
+                ui.dashboardContent.querySelectorAll('.order-card').forEach(card => {
+                    card.addEventListener('click', () => showOrderDetails(card.dataset.orderId, card.dataset.orderType));
+                });
+            }
+
+            function showOrderDetails(orderId, orderType) {
+                const order = dashboardData[orderType].find(o => o.id === orderId);
+                if (!order || !order.lat || !order.lon) {
+                    alert('לא קיימים נתוני מיקום עבור הזמנה זו.');
+                    return;
+                };
+
+                ui.detailsModal.innerHTML = `
+                    <div class="details-content">
+                        <div id="map"></div>
+                        <div class="details-info">
+                            <h3>${order.project}</h3>
+                            <p><strong>כתובת:</strong> ${order.address}</p>
+                            <p><strong>סטטוס:</strong> ${order.status}</p>
+                            ${order.items ? `<p><strong>פריטים:</strong> ${order.items}</p>` : ''}
+                            <button id="close-details-btn" class="fancy-button" style="width: auto;">סגור</button>
+                        </div>
+                    </div>`;
+                ui.detailsModal.style.display = 'flex';
+                
+                document.getElementById('close-details-btn').onclick = () => {
+                    ui.detailsModal.style.display = 'none';
+                    if (map) { map.remove(); map = null; }
+                };
+
+                setTimeout(() => {
+                    if(document.getElementById('map')) {
+                        map = L.map('map').setView([order.lat, order.lon], 15);
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+                        const marker = L.marker([order.lat, order.lon]).addTo(map);
+                        marker.bindPopup(`<b>${order.project}</b><br>${order.status}`).openPopup();
+                    }
+                }, 100);
             }
 
             async function handleSendMessage() {
@@ -141,78 +267,77 @@
                 if (!text) return;
                 
                 addMessage(text, 'outgoing');
+                const originalText = text;
                 ui.messageInput.value = '';
-                addSystemMessage('מעבד את בקשתך...');
+                addMessage('מעבד את בקשתך...', 'incoming');
 
-                const response = await apiPost({ action: 'predictOrder', text });
+                const response = await apiPost({ action: 'predictOrder', text: originalText });
                 
-                if (response.success) {
+                if (response && response.success) {
                     orderDraft = {
-                        clientId: clientData.id,
-                        clientName: clientData.name,
-                        items: [
-                            ...response.data.predictedItems,
-                            ...response.data.unidentifiedItems
-                        ]
+                        clientId: clientData.id, clientName: clientData.name,
+                        items: response.data.items,
+                        originalText: originalText,
                     };
                     renderDraftBubble();
-                } else {
-                    addSystemMessage(`שגיאה בניתוח ההודעה: ${response.error}`);
-                }
+                } else { addMessage(`שגיאה בניתוח ההודעה.`, 'incoming'); }
             }
             
             function renderDraftBubble() {
                 if (!orderDraft || orderDraft.items.length === 0) {
-                    addSystemMessage('לא זוהו פריטים בהודעה. נסה שוב.');
-                    return;
+                    addMessage('לא זוהו פריטים בהודעה. נסה שוב.', 'incoming'); return;
                 }
 
                 const itemsHtml = orderDraft.items.map(item => {
-                    if (item.matched) {
-                        return `<li>✅ ${item.quantity} x ${item.name}</li>`;
-                    }
+                    if (item.matched) return `<li>✅ ${item.quantity} x ${item.name} (מק"ט: ${item.sku})</li>`;
                     return `<li>❓ ${item.quantity} x ${item.raw} (לא זוהה)</li>`;
                 }).join('');
 
                 const draftHtml = `
                     <h3>נא לאשר את טיוטת ההזמנה:</h3>
                     <ul>${itemsHtml}</ul>
-                    <div class="actions">
-                        <button id="confirm-order-btn" class="whatsapp-button primary">✅ אשר וצור הזמנה</button>
-                        <button id="cancel-order-btn" class="whatsapp-button secondary">❌ בטל</button>
+                    <div style="margin-top: 12px; display: flex; gap: 8px;">
+                        <button id="confirm-order-btn" class="fancy-button" style="background-color: var(--secondary-color); color: #fff;">אשר וצור הזמנה</button>
+                        <button id="cancel-order-btn" class="fancy-button" style="background-color: #ccc;">בטל</button>
                     </div>`;
-
                 addMessage(draftHtml, 'incoming draft-bubble');
 
                 document.getElementById('confirm-order-btn').onclick = handleConfirmOrder;
                 document.getElementById('cancel-order-btn').onclick = () => {
-                     addSystemMessage('הטיוטה בוטלה. ניתן להתחיל הזמנה חדשה.');
-                     orderDraft = null;
+                     addMessage('הטיוטה בוטלה.', 'incoming'); orderDraft = null;
                 };
             }
             
             async function handleConfirmOrder() {
                 if (!orderDraft) return;
-
-                addSystemMessage('יוצר הזמנה במערכת...');
+                addMessage('יוצר הזמנה במערכת...', 'incoming');
                 const response = await apiPost({ action: 'createOrder', orderDraft });
 
-                if (response.success) {
-                    addSystemMessage(`הזמנה ${response.data.orderId} נוצרה בהצלחה!`);
-                    addMessage(`<strong>סיכום לתיעוד:</strong><br>${response.data.formattedOrder.replace(/\n/g, '<br>')}`, 'incoming');
+                if (response && response.success) {
+                    addMessage(`הזמנה ${response.data.orderId} נוצרה בהצלחה!`, 'incoming');
                     orderDraft = null;
-                } else {
-                    addSystemMessage(`שגיאה ביצירת ההזמנה: ${response.error}`);
-                }
+                } else { addMessage(`שגיאה ביצירת ההזמנה.`, 'incoming'); }
+            }
+            
+            function addMessage(text, type) {
+                const bubble = document.createElement('div');
+                bubble.className = `message-bubble ${type}`;
+                bubble.innerHTML = text;
+                ui.chatCanvas.appendChild(bubble);
+                ui.chatCanvas.scrollTop = ui.chatCanvas.scrollHeight;
             }
 
             ui.loginBtn.addEventListener('click', handleLogin);
+            ui.fabChatBtn.addEventListener('click', () => navigateTo('chat'));
+            ui.backToDashboardBtn.addEventListener('click', () => navigateTo('dashboard'));
+            ui.attachBtn.addEventListener('click', () => ui.fileInput.click());
+            ui.fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) addMessage(`קובץ "${file.name}" צורף.`, 'outgoing');
+            });
             ui.sendBtn.addEventListener('click', handleSendMessage);
             ui.messageInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage();
-                }
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }
             });
         });
     </script>
