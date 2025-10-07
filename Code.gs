@@ -22,8 +22,7 @@ function doPost(e) {
 }
 
 function doGet(e) {
-  // Simple check to confirm the script is deployed and running.
-  return ContentService.createTextOutput("The script is running and responds to GET requests.");
+  return ContentService.createTextOutput("The script is running and responds to POST requests.");
 }
 
 function getSheetDataAsObjects(sheetName) {
@@ -48,30 +47,32 @@ function getDashboardData(clientId) {
     const allProjects = getSheetDataAsObjects("פרויקטים");
 
     const containers = getSheetDataAsObjects("הזמנות מכולות")
-        .filter(o => o['מזהה_לקוח'] && o['מזהה_לקוח'].toString() === clientId.toString() && o.סטטוס !== 'סגור')
+        .filter(o => o['מספר לקוח'] && o['מספר לקוח'].toString() === clientId.toString() && o.סטטוס !== 'סגור')
         .map(o => {
-            const project = allProjects.find(p => p['שם_פרויקט'] === o['שם_פרויקט']);
+            // --- FIX: Logic to correctly find the project name and details ---
+            const projectName = o['שם פרויקט'] || o['כתובת']; // Fallback to 'כתובת' if 'שם פרויקט' is missing
+            const project = allProjects.find(p => p['שם_פרויקט'] === projectName);
             return { 
                 type: 'container',
                 id: o['מספר_הזמנה'] || `C${Math.random()}`,
-                project: o['שם_פרויקט'], 
+                project: projectName || 'פרויקט לא משויך', 
                 status: o.סטטוס, 
                 items: `מכולה ${o['גודל'] || ''}`.trim(),
-                startDate: o['תאריך_פתיחה'],
-                address: project ? project.כתובת : '',
+                startDate: o['תאריך התחלה'],
+                address: project ? project.כתובת : (o.כתובת || 'לא צוינה'), // Use actual address from project
                 lat: project ? project.lat : null,
                 lon: project ? project.lon : null
             };
         });
 
     const materials = getSheetDataAsObjects("הזמנות חומרי בנין")
-        .filter(o => o['מזהה_לקוח'] && o['מזהה_לקוח'].toString() === clientId.toString() && o.סטטוס !== 'סגור')
+        .filter(o => o['מספר לקוח'] && o['מספר לקוח'].toString() === clientId.toString() && o.סטטוס !== 'סגור')
         .map(o => ({ 
             type: 'material',
             id: o['מספר_הזמנה'] || `M${Math.random()}`,
-            project: o['שם_פרויקט'], 
+            project: o['שם פרויקט'] || 'פרויקט לא משויך', 
             status: o.סטטוס, 
-            items: o['פירוט_הזמנה'] 
+            items: o['פריטים'] 
         }));
     
     const allOrders = [...containers, ...materials];
@@ -97,47 +98,37 @@ function createOrderFromText(text, clientId) {
     clientData['שם_לקוח'], // שם לקוח
     "הזמנה מהצ'אט",    // שם פרויקט
     "",                // פרטי אספקה
-    text,              // פירוט_הזמנה
+    text,              // פריטים
     "",                // הערות
     "חדשה"             // סטטוס
   ]);
   
-  const orderId = sheet.getLastRow(); // A simple way to get a unique ID for the new order.
+  const orderId = sheet.getLastRow();
   return { success: true, data: { orderId: `SBN-TXT-${orderId}` } };
 }
 
 function uploadFile(payload) { /* ... same working function ... */ }
 function updateClientAddress(clientId, lat, lon) { /* ... same working function ... */ }
 
-
-// --- פונקציית בדיקה חדשה ---
-/**
- * To run this function:
- * 1. Open the Apps Script editor.
- * 2. In the toolbar at the top, select "createTestOrders" from the function dropdown.
- * 3. Click the "Run" button.
- * This will add two new test orders for client 60120 to your Google Sheets.
- */
 function createTestOrders() {
   const clientId = '60120';
   const clientName = 'בר אורניל';
   const projectName = 'אשר לוי';
 
-  // 1. Create a container order
+  // --- FIX: Using correct headers for test data creation ---
   const containersSheet = SpreadsheetApp.openById(SS_ID).getSheetByName("הזמנות מכולות");
   containersSheet.appendRow([
     `TEST-C-${Date.now()}`, // מספר_הזמנה
-    clientId,               // מזהה_לקוח
-    clientName,             // שם_לקוח
-    projectName,            // שם_פרויקט
+    clientId,               // מספר לקוח
+    clientName,             // שם לקוח
+    projectName,            // שם פרויקט
     '8 קוב',                // גודל
-    new Date(),             // תאריך_פתיחה
-    '',                     // תאריך_סיום
+    new Date(),             // תאריך התחלה
+    '',                     // תאריך סיום
     'פעיל'                  // סטטוס
   ]);
   Logger.log('Test container order created for Bar Ornil.');
 
-  // 2. Create a building materials order
   const materialsSheet = SpreadsheetApp.openById(SS_ID).getSheetByName("הזמנות חומרי בנין");
   materialsSheet.appendRow([
     new Date(),             // תאריך קליטה
@@ -145,7 +136,7 @@ function createTestOrders() {
     clientName,             // שם לקוח
     projectName,            // שם פרויקט
     'אספקה מיידית',         // פרטי אספקה
-    '10 בלוקים, 5 שקי מלט', // פירוט_הזמנה
+    '10 בלוקים, 5 שקי מלט', // פריטים
     'הזמנת בדיקה',          // הערות
     'חדשה'                  // סטטוס
   ]);
