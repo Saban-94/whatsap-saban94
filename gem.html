@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>מרכז הבקרה - ח.סבן</title>
+    <title>מערכת הזמנות - ח.סבן</title>
     <!-- Icons and Fonts -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap" rel="stylesheet">
@@ -35,10 +35,12 @@
         :root {
             --primary-color: #2c3e50;
             --secondary-color: #3498db;
-            --background-color: #ecf0f1;
+            --background-color: #f0f2f5;
             --surface-color: #ffffff;
             --text-color: #34495e;
             --light-gray: #bdc3c7;
+            --bot-bubble-bg: #e9e9eb;
+            --user-bubble-bg: #dcf8c6;
             --status-new: #3498db;
             --status-progress: #f1c40f;
             --status-ready: #e67e22;
@@ -55,172 +57,120 @@
             display: flex;
             flex-direction: column;
             height: 100vh;
+            width: 100vw;
+            overflow: hidden;
         }
 
-        .view { display: none; width: 100%; height: 100%; overflow: hidden; }
+        .view { display: none; width: 100%; height: 100%; flex-direction: column; }
 
         /* Login View */
         #login-view {
-            display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 20px;
-            box-sizing: border-box;
+            padding: 20px; box-sizing: border-box;
         }
         #login-view h1 { color: var(--primary-color); }
-        #login-view input {
-            padding: 12px;
-            border: 1px solid var(--light-gray);
-            border-radius: 8px;
-            margin-bottom: 15px;
-            width: 80%;
-            max-width: 300px;
-            text-align: right;
+        #login-view input, #login-view button {
+            padding: 12px; border-radius: 8px; margin-bottom: 15px; width: 80%; max-width: 300px;
         }
-        #login-view button {
-            padding: 12px 25px;
-            background-color: var(--secondary-color);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        #login-view button:hover { background-color: #2980b9; }
+        #login-view input { border: 1px solid var(--light-gray); text-align: right; }
+        #login-view button { background-color: var(--secondary-color); color: white; border: none; cursor: pointer; font-size: 16px; }
 
-
-        /* Dashboard View */
-        #dashboard-view {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
+        /* Chat View */
+        #chat-view { height: 100%; }
+        .chat-header {
+            background: var(--primary-color); color: white; padding: 10px 15px;
+            display: flex; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .dashboard-header {
-            background: var(--surface-color);
-            padding: 10px 15px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            z-index: 1000;
+        .chat-header h2 { margin: 0; font-size: 18px; }
+        #chat-canvas {
+            flex-grow: 1; overflow-y: auto; padding: 15px; background-image: url('https://i.pinimg.com/736x/8c/98/99/8c98994518b575bfd8c949e91d20548b.jpg');
         }
-        .segmented-control {
-            display: flex;
-            width: 100%;
-            background-color: #e4e4e7;
-            border-radius: 9px;
-            padding: 4px;
+        .message-bubble {
+            padding: 8px 12px; border-radius: 12px; margin-bottom: 10px; max-width: 80%;
+            word-wrap: break-word; line-height: 1.4;
         }
-        .segmented-control button {
-            flex: 1;
-            padding: 8px;
-            border: none;
-            background: transparent;
-            border-radius: 7px;
-            font-weight: 600;
-            color: #52525b;
-            cursor: pointer;
-            transition: all 0.2s ease-in-out;
-        }
-        .segmented-control button.active {
+        .user { background-color: var(--user-bubble-bg); align-self: flex-start; border-bottom-left-radius: 0; }
+        .bot { background-color: var(--bot-bubble-bg); align-self: flex-end; border-bottom-right-radius: 0; }
+        .system { background-color: #fcf8e3; align-self: center; text-align: center; font-size: 0.9em; width: 100%; }
+        
+        /* Order Card Bubble */
+        .order-card-bubble {
             background-color: var(--surface-color);
-            color: var(--primary-color);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
-        .dashboard-content {
-            flex-grow: 1;
-            overflow: hidden;
-            position: relative;
-        }
-        .content-pane {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            transition: opacity 0.3s ease, transform 0.3s ease;
-            opacity: 0;
-            transform: scale(0.98);
-            pointer-events: none;
-        }
-        .content-pane.active {
-            opacity: 1;
-            transform: scale(1);
-            pointer-events: auto;
-        }
-
-        /* Kanban Board Styles */
-        #kanban-board-container {
-            display: flex;
-            gap: 10px;
-            padding: 15px;
-            overflow-x: auto;
-            height: 100%;
-            box-sizing: border-box;
-        }
-        .kanban-column {
-            flex: 0 0 280px;
-            background-color: var(--background-color);
             border-radius: 12px;
-            display: flex;
-            flex-direction: column;
+            padding: 0;
+            margin: 5px 0 15px 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            align-self: center;
+            width: 100%;
+            max-width: 100%;
         }
-        .kanban-column-header {
-            padding: 12px;
-            font-weight: 700;
-            border-bottom: 2px solid var(--light-gray);
+        .order-card-header {
+            padding: 10px 15px;
+            border-bottom: 1px solid #eee;
+            border-top-right-radius: 12px;
+            border-top-left-radius: 12px;
+            color: white;
             display: flex;
+            justify-content: space-between;
             align-items: center;
         }
-        .status-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            margin-left: 8px;
-        }
-        .kanban-cards {
-            padding: 8px;
-            overflow-y: auto;
-            flex-grow: 1;
-        }
-        .kanban-card {
-            background: var(--surface-color);
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-            border-right: 5px solid;
-            cursor: pointer;
-        }
-        .kanban-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        .card-id { font-weight: 700; font-size: 0.9em; margin-bottom: 4px; }
-        .card-client { font-size: 1.1em; margin-bottom: 8px; }
-        .card-date { font-size: 0.8em; color: #7f8c8d; }
-        
-        .status-new .status-dot, .kanban-card.status-new { border-color: var(--status-new); }
-        .status-progress .status-dot, .kanban-card.status-progress { border-color: var(--status-progress); }
-        .status-ready .status-dot, .kanban-card.status-ready { border-color: var(--status-ready); }
-        .status-shipped .status-dot, .kanban-card.status-shipped { border-color: var(--status-shipped); }
-        .status-cancelled .status-dot, .kanban-card.status-cancelled { border-color: var(--status-cancelled); }
+        .order-card-header .id { font-weight: 700; }
+        .order-card-header .date { font-size: 0.9em; }
+        .order-card-body { padding: 15px; font-size: 1.1em; }
+        .order-card-body .client-name { font-weight: 600; margin-bottom: 5px; }
+        .order-card-body .address { font-size: 0.9em; color: #7f8c8d; }
 
-        /* Map Styles */
-        #map-container {
-            width: 100%;
-            height: 100%;
+        /* Chat Input */
+        .chat-input-container {
+            display: flex; align-items: center; padding: 10px;
+            background-color: var(--background-color); border-top: 1px solid #ddd;
         }
-        #map {
-            width: 100%;
-            height: 100%;
+        .chat-input-container textarea {
+            flex-grow: 1; border: 1px solid var(--light-gray); border-radius: 20px;
+            padding: 10px 15px; font-size: 16px; resize: none;
         }
-        .leaflet-popup-content-wrapper {
-            border-radius: 8px;
+        .chat-input-container button {
+            background: none; border: none; font-size: 22px; cursor: pointer;
+            color: var(--secondary-color); margin: 0 8px;
         }
-        .leaflet-popup-content {
-            font-family: 'Assistant', sans-serif;
-            font-size: 14px;
-        }
-        .popup-title { font-weight: 700; font-size: 1.1em; margin-bottom: 5px; }
-        .popup-address { color: #555; }
+        #send-btn { color: var(--primary-color); }
         
+        /* Action Menu */
+        #menu-btn-container { position: relative; }
+        #action-menu {
+            position: absolute; bottom: 50px; right: 0;
+            background-color: var(--surface-color);
+            border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            width: 200px; padding: 8px; z-index: 100;
+            display: none; /* Initially hidden */
+        }
+        #action-menu button {
+            display: block; width: 100%; text-align: right;
+            padding: 10px 12px; font-size: 16px;
+            background: none; border: none; cursor: pointer;
+        }
+        #action-menu button:hover { background-color: #f5f5f5; }
+        
+        /* Map Overlay */
+        #map-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            z-index: 2000; display: none; /* Hidden by default */
+            justify-content: center; align-items: center;
+        }
+        #map-container {
+            width: 95%; height: 90%; background: white; border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3); position: relative;
+        }
+        #map { width: 100%; height: 100%; border-radius: 12px; }
+        #close-map-btn {
+            position: absolute; top: 10px; right: 10px;
+            width: 30px; height: 30px; line-height: 30px; text-align: center;
+            background: white; border: none; border-radius: 50%;
+            font-size: 18px; cursor: pointer; z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
     </style>
 </head>
 <body>
@@ -229,44 +179,40 @@
         <h1>כניסה למערכת</h1>
         <input type="text" id="clientId" placeholder="הכנס מספר לקוח">
         <button onclick="login()">התחבר</button>
-        <button onclick="navigateTo('dashboard')" style="margin-top: 20px; background-color: #16a085;">לדשבורד (זמני)</button>
     </div>
 
-    <div id="dashboard-view" class="view">
-        <div class="dashboard-header">
-            <div class="segmented-control">
-                <button id="btn-kanban" class="active" onclick="switchDashboardView('kanban')">
-                    <i class="fa-solid fa-table-columns"></i> הזמנות
-                </button>
-                <button id="btn-map" onclick="switchDashboardView('map')">
-                    <i class="fa-solid fa-map-location-dot"></i> מפה
-                </button>
-            </div>
-        </div>
-        <div class="dashboard-content">
-            <div id="kanban-pane" class="content-pane active">
-                <div id="kanban-board-container">
-                    <!-- Kanban columns will be generated here -->
+    <div id="chat-view" class="view">
+        <div class="chat-header"><h2>צ'אט הזמנות</h2></div>
+        <div id="chat-canvas" style="display: flex; flex-direction: column;"></div>
+        <div class="chat-input-container">
+            <div id="menu-btn-container">
+                <button id="menu-btn" onclick="toggleActionMenu()"><i class="fa-solid fa-plus-circle"></i></button>
+                <div id="action-menu">
+                    <button onclick="showOrdersInChat()"><i class="fa-solid fa-list-check fa-fw"></i> הצג הזמנות</button>
+                    <button onclick="showMapOverlay()"><i class="fa-solid fa-map-location-dot fa-fw"></i> הצג מפה</button>
                 </div>
             </div>
-            <div id="map-pane" class="content-pane">
-                <div id="map-container">
-                    <div id="map"></div>
-                </div>
-            </div>
+            <textarea id="message-input" placeholder="הקלד הודעה..." rows="1"></textarea>
+            <button id="send-btn"><i class="fa-solid fa-paper-plane"></i></button>
         </div>
     </div>
     
-    <!-- כאן יכולים להיות שאר ה-views שלך, כמו הצ'אט -->
+    <div id="map-overlay">
+        <div id="map-container">
+            <button id="close-map-btn" onclick="hideMapOverlay()">&times;</button>
+            <div id="map"></div>
+        </div>
+    </div>
 
     <script>
     document.addEventListener('DOMContentLoaded', function () {
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwYyJ8dZ1iW1v0W2Yc2bY4a1xY_Xy_3Z2_n2e8f1k3a0f7l3j9p8o7i6t5u4r3e2a1s/exec";
-        let map; // הגדרת משתנה המפה ברמה הגלובלית של הסקריפט
+        let map; 
+        let ordersDataCache = null; // Cache for orders data
 
-        // Function to call Google Apps Script
+        // --- Core Functions ---
         async function callAppScript(action, payload = {}) {
-            // כאן תוסיף לוגיקת טעינה, למשל הצגת ספינר
+            // Add loading indicator logic here
             try {
                 const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
@@ -277,164 +223,147 @@
                 return await response.json();
             } catch (error) {
                 console.error('Error calling App Script:', error);
-                // כאן תוסיף לוגיקת טיפול בשגיאה, למשל הצגת הודעה למשתמש
+                addMessage({ html: 'שגיאה בתקשורת עם השרת.', type: 'system' });
                 throw error;
             } finally {
-                // כאן תסיר את לוגיקת הטעינה
+                // Remove loading indicator logic here
             }
+        }
+
+        function addMessage({ html, type }) {
+            const canvas = document.getElementById('chat-canvas');
+            const bubble = document.createElement('div');
+            bubble.className = `message-bubble ${type}`;
+            bubble.innerHTML = html;
+            canvas.appendChild(bubble);
+            canvas.scrollTop = canvas.scrollHeight;
         }
 
         // --- Navigation ---
-        window.navigateTo = function(viewName) {
+        function navigateTo(viewName) {
             document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
             const viewElement = document.getElementById(`${viewName}-view`);
             if (viewElement) {
-                viewElement.style.display = 'flex'; // או block, תלוי ב-CSS
-                if (viewName === 'dashboard') {
-                    renderDashboard();
-                }
+                viewElement.style.display = 'flex';
             }
         }
-
         window.login = function() {
             const clientId = document.getElementById('clientId').value;
             if (clientId) {
                 localStorage.setItem('clientId', clientId);
-                navigateTo('dashboard'); // או לאן שתרצה לנווט אחרי לוגין
+                navigateTo('chat');
             } else {
                 alert('יש להזין מספר לקוח');
             }
         }
 
-        // --- Dashboard Logic ---
-        const STATUSES = {
-            'חדשה': { title: 'חדשות', color: 'var(--status-new)', icon: 'fa-sparkles' },
-            'בטיפול': { title: 'בטיפול', color: 'var(--status-progress)', icon: 'fa-arrows-rotate' },
-            'מוכנה למשלוח': { title: 'מוכנה למשלוח', color: 'var(--status-ready)', icon: 'fa-box-check' },
-            'נשלחה': { title: 'נשלחה', color: 'var(--status-shipped)', icon: 'fa-truck-fast' },
-            'בוטלה': { title: 'בוטלו', color: 'var(--status-cancelled)', icon: 'fa-ban' }
+        // --- Action Menu ---
+        window.toggleActionMenu = function() {
+            const menu = document.getElementById('action-menu');
+            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+        }
+
+        // --- Features ---
+        const STATUS_STYLES = {
+            'חדשה': { title: 'חדשה', color: 'var(--status-new)'},
+            'בטיפול': { title: 'בטיפול', color: 'var(--status-progress)'},
+            'מוכנה למשלוח': { title: 'מוכנה למשלוח', color: 'var(--status-ready)'},
+            'נשלחה': { title: 'נשלחה', color: 'var(--status-shipped)'},
+            'בוטלה': { title: 'בוטלה', color: 'var(--status-cancelled)'}
         };
 
-        async function renderDashboard() {
+        window.showOrdersInChat = async function() {
+            toggleActionMenu(); // Close menu
+            addMessage({ html: 'טוען הזמנות...', type: 'system' });
             try {
                 const data = await callAppScript('getDashboardData');
-                renderKanbanBoard(data.orders);
-                initializeMap(data.orders);
+                ordersDataCache = data.orders; // Cache the data
+                if (ordersDataCache && ordersDataCache.length > 0) {
+                    ordersDataCache.forEach(order => {
+                        const statusStyle = STATUS_STYLES[order.status] || { color: '#7f8c8d' };
+                        const orderCardHtml = `
+                            <div class="order-card-header" style="background-color: ${statusStyle.color};">
+                                <span class="id">${order.id || 'N/A'}</span>
+                                <span class="date">${new Date(order.date).toLocaleDateString('he-IL')}</span>
+                            </div>
+                            <div class="order-card-body">
+                                <div class="client-name">${order.clientName || 'לקוח לא ידוע'}</div>
+                                <div class="address">${order.address || 'כתובת לא צוינה'}</div>
+                            </div>
+                        `;
+                        addMessage({ html: orderCardHtml, type: 'order-card-bubble' });
+                    });
+                } else {
+                    addMessage({ html: 'לא נמצאו הזמנות פעילות.', type: 'system' });
+                }
             } catch (error) {
-                document.getElementById('kanban-board-container').innerHTML = `<p>שגיאה בטעינת הנתונים.</p>`;
+                addMessage({ html: 'שגיאה בטעינת הזמנות.', type: 'system' });
             }
         }
-        
-        function renderKanbanBoard(orders) {
-            const container = document.getElementById('kanban-board-container');
-            container.innerHTML = ''; // Clear previous content
 
-            const columns = {};
-            for (const statusKey in STATUSES) {
-                columns[statusKey] = [];
+        window.showMapOverlay = async function() {
+            toggleActionMenu();
+            const overlay = document.getElementById('map-overlay');
+            overlay.style.display = 'flex';
+
+            if (!ordersDataCache) { // Fetch data if not cached
+                try {
+                    const data = await callAppScript('getDashboardData');
+                    ordersDataCache = data.orders;
+                } catch(error) {
+                    alert('לא ניתן לטעון את נתוני המפה');
+                    hideMapOverlay();
+                    return;
+                }
             }
             
-            orders.forEach(order => {
-                if (columns[order.status]) {
-                    columns[order.status].push(order);
-                } else {
-                    // Fallback for unknown statuses
-                    if (!columns['אחר']) columns['אחר'] = [];
-                    columns['אחר'].push(order);
-                }
-            });
-
-            for (const statusKey in STATUSES) {
-                const statusInfo = STATUSES[statusKey];
-                const columnEl = document.createElement('div');
-                columnEl.className = 'kanban-column';
-                columnEl.innerHTML = `
-                    <div class="kanban-column-header ${'status-' + statusKey.replace(' ','-')}">
-                        <span class="status-dot" style="background-color: ${statusInfo.color};"></span>
-                        ${statusInfo.title} (${columns[statusKey].length})
-                    </div>
-                    <div class="kanban-cards"></div>
-                `;
-
-                const cardsContainer = columnEl.querySelector('.kanban-cards');
-                columns[statusKey].forEach(order => {
-                    const cardEl = document.createElement('div');
-                    cardEl.className = `kanban-card status-${order.status.replace(' ','-')}`;
-                    cardEl.style.borderColor = statusInfo.color;
-                    cardEl.innerHTML = `
-                        <div class="card-id">${order.id || 'N/A'}</div>
-                        <div class="card-client">${order.clientName || 'לקוח לא ידוע'}</div>
-                        <div class="card-date">${new Date(order.date).toLocaleDateString('he-IL')}</div>
-                    `;
-                    // Add click event listener to show order details
-                    cardEl.onclick = () => alert(`Order Details: ${JSON.stringify(order, null, 2)}`);
-                    cardsContainer.appendChild(cardEl);
-                });
-                container.appendChild(columnEl);
-            }
+            initializeMap(ordersDataCache);
         }
-        
+
+        window.hideMapOverlay = function() {
+            document.getElementById('map-overlay').style.display = 'none';
+        }
+
         function initializeMap(orders) {
-            if (map) { // אם המפה כבר קיימת, הסר אותה כדי למנוע כפילות
-                map.remove();
-            }
+            if (map) map.remove();
 
-            map = L.map('map').setView([31.7683, 35.2137], 7); // Center on Israel
-
+            map = L.map('map').setView([31.7683, 35.2137], 7.5); // Center on Israel
             L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-                maxZoom: 19
+                attribution: '© OpenStreetMap contributors © CARTO', maxZoom: 19
             }).addTo(map);
 
             const markers = L.markerClusterGroup();
-            
             orders.forEach(order => {
                 if (order.lat && order.lon) {
-                    const statusInfo = STATUSES[order.status] || { color: 'gray', icon: 'fa-question-circle' };
-                    // We can't easily put FontAwesome icons as markers without a plugin, 
-                    // so we'll use popups to convey information.
                     const marker = L.marker([order.lat, order.lon]);
-                    marker.bindPopup(`
-                        <div class="popup-title">${order.clientName || 'הזמנה'}</div>
-                        <div class="popup-address">סטטוס: ${order.status}</div>
-                        <div class="popup-address">${order.address || 'כתובת לא צוינה'}</div>
-                    `);
+                    marker.bindPopup(`<b>${order.clientName || 'הזמנה'}</b><br>${order.status}<br>${order.address || ''}`);
                     markers.addLayer(marker);
                 }
             });
-
             map.addLayer(markers);
             
-            // This is a fix to ensure the map renders correctly when its container becomes visible
-            setTimeout(() => {
-                map.invalidateSize();
-            }, 350);
+            setTimeout(() => map.invalidateSize(), 100); // Critical for rendering in a modal
         }
 
-        window.switchDashboardView = function(view) {
-            document.getElementById('kanban-pane').classList.toggle('active', view === 'kanban');
-            document.getElementById('map-pane').classList.toggle('active', view === 'map');
-            document.getElementById('btn-kanban').classList.toggle('active', view === 'kanban');
-            document.getElementById('btn-map').classList.toggle('active', view === 'map');
-
-            if (view === 'map') {
-                // Ensure map is rendered correctly
-                setTimeout(() => {
-                    if (map) map.invalidateSize();
-                }, 100);
-            }
-        }
-        
         // --- Init ---
         const clientId = localStorage.getItem('clientId');
         if (clientId) {
             document.getElementById('clientId').value = clientId;
-            navigateTo('dashboard');
+            navigateTo('chat');
         } else {
             navigateTo('login');
         }
 
+        // Close menu if clicking outside
+        document.addEventListener('click', function(event) {
+            const menu = document.getElementById('action-menu');
+            const menuButton = document.getElementById('menu-btn');
+            if (!menu.contains(event.target) && !menuButton.contains(event.target.parentElement)) {
+                menu.style.display = 'none';
+            }
+        });
     });
     </script>
 </body>
 </html>
+
