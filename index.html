@@ -77,6 +77,25 @@
         .card-actions { display: flex; gap: 10px; margin-top: 15px; }
         .card-button { flex: 1; padding: 8px; border-radius: 6px; border: 1px solid var(--wa-teal-green); background: transparent; color: var(--wa-teal-green); cursor: pointer; font-weight: 600; }
 
+        /* Chat */
+        .message-bubble { max-width: 85%; padding: 8px 12px; border-radius: 8px; line-height: 1.5; word-wrap: break-word; box-shadow: 0 1px 1px rgba(0,0,0,0.1); position: relative; margin-bottom: 10px; }
+        .message-bubble.outgoing { background: var(--wa-outgoing-bubble); margin-left: auto; }
+        .message-bubble.incoming { background: var(--wa-incoming-bubble); margin-right: auto; }
+        .message-bubble.system { background: var(--wa-system-bubble); text-align: center; align-self: center; font-size: 0.85rem; }
+        .map-in-bubble { height: 150px; border-radius: 8px; margin-top: 5px; z-index: 1; }
+
+        .chat-footer { padding: 8px; background: var(--wa-header-bg); display: flex; align-items: flex-end; gap: 8px; position: relative; }
+        .chat-input-wrapper { flex-grow: 1; background: #fff; border-radius: 24px; display: flex; align-items: center; padding: 0 10px; }
+        .chat-input { flex-grow: 1; border: none; background: transparent; font-size: 1rem; resize: none; padding: 12px 5px; max-height: 100px; outline: none; }
+        .attach-button { background: transparent; border: none; cursor: pointer; font-size: 1.5rem; color: var(--wa-text-secondary); padding: 10px; }
+        .send-button { background-color: var(--wa-teal-green); color: #fff; border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border: none; flex-shrink: 0; font-size: 1.2rem; }
+        
+        #attachment-menu { position: absolute; bottom: calc(100% + 5px); left: 10px; background: #fff; border-radius: var(--radius); box-shadow: 0 -2px 10px rgba(0,0,0,0.1); padding: 10px; display: flex; flex-direction: column; gap: 5px; transform: translateY(10px); opacity: 0; pointer-events: none; transition: all 0.2s ease-out; z-index: 10; }
+        #attachment-menu.visible { transform: translateY(0); opacity: 1; pointer-events: auto; }
+        .attachment-item { display: flex; align-items: center; gap: 15px; padding: 10px; border-radius: 6px; cursor: pointer; }
+        .attachment-item:hover { background-color: #f0f0f0; }
+        .attachment-item .icon-wrapper { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; }
+
     </style>
 </head>
 <body>
@@ -152,7 +171,6 @@
 
         function renderDashboard() {
             let containerHtml = '<h4>מכולות פעילות</h4>';
-            
             // --- FIX: Added safety check for dashboardData and dashboardData.orders ---
             const orders = (dashboardData && dashboardData.orders) || [];
             const containers = orders.filter(o => o && o.type === 'container');
@@ -200,7 +218,7 @@
                 <div class="app-content">${containerHtml}${materialsHtml}</div>
                 <button id="fab-chat-btn" class="fab"><i class="fa-solid fa-comment-dots"></i></button>
             `;
-            document.getElementById('fab-chat-btn').onclick = () => { /* Logic to open chat */ };
+            document.getElementById('fab-chat-btn').onclick = () => { renderChat(); navigateTo('chat'); };
 
             containers.forEach(o => {
                 if(o.lat && o.lon) {
@@ -217,7 +235,100 @@
             });
         }
         
-        // Initial render
+        function renderChat() {
+            screens.chat.innerHTML = `
+                <header class="app-header">
+                     <img src="${clientData.avatar || 'https://i.postimg.cc/rsxW32Jj/logo.png'}" alt="Avatar" class="avatar">
+                    <div class="header-info"><div class="client-name">${clientData.name}</div><div class="client-status"><div class="status-dot"></div>מחובר</div></div>
+                    <button id="back-to-dashboard-btn" style="background:none;border:none;font-size:1.5rem;transform:scaleX(-1);">➡️</button>
+                </header>
+                <div id="chat-canvas" class="app-content"></div>
+                <footer class="chat-footer">
+                    <div id="attachment-menu">
+                        <div class="attachment-item" id="attach-file"><div class="icon-wrapper" style="background: #007bff;"><i class="fa-solid fa-file"></i></div><span>מסמך/תמונה</span></div>
+                        <div class="attachment-item" id="attach-location"><div class="icon-wrapper" style="background: #28a745;"><i class="fa-solid fa-location-dot"></i></div><span>שתף מיקום</span></div>
+                    </div>
+                    <div class="chat-input-wrapper">
+                         <button id="attach-btn" class="attach-button"><i class="fa-solid fa-paperclip"></i></button>
+                         <input type="file" id="file-input" hidden>
+                         <textarea id="message-input" class="chat-input" placeholder="הקלד הודעה..."></textarea>
+                    </div>
+                    <button id="send-btn" class="send-button"><i class="fa-solid fa-paper-plane"></i></button>
+                </footer>`;
+            
+            document.getElementById('back-to-dashboard-btn').onclick = () => navigateTo('dashboard');
+            document.getElementById('send-btn').onclick = handleSendMessage;
+            document.getElementById('message-input').onkeypress = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } };
+            
+            const attachmentMenu = document.getElementById('attachment-menu');
+            document.getElementById('attach-btn').onclick = () => attachmentMenu.classList.toggle('visible');
+            document.getElementById('attach-file').onclick = () => { document.getElementById('file-input').click(); attachmentMenu.classList.remove('visible'); };
+            document.getElementById('file-input').onchange = () => {}; // Re-implement file handling
+            document.getElementById('attach-location').onclick = () => { handleLocationSend(); attachmentMenu.classList.remove('visible'); };
+
+            const hour = new Date().getHours();
+            const greeting = hour < 5 ? 'לילה טוב' : hour < 12 ? 'בוקר טוב' : hour < 18 ? 'צהריים טובים' : 'ערב טוב';
+            addMessage({ html: `${greeting} ${clientData.name}! 👋 איך אפשר לעזור?`, type: 'incoming' });
+        }
+
+        async function handleSendMessage() { 
+            const input = document.getElementById('message-input');
+            const text = input.value.trim();
+            if(!text) return;
+            addMessage({html: text, type: 'outgoing'});
+            input.value = '';
+            const response = await apiPost({ action: 'createOrderFromText', text, clientId: clientData.id });
+            if (response.success) {
+                addMessage({html: `הזמנה ${response.data.orderId} נוצרה!`, type: 'incoming'});
+            } else {
+                addMessage({html: `שגיאה: ${response.error}`, type: 'system'});
+            }
+         }
+
+        function handleLocationSend() {
+            addMessage({ html: 'מאתר מיקום...', type: 'system' });
+            if (!navigator.geolocation) {
+                return addMessage({ html: 'שירותי מיקום לא נתמכים בדפדפן.', type: 'system' });
+            }
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                const { latitude, longitude } = position.coords;
+                const mapId = `map-${Date.now()}`;
+                const mapHtml = `<div id="${mapId}" class="map-in-bubble"></div>`;
+                addMessage({ html: mapHtml, type: 'outgoing' });
+
+                setTimeout(() => {
+                    const map = L.map(mapId, { zoomControl: false }).setView([latitude, longitude], 16);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+                    L.marker([latitude, longitude]).addTo(map);
+                }, 100);
+
+                addMessage({ html: `תודה על העדכון! מעכשיו כל הזמנה חדשה תעודכן למיקום זה. האם לאשר?<br><button id="confirm-loc-btn" class="card-button" style="background:var(--wa-teal-green); color:white; margin-top: 5px;">כן, אשר</button>`, type: 'incoming' });
+                document.getElementById('confirm-loc-btn').onclick = async (e) => {
+                    e.target.disabled = true;
+                    e.target.textContent = 'מעדכן...';
+                    const response = await apiPost({ action: 'updateClientAddress', clientId: clientData.id, lat: latitude, lon: longitude });
+                    if(response.success){
+                        addMessage({ html: '✅ המיקום עודכן בהצלחה!', type: 'system' });
+                    } else {
+                        addMessage({ html: `שגיאה בעדכון המיקום: ${response.error}`, type: 'system' });
+                    }
+                     e.target.closest('.message-bubble').innerHTML = '✅ המיקום עודכן בהצלחה!';
+                };
+            }, () => addMessage({ html: 'לא ניתן היה לקבל את המיקום.', type: 'system' }));
+        }
+
+        function addMessage({ html, type, id }) {
+            const canvas = document.getElementById('chat-canvas');
+            if(!canvas) return;
+            const bubble = document.createElement('div');
+            bubble.className = `message-bubble ${type}`;
+            if(id) bubble.id = id;
+            bubble.innerHTML = html;
+            canvas.appendChild(bubble);
+            canvas.scrollTop = canvas.scrollHeight;
+            return bubble;
+        }
+
         renderLogin();
         navigateTo('login');
     });
