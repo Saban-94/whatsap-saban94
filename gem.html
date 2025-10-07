@@ -166,7 +166,7 @@
     </div>
 
     <script>
-    // Version: 3.0 - Filter Fix & Enhanced Detail View
+    // Version: 3.1 - Robust Add-to-Order and UX Flow
     document.addEventListener('DOMContentLoaded', function () {
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyZgl7XxNaZ-AbSM6AnssN0f8gWOImjGqZi8baVIwv4cdiIUYAw7h-CUP20e8KXIics/exec";
         let productCatalog = [];
@@ -241,7 +241,6 @@
         }
 
         window.openProductDetail = function(sku) {
-            // Note: SKU can be a number, so we compare with ==
             const product = productCatalog.find(p => p.sku == sku);
             if (!product) return;
             
@@ -255,10 +254,10 @@
                     <p class="description">${product.description || 'אין תיאור זמין.'}</p>
                 </div>
                 <div class="detail-actions-container">
-                     <button onclick="addToOrderFromDetail('${product.sku}')"><i class="fa-solid fa-cart-plus"></i> הוסף להזמנה</button>
+                     <button onclick="addToOrderFromDetail(this, '${product.sku}')"><i class="fa-solid fa-cart-plus"></i> הוסף להזמנה</button>
                     <div class="quantity-selector">
-                        <label for="detail-qty-${product.sku}">כמות:</label>
-                        <input type="number" id="detail-qty-${product.sku}" value="1" min="1">
+                        <label>כמות:</label>
+                        <input type="number" value="1" min="1">
                     </div>
                 </div>
             `;
@@ -272,11 +271,20 @@
             searchModal.classList.add('visible');
         }
 
-        window.addToOrderFromDetail = function(sku) {
-             // Note: SKU can be a number, so we compare with ==
+        window.addToOrderFromDetail = function(buttonElement, sku) {
             const product = productCatalog.find(p => p.sku == sku);
-            const quantity = document.getElementById(`detail-qty-${sku}`).value;
-            if (!product || !quantity) return;
+            
+            // Robustly find the quantity input relative to the button
+            const actionContainer = buttonElement.closest('.detail-actions-container');
+            const quantityInput = actionContainer.querySelector('input[type="number"]');
+            
+            if (!product || !quantityInput) {
+                console.error("Could not add product to order. Product or quantity input not found.");
+                return;
+            }
+            
+            const quantity = quantityInput.value;
+            if (!quantity || quantity < 1) return;
 
             const orderText = `${quantity} ${product.name}`;
             
@@ -287,7 +295,9 @@
                 messageInput.value = orderText;
             }
             
+            // Close all modals for a smooth return to the chat
             detailModal.classList.remove('visible');
+            searchModal.classList.remove('visible');
             messageInput.focus();
         }
     });
