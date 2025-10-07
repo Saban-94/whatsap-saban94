@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>מרכז הבקרה - ח.סבן</title>
+    <!-- Icons and Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- LeafletJS for Maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Web App Manifest -->
+    <link rel="manifest" href="./manifest.json">
+    
+    <!-- OneSignal Push Notifications -->
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(function(OneSignal) {
+        OneSignal.init({
+          appId: "546472ac-f9ab-4c6c-beb2-e41c72af9849",
+        });
+      });
+    </script>
+
+    <style>
+        :root {
+            --wa-bg: #EFEAE2; --wa-teal-green: #008069; --wa-green: #128C7E; --wa-light-green: #25D366;
+            --wa-outgoing-bubble: #D9FDD3; --wa-incoming-bubble: #FFFFFF;
+            --wa-header-bg: #F0F2F5; --wa-system-bubble: #E2F2FF;
+            --wa-text-primary: #111b21; --wa-text-secondary: #667781;
+            --wa-danger: #d9534f;
+            --font-family: 'Assistant', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            --radius: 12px;
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; font-family: var(--font-family); background-color: var(--wa-teal-green); }
+        
+        #app-container { display: flex; flex-direction: column; height: 100%; max-width: 600px; margin: 0 auto; background-color: #fff; box-shadow: 0 5px 20px rgba(0,0,0,0.2); position: relative; overflow: hidden; }
+        
+        .screen { display: none; flex-direction: column; height: 100%; animation: fadeIn 0.3s; }
+        .screen.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Login Screen */
+        #login-screen {
+            background: var(--wa-header-bg); justify-content: center; align-items: center; padding: 20px;
+        }
+        .login-box { text-align: center; width: 100%; max-width: 340px; }
+        .login-box .logo { width: 100px; height: 100px; border-radius: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .login-input { width: 100%; padding: 16px; font-size: 1.1rem; border-radius: var(--radius); border: 1px solid #ddd; margin-bottom: 15px; text-align: center; }
+        .login-button { width: 100%; padding: 16px; border: none; border-radius: var(--radius); background: var(--wa-teal-green); color: #fff; font-size: 1.2rem; font-weight: 600; cursor: pointer; transition: transform 0.2s; }
+        
+        /* App Header */
+        .app-header { display: flex; align-items: center; gap: 10px; padding: 10px 15px; background: var(--wa-header-bg); flex-shrink: 0; border-bottom: 1px solid #e0e0e0; }
+        .avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+        .header-info { flex-grow: 1; text-align: right; }
+        .client-name { font-weight: 600; color: var(--wa-text-primary); }
+        .client-status { font-size: 0.8rem; color: var(--wa-text-secondary); display: flex; align-items: center; justify-content: flex-end; gap: 5px; }
+        .status-dot { width: 8px; height: 8px; background: var(--wa-light-green); border-radius: 50%; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(37, 211, 102, 0); } 100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); } }
+        
+        .app-content { flex-grow: 1; overflow-y: auto; background-color: var(--wa-bg); padding: 10px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); }
+        .fab { position: fixed; bottom: 20px; left: 20px; width: 60px; height: 60px; background: var(--wa-light-green); color: #fff; border-radius: 50%; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.2); font-size: 1.5rem; z-index: 100; display: flex; align-items: center; justify-content: center; }
+
+        /* Dashboard Cards */
+        .card { background: #fff; padding: 15px; margin-bottom: 15px; border-radius: var(--radius); box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+        .card h4 { margin: 0 0 10px 0; color: var(--wa-teal-green); }
+        .card p { margin: 0 0 5px 0; font-size: 0.95rem; color: var(--wa-text-secondary); }
+        .card .map-container { height: 150px; border-radius: 8px; margin-top: 10px; background-color: #eee; z-index: 1; }
+        .progress-bar { width: 100%; background-color: #e9ecef; border-radius: 5px; height: 10px; overflow: hidden; margin-top: 8px; }
+        .progress-bar-fill { height: 100%; background-color: var(--wa-light-green); transition: width 0.5s ease-in-out; }
+        .card.overdue { border-right: 5px solid var(--wa-danger); animation: blink-red 1.5s infinite; }
+        .card.overdue .progress-bar-fill { background-color: var(--wa-danger); }
+        @keyframes blink-red { 50% { border-right-color: transparent; } }
+        .card-actions { display: flex; gap: 10px; margin-top: 15px; }
+        .card-button { flex: 1; padding: 8px; border-radius: 6px; border: 1px solid var(--wa-teal-green); background: transparent; color: var(--wa-teal-green); cursor: pointer; font-weight: 600; }
+
+        /* Chat */
+        .message-bubble { max-width: 85%; padding: 8px 12px; border-radius: 8px; line-height: 1.5; word-wrap: break-word; box-shadow: 0 1px 1px rgba(0,0,0,0.1); position: relative; margin-bottom: 10px; }
+        .message-bubble.outgoing { background: var(--wa-outgoing-bubble); margin-left: auto; }
+        .message-bubble.incoming { background: var(--wa-incoming-bubble); margin-right: auto; }
+        .message-bubble.system { background: var(--wa-system-bubble); text-align: center; align-self: center; font-size: 0.85rem; }
+        .map-in-bubble { height: 150px; border-radius: 8px; margin-top: 5px; z-index: 1; }
+
+        .chat-footer { padding: 8px; background: var(--wa-header-bg); display: flex; align-items: flex-end; gap: 8px; position: relative; }
+        .chat-input-wrapper { flex-grow: 1; background: #fff; border-radius: 24px; display: flex; align-items: center; padding: 0 10px; }
+        .chat-input { flex-grow: 1; border: none; background: transparent; font-size: 1rem; resize: none; padding: 12px 5px; max-height: 100px; outline: none; }
+        .attach-button { background: transparent; border: none; cursor: pointer; font-size: 1.5rem; color: var(--wa-text-secondary); padding: 10px; }
+        .send-button { background-color: var(--wa-teal-green); color: #fff; border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border: none; flex-shrink: 0; font-size: 1.2rem; }
+        
+        #attachment-menu { position: absolute; bottom: calc(100% + 5px); left: 10px; background: #fff; border-radius: var(--radius); box-shadow: 0 -2px 10px rgba(0,0,0,0.1); padding: 10px; display: flex; flex-direction: column; gap: 5px; transform: translateY(10px); opacity: 0; pointer-events: none; transition: all 0.2s ease-out; z-index: 10; }
+        #attachment-menu.visible { transform: translateY(0); opacity: 1; pointer-events: auto; }
+        .attachment-item { display: flex; align-items: center; gap: 15px; padding: 10px; border-radius: 6px; cursor: pointer; }
+        .attachment-item:hover { background-color: #f0f0f0; }
+        .attachment-item .icon-wrapper { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; }
+
+    </style>
+</head>
+<body>
+    <div id="app-container">
+        <!-- Screens are populated dynamically -->
+        <div id="login-screen" class="screen active"></div>
+        <div id="dashboard-screen" class="screen"></div>
+        <div id="chat-screen" class="screen"></div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const API_URL = "https://saban-proxy.hsaban2025.workers.dev/";
+        let clientData = null, dashboardData = null, mapInstances = {};
+
+        const screens = { login: document.getElementById('login-screen'), dashboard: document.getElementById('dashboard-screen'), chat: document.getElementById('chat-screen') };
+
+        function navigateTo(screenName) {
+            Object.values(mapInstances).forEach(map => map.remove());
+            mapInstances = {};
+            Object.values(screens).forEach(s => s.classList.remove('active'));
+            screens[screenName].classList.add('active');
+        }
+
+        async function apiPost(body) {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                if (!response.ok) throw new Error(`שגיאת שרת (HTTP ${response.status})`);
+                return await response.json();
+            } catch (error) {
+                console.error("API Call Error:", error);
+                return { success: false, error: error.message };
+            }
+        }
+        
+        function renderLogin() {
+             screens.login.innerHTML = `
+                <div class="login-box">
+                    <img src="https://i.postimg.cc/tCpLp7B6/image.png" alt="לוגו" class="logo">
+                    <h2>ח. סבן - מרכז הבקרה</h2>
+                    <input type="text" id="client-id-input" class="login-input" placeholder="הקלד מספר לקוח">
+                    <button id="login-btn" class="login-button">כניסה</button>
+                </div>`;
+            const loginBtn = document.getElementById('login-btn');
+            const clientIdInput = document.getElementById('client-id-input');
+            loginBtn.onclick = async () => {
+                loginBtn.disabled = true;
+                loginBtn.textContent = 'מתחבר...';
+                const clientId = clientIdInput.value.trim();
+                if (!clientId) {
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = 'כניסה';
+                    return;
+                }
+                const response = await apiPost({ action: 'getDashboardData', clientId });
+                if (response && response.success) {
+                    clientData = response.data.client;
+                    dashboardData = response.data.dashboard;
+                    renderDashboard();
+                    navigateTo('dashboard');
+                } else {
+                    alert(`כניסה נכשלה: ${response.error || 'אנא בדוק את מספר הלקוח.'}`);
+                }
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'כניסה';
+            };
+            clientIdInput.onkeypress = (e) => { if (e.key === 'Enter') loginBtn.click(); };
+        }
+
+        function renderDashboard() {
+            let containerHtml = '<h4>מכולות פעילות</h4>';
+            
+            // --- FIX: Added safety check for dashboardData and dashboardData.orders ---
+            const orders = (dashboardData && dashboardData.orders) || [];
+            const containers = orders.filter(o => o && o.type === 'container');
+
+            if (containers.length > 0) {
+                 containers.forEach(o => {
+                    const startDate = new Date(o.startDate);
+                    const daysPassed = !isNaN(startDate) ? Math.max(0, Math.floor((new Date() - startDate) / 864e5)) : 0;
+                    const progress = Math.min(100, (daysPassed / 10) * 100);
+                    const isOverdue = daysPassed > 10;
+                    
+                    containerHtml += `
+                        <div class="card ${isOverdue ? 'overdue' : ''}">
+                            <h4>${o.project}</h4>
+                            <p><strong>סטטוס:</strong> ${o.status}</p>
+                            <p>${o.items} בכתובת: ${o.address || 'לא צוינה'}</p>
+                            <div class="map-container" id="map-${o.id}"></div>
+                            <div class="progress-bar-container">
+                                <small>ימי שכירות: ${daysPassed} מתוך 10</small>
+                                <div class="progress-bar"><div class="progress-bar-fill" style="width:${progress}%"></div></div>
+                            </div>
+                            <div class="card-actions">
+                                <button class="card-button">החלף מכולה</button>
+                                <button class="card-button">הוצא מכולה</button>
+                            </div>
+                        </div>`;
+                });
+            } else {
+                containerHtml += '<p>אין מכולות פעילות.</p>';
+            }
+
+            let materialsHtml = '<h4>הזמנות חומרים</h4>';
+            const materials = orders.filter(o => o && o.type === 'material');
+            if(materials.length > 0) {
+                materialsHtml += materials.map(o => `<div class="card"><h4>${o.project}</h4><p><strong>סטטוס:</strong> ${o.status}</p><p><small>${o.items}</small></p></div>`).join('');
+            } else {
+                materialsHtml += '<p>אין הזמנות חומרים.</p>';
+            }
+            
+            screens.dashboard.innerHTML = `
+                <header class="app-header">
+                    <img src="${clientData.avatar || 'https://i.postimg.cc/rsxW32Jj/logo.png'}" alt="Avatar" class="avatar">
+                    <div class="header-info"><div class="client-name">${clientData.name}</div><div class="client-status"><div class="status-dot"></div>מחובר</div></div>
+                </header>
+                <div class="app-content">${containerHtml}${materialsHtml}</div>
+                <button id="fab-chat-btn" class="fab"><i class="fa-solid fa-comment-dots"></i></button>
+            `;
+            document.getElementById('fab-chat-btn').onclick = () => { renderChat(); navigateTo('chat'); };
+
+            containers.forEach(o => {
+                if(o.lat && o.lon) {
+                    setTimeout(() => {
+                        const mapId = `map-${o.id}`;
+                        if(document.getElementById(mapId) && !mapInstances[mapId]) {
+                            const map = L.map(mapId, { zoomControl: false, dragging: false, scrollWheelZoom: false }).setView([o.lat, o.lon], 15);
+                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '' }).addTo(map);
+                            L.marker([o.lat, o.lon]).addTo(map);
+                            mapInstances[mapId] = map;
+                        }
+                    }, 100);
+                }
+            });
+        }
+        
+        function renderChat() {
+            screens.chat.innerHTML = `
+                <header class="app-header">
+                     <img src="${clientData.avatar || 'https://i.postimg.cc/rsxW32Jj/logo.png'}" alt="Avatar" class="avatar">
+                    <div class="header-info"><div class="client-name">${clientData.name}</div><div class="client-status"><div class="status-dot"></div>מחובר</div></div>
+                    <button id="back-to-dashboard-btn" style="background:none;border:none;font-size:1.5rem;transform:scaleX(-1);">➡️</button>
+                </header>
+                <div id="chat-canvas" class="app-content"></div>
+                <footer class="chat-footer">
+                    <div id="attachment-menu">
+                        <div class="attachment-item" id="attach-file"><div class="icon-wrapper" style="background: #007bff;"><i class="fa-solid fa-file"></i></div><span>מסמך/תמונה</span></div>
+                        <div class="attachment-item" id="attach-location"><div class="icon-wrapper" style="background: #28a745;"><i class="fa-solid fa-location-dot"></i></div><span>שתף מיקום</span></div>
+                    </div>
+                    <div class="chat-input-wrapper">
+                         <button id="attach-btn" class="attach-button"><i class="fa-solid fa-paperclip"></i></button>
+                         <input type="file" id="file-input" hidden>
+                         <textarea id="message-input" class="chat-input" placeholder="הקלד הודעה..."></textarea>
+                    </div>
+                    <button id="send-btn" class="send-button"><i class="fa-solid fa-paper-plane"></i></button>
+                </footer>`;
+            
+            document.getElementById('back-to-dashboard-btn').onclick = () => navigateTo('dashboard');
+            document.getElementById('send-btn').onclick = handleSendMessage;
+            document.getElementById('message-input').onkeypress = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } };
+            
+            const attachmentMenu = document.getElementById('attachment-menu');
+            document.getElementById('attach-btn').onclick = () => attachmentMenu.classList.toggle('visible');
+            document.getElementById('attach-file').onclick = () => { document.getElementById('file-input').click(); attachmentMenu.classList.remove('visible'); };
+            document.getElementById('file-input').onchange = () => {}; // Re-implement file handling
+            document.getElementById('attach-location').onclick = () => { handleLocationSend(); attachmentMenu.classList.remove('visible'); };
+
+            const hour = new Date().getHours();
+            const greeting = hour < 5 ? 'לילה טוב' : hour < 12 ? 'בוקר טוב' : hour < 18 ? 'צהריים טובים' : 'ערב טוב';
+            addMessage({ html: `${greeting} ${clientData.name}! 👋 איך אפשר לעזור?`, type: 'incoming' });
+        }
+
+        async function handleSendMessage() { 
+            const input = document.getElementById('message-input');
+            const text = input.value.trim();
+            if(!text) return;
+            addMessage({html: text, type: 'outgoing'});
+            input.value = '';
+            const response = await apiPost({ action: 'createOrderFromText', text, clientId: clientData.id });
+            if (response.success) {
+                addMessage({html: `הזמנה ${response.data.orderId} נוצרה!`, type: 'incoming'});
+            } else {
+                addMessage({html: `שגיאה: ${response.error}`, type: 'system'});
+            }
+         }
+
+        function handleLocationSend() {
+            addMessage({ html: 'מאתר מיקום...', type: 'system' });
+            if (!navigator.geolocation) {
+                return addMessage({ html: 'שירותי מיקום לא נתמכים בדפדפן.', type: 'system' });
+            }
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                const { latitude, longitude } = position.coords;
+                const mapId = `map-${Date.now()}`;
+                const mapHtml = `<div id="${mapId}" class="map-in-bubble"></div>`;
+                addMessage({ html: mapHtml, type: 'outgoing' });
+
+                setTimeout(() => {
+                    const map = L.map(mapId, { zoomControl: false }).setView([latitude, longitude], 16);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+                    L.marker([latitude, longitude]).addTo(map);
+                }, 100);
+
+                addMessage({ html: `תודה על העדכון! מעכשיו כל הזמנה חדשה תעודכן למיקום זה. האם לאשר?<br><button id="confirm-loc-btn" class="card-button" style="background:var(--wa-teal-green); color:white; margin-top: 5px;">כן, אשר</button>`, type: 'incoming' });
+                document.getElementById('confirm-loc-btn').onclick = async (e) => {
+                    e.target.disabled = true;
+                    e.target.textContent = 'מעדכן...';
+                    const response = await apiPost({ action: 'updateClientAddress', clientId: clientData.id, lat: latitude, lon: longitude });
+                    if(response.success){
+                        addMessage({ html: '✅ המיקום עודכן בהצלחה!', type: 'system' });
+                    } else {
+                        addMessage({ html: `שגיאה בעדכון המיקום: ${response.error}`, type: 'system' });
+                    }
+                     e.target.closest('.message-bubble').innerHTML = '✅ המיקום עודכן בהצלחה!';
+                };
+            }, () => addMessage({ html: 'לא ניתן היה לקבל את המיקום.', type: 'system' }));
+        }
+
+        function addMessage({ html, type, id }) {
+            const canvas = document.getElementById('chat-canvas');
+            if(!canvas) return;
+            const bubble = document.createElement('div');
+            bubble.className = `message-bubble ${type}`;
+            if(id) bubble.id = id;
+            bubble.innerHTML = html;
+            canvas.appendChild(bubble);
+            canvas.scrollTop = canvas.scrollHeight;
+            return bubble;
+        }
+
+        renderLogin();
+        navigateTo('login');
+    });
+    </script>
+</body>
+</html>
+
