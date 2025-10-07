@@ -460,62 +460,174 @@
                 renderDashboard();
             }
         }
-        
-        function renderChat() {
-            screens.chat.innerHTML = `
-                <header class="app-header">
-                     <img src="${clientData.avatar || 'https://i.postimg.cc/rsxW32Jj/logo.png'}" alt="Avatar" class="avatar">
-                    <div class="header-info"><div class="client-name">${clientData.name}</div><div class="client-status"><div class="status-dot"></div>מחובר</div></div>
-                    <button id="back-to-dashboard-btn" style="background:none;border:none;font-size:1.5rem;transform:scaleX(-1);">➡️</button>
-                </header>
-                <div id="chat-canvas" class="app-content"></div>
-                <footer class="chat-footer">
-                    <div id="attachment-menu">
-                        <div class="attachment-item" id="attach-file"><div class="icon-wrapper" style="background: #007bff;"><i class="fa-solid fa-file"></i></div><span>מסמך/תמונה</span></div>
-                        <div class="attachment-item" id="attach-location"><div class="icon-wrapper" style="background: #28a745;"><i class="fa-solid fa-location-dot"></i></div><span>שתף מיקום</span></div>
-                    </div>
-                    <div class="chat-input-wrapper">
-                         <button id="attach-btn" class="attach-button"><i class="fa-solid fa-paperclip"></i></button>
-                         <input type="file" id="file-input" hidden>
-                         <textarea id="message-input" class="chat-input" placeholder="הקלד הודעה..."></textarea>
-                    </div>
-                    <button id="send-btn" class="send-button"><i class="fa-solid fa-paper-plane"></i></button>
-                </footer>`;
-            
-            document.getElementById('back-to-dashboard-btn').onclick = () => navigateTo('dashboard');
-            document.getElementById('send-btn').onclick = handleSendMessage;
-            document.getElementById('message-input').onkeypress = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } };
-            
-            const attachmentMenu = document.getElementById('attachment-menu');
-            document.getElementById('attach-btn').onclick = () => attachmentMenu.classList.toggle('visible');
-            document.getElementById('attach-file').onclick = () => { document.getElementById('file-input').click(); attachmentMenu.classList.remove('visible'); };
-            document.getElementById('file-input').onchange = () => {}; // Re-implement file handling
-            document.getElementById('attach-location').onclick = () => { handleLocationSend(); attachmentMenu.classList.remove('visible'); };
+function renderChat() {
+    screens.chat.innerHTML = `
+        <header class="app-header">
+             <img src="${clientData.avatar || 'https://i.postimg.cc/rsxW32Jj/logo.png'}" alt="Avatar" class="avatar">
+            <div class="header-info"><div class="client-name">${clientData.name}</div><div class="client-status"><div class="status-dot"></div>מחובר</div></div>
+            <button id="back-to-dashboard-btn" style="background:none;border:none;font-size:1.5rem;transform:scaleX(-1);">➡️</button>
+        </header>
+        <div id="chat-canvas" class="app-content"></div>
+        <footer class="chat-footer">
+            <div id="attachment-menu">
+                <div class="attachment-item" id="attach-file"><div class="icon-wrapper" style="background: #007bff;"><i class="fa-solid fa-file"></i></div><span>מסמך/תמונה</span></div>
+                <div class="attachment-item" id="attach-location"><div class="icon-wrapper" style="background: #28a745;"><i class="fa-solid fa-location-dot"></i></div><span>שתף מיקום</span></div>
+            </div>
+            <div class="chat-input-wrapper">
+                 <button id="attach-btn" class="attach-button"><i class="fa-solid fa-paperclip"></i></button>
+                 <input type="file" id="file-input" hidden accept="image/*,.pdf,.doc,.docx,.txt">
+                 <textarea id="message-input" class="chat-input" placeholder="הקלד הודעה..."></textarea>
+            </div>
+            <button id="send-btn" class="send-button"><i class="fa-solid fa-paper-plane"></i></button>
+        </footer>`;
+    
+    document.getElementById('back-to-dashboard-btn').onclick = () => navigateTo('dashboard');
+    document.getElementById('send-btn').onclick = handleSendMessage;
+    document.getElementById('message-input').onkeypress = (e) => { 
+        if (e.key === 'Enter' && !e.shiftKey) { 
+            e.preventDefault(); 
+            handleSendMessage(); 
+        } 
+    };
+    
+    const attachmentMenu = document.getElementById('attachment-menu');
+    const attachBtn = document.getElementById('attach-btn');
+    
+    attachBtn.onclick = () => {
+        attachmentMenu.classList.toggle('visible');
+    };
+    
+    // טיפול בהעלאת קובץ
+    document.getElementById('attach-file').onclick = () => { 
+        document.getElementById('file-input').click(); 
+        attachmentMenu.classList.remove('visible'); 
+    };
+    
+    document.getElementById('file-input').onchange = handleFileUpload;
+    
+    document.getElementById('attach-location').onclick = () => { 
+        handleLocationSend(); 
+        attachmentMenu.classList.remove('visible'); 
+    };
 
-            const hour = new Date().getHours();
-            const greeting = hour < 5 ? 'לילה טוב' : hour < 12 ? 'בוקר טוב' : hour < 18 ? 'צהריים טובים' : 'ערב טוב';
-            addMessage({ html: `${greeting} ${clientData.name}! 👋 איך אפשר לעזור?`, type: 'incoming' });
-            
-            // Add AI suggestions
-            addMessage({ 
-                html: `אני יכול לעזור לך עם:<br>
-                <div class="suggestion-item" data-text="אני צריך 3 שקים של מלט אפור">הזמנת חומרים</div>
-                <div class="suggestion-item" data-text="אני צריך מכולה לבניין">הזמנת מכולה</div>
-                <div class="suggestion-item" data-text="מתי תגיע המכולה שלי?">מעקב אחרי הזמנה</div>
-                <div class="suggestion-item" data-text="אני צריך מנוף">הזמנת מנוף</div>`, 
-                type: 'incoming' 
+    // הודעת ברכה
+    const hour = new Date().getHours();
+    const greeting = hour < 5 ? 'לילה טוב' : hour < 12 ? 'בוקר טוב' : hour < 18 ? 'צהריים טובים' : 'ערב טוב';
+    addMessage({ html: `${greeting} ${clientData.name}! 👋 איך אפשר לעזור?`, type: 'incoming' });
+    
+    // הצעות AI
+    addMessage({ 
+        html: `אני יכול לעזור לך עם:<br>
+        <div class="suggestion-item" data-text="אני צריך 3 שקים של מלט אפור">הזמנת חומרים</div>
+        <div class="suggestion-item" data-text="אני צריך מכולה לבניין">הזמנת מכולה</div>
+        <div class="suggestion-item" data-text="מתי תגיע המכולה שלי?">מעקב אחרי הזמנה</div>
+        <div class="suggestion-item" data-text="אני צריך מנוף">הזמנת מנוף</div>`, 
+        type: 'incoming' 
+    });
+    
+    // הוספת מאזיני אירוע להצעות
+    setTimeout(() => {
+        document.querySelectorAll('.suggestion-item').forEach(item => {
+            item.onclick = () => {
+                document.getElementById('message-input').value = item.dataset.text;
+                document.getElementById('message-input').focus();
+            };
+        });
+    }, 100);
+}
+
+// פונקציה חדשה לטיפול בהעלאת קבצים - גרסה מתוקנת
+async function handleFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // הצגת הודעה על העלאה
+    const uploadingMsg = addMessage({ 
+        html: `📤 מעלה קובץ: ${file.name}...`, 
+        type: 'system' 
+    });
+
+    try {
+        // המרת הקובץ ל-base64
+        const base64 = await fileToBase64(file);
+
+        // שליחה לשרת
+        const response = await apiPost({
+            action: 'uploadFile',
+            payload: {
+                fileName: file.name,
+                base64Data: base64.split(',')[1], // מסיר את הקידומת
+                mimeType: file.type,
+                clientId: clientData.id
+            }
+        });
+
+        // הסרת הודעת ההעלאה
+        if (uploadingMsg) uploadingMsg.remove();
+
+        if (response.success) {
+            // הצגת הקובץ שהועלה
+            let fileHtml;
+            if (file.type.startsWith('image/')) {
+                fileHtml = `<div style="margin-top: 5px;">
+                    <img src="${response.data.viewUrl || response.data.downloadUrl}" alt="${file.name}" style="max-width: 200px; border-radius: 8px;">
+                    <div style="font-size: 0.8rem; color: var(--wa-text-secondary); margin-top: 5px;">
+                        <a href="${response.data.downloadUrl}" target="_blank" style="color: var(--wa-teal-green);">הורד קובץ</a>
+                    </div>
+                </div>`;
+            } else {
+                fileHtml = `<div style="margin-top: 5px;">
+                    <a href="${response.data.viewUrl || response.data.downloadUrl}" target="_blank" style="color: var(--wa-teal-green); text-decoration: none; font-weight: 600;">
+                        <i class="fas fa-file"></i> ${file.name}
+                    </a>
+                    <div style="font-size: 0.8rem; color: var(--wa-text-secondary); margin-top: 5px;">
+                        <a href="${response.data.downloadUrl}" target="_blank" style="color: var(--wa-teal-green);">הורד קובץ</a>
+                    </div>
+                </div>`;
+            }
+
+            addMessage({
+                html: fileHtml,
+                type: 'outgoing'
+            });
+
+            addMessage({
+                html: `✅ הקובץ <strong>${file.name}</strong> הועלה בהצלחה!`,
+                type: 'system'
             });
             
-            // Add click handlers for suggestion items
-            setTimeout(() => {
-                document.querySelectorAll('.suggestion-item').forEach(item => {
-                    item.onclick = () => {
-                        document.getElementById('message-input').value = item.dataset.text;
-                    };
-                });
-            }, 100);
+            // הצגת לינק ישיר לקובץ
+            addMessage({
+                html: `🔗 <a href="${response.data.viewUrl}" target="_blank" style="color: var(--wa-teal-green);">לצפייה בקובץ</a>`,
+                type: 'incoming'
+            });
+        } else {
+            addMessage({
+                html: `❌ שגיאה בהעלאת הקובץ: ${response.error}`,
+                type: 'system'
+            });
         }
+    } catch (error) {
+        if (uploadingMsg) uploadingMsg.remove();
+        addMessage({
+            html: `❌ שגיאה בהעלאת הקובץ: ${error.message}`,
+            type: 'system'
+        });
+    }
+    
+    // איפוס הקלט
+    event.target.value = '';
+}
 
+// פונקציית עזר להמרת קובץ ל-base64
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+    });
+}
         async function handleSendMessage() { 
             const input = document.getElementById('message-input');
             const text = input.value.trim();
