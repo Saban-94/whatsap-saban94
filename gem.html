@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>הזמנה - {{PROJECT_NAME}}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap');
+        
+        :root {
+            --primary-color: #008069;
+            --secondary-color: #128C7E;
+            --text-color: #333;
+            --bg-light: #f7f9fc;
+            --border-color: #e0e0e0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Assistant', sans-serif;
+            line-height: 1.5;
+            color: var(--text-color);
+            background-color: var(--bg-light);
+        }
+        
+        .page-container {
+            max-width: 800px; /* A4 width approximation */
+            min-height: 1120px; /* A4 height approximation */
+            margin: 20px auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            padding: 25px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+
+        .header .logo {
+             font-size: 28px;
+             font-weight: 700;
+             color: var(--primary-color);
+        }
+
+        .header .order-details {
+            text-align: left;
+            font-size: 14px;
+        }
+        .header .order-details p {
+            margin-bottom: 4px;
+        }
+        .header .order-details strong {
+            font-weight: 600;
+        }
+
+        .customer-info {
+            background-color: var(--bg-light);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+        .customer-info h2 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: var(--secondary-color);
+        }
+        .customer-info p {
+            font-size: 15px;
+        }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 25px;
+        }
+        .items-table thead {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        .items-table th, .items-table td {
+            padding: 12px;
+            text-align: right;
+            border: 1px solid var(--border-color);
+        }
+        .items-table th {
+            font-weight: 600;
+        }
+        .items-table tbody tr:nth-child(even) {
+            background-color: var(--bg-light);
+        }
+        .items-table td.quantity {
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .notes {
+            padding: 15px;
+            background-color: #fffbe6;
+            border: 1px solid #ffe58f;
+            border-radius: 8px;
+            margin-bottom: 25px;
+        }
+
+        .action-buttons {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+        .action-buttons a {
+            display: inline-block;
+            text-decoration: none;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .action-buttons a:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .whatsapp-btn {
+            background-color: #25D366;
+        }
+        .print-btn {
+            background-color: #4A90E2;
+        }
+
+        /* Print-specific styles */
+        @media print {
+            body {
+                background-color: white;
+                font-size: 12pt;
+            }
+            .page-container {
+                margin: 0;
+                padding: 0;
+                border: none;
+                box-shadow: none;
+                border-radius: 0;
+                max-width: 100%;
+                min-height: auto;
+            }
+            .action-buttons {
+                display: none;
+            }
+            .header, .customer-info, .items-table {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="page-container">
+        <header class="header">
+            <div class="logo">ח. סבן - חומרי בניין</div>
+            <div class="order-details">
+                <p><strong>מספר הזמנה:</strong> <span id="order-id"></span></p>
+                <p><strong>תאריך:</strong> <span id="order-date"></span></p>
+            </div>
+        </header>
+
+        <section class="customer-info">
+            <h2>פרטי הזמנה</h2>
+            <p><strong>שם לקוח:</strong> <span id="client-name"></span></p>
+            <p><strong>פרויקט:</strong> <span id="project-name"></span></p>
+            <p><strong>כתובת למשלוח:</strong> <span id="delivery-address"></span></p>
+        </section>
+
+        <section class="items-section">
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th style="width: 60%;">שם פריט</th>
+                        <th style="width: 40%;">כמות</th>
+                    </tr>
+                </thead>
+                <tbody id="items-tbody">
+                    <!-- Rows will be injected by JavaScript -->
+                </tbody>
+            </table>
+        </section>
+        
+        <section class="notes">
+            <strong>הערות:</strong>
+            <p id="order-notes">אין הערות מיוחדות.</p>
+        </section>
+
+        <footer class="action-buttons">
+            <a href="#" id="whatsapp-link" class="whatsapp-btn" target="_blank">
+               📞 שתף בוואטסאפ
+            </a>
+            <a href="javascript:window.print()" class="print-btn">
+               🖨️ הדפס
+            </a>
+        </footer>
+    </div>
+
+    <script>
+        // --- הדגמת נתונים ---
+        // במערכת האמיתית, השרת יצטרך לספק אובייקט כזה
+        // לפונקציה שיוצרת את ה-HTML.
+        const orderData = {
+            orderId: 'FREE-1759829116428',
+            clientName: 'תחסין',
+            projectName: 'סביון',
+            deliveryAddress: 'הסתדרות 29, רעננה',
+            orderDate: '07/10/2025',
+            notes: 'אספקה לתאריך 09/10/2025, שעה 17:24',
+            businessWhatsapp: '972501234567', // מספר הוואטסאפ של העסק
+            items: [
+                { name: 'חוט שיזור', quantity: '80 ק״ג' },
+                { name: 'חבילות מסמר 10', quantity: '5' },
+                { name: 'חבילות מסמר 6', quantity: '6' },
+                { name: 'חבילות מסמר 3סמ דק', quantity: '2' },
+                { name: 'חבילה מסמר 4סמ', quantity: '2' },
+                { name: 'חוט קשירה', quantity: '40 ק״ג' },
+                { name: 'חבילות ניילון', quantity: '6' },
+                { name: 'דסקיות ברזל 9״', quantity: '30 י״ח' },
+                { name: 'דסקיות 4״', quantity: '20 י״ח' },
+                { name: 'מסטרינה בנאים', quantity: '2' },
+                { name: 'חוט בנאים', quantity: '4 י״ח' },
+                { name: 'בורג עץ 3.5 ס״מ', quantity: '2000' },
+                { name: 'מקצץ', quantity: '2' },
+                { name: 'פלס 1 מטר', quantity: '1' },
+                { name: 'מטר 5 מטר', quantity: '3' }
+            ]
+        };
+
+        // פונקציה למילוי הטופס בנתונים
+        function populateOrderData() {
+            // מילוי פרטי ההזמנה
+            document.getElementById('order-id').textContent = orderData.orderId;
+            document.getElementById('order-date').textContent = orderData.orderDate;
+            document.getElementById('client-name').textContent = orderData.clientName;
+            document.getElementById('project-name').textContent = orderData.projectName;
+            document.getElementById('delivery-address').textContent = orderData.deliveryAddress;
+            if (orderData.notes) {
+                document.getElementById('order-notes').textContent = orderData.notes;
+            }
+
+            // יצירת שורות בטבלת הפריטים
+            const itemsTbody = document.getElementById('items-tbody');
+            itemsTbody.innerHTML = ''; // ניקוי טבלה קיימת
+            orderData.items.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.name}</td>
+                    <td class="quantity">${item.quantity}</td>
+                `;
+                itemsTbody.appendChild(row);
+            });
+            
+            // יצירת קישור וואטסאפ דינמי
+            const whatsappLink = document.getElementById('whatsapp-link');
+            const itemsSummary = orderData.items.map(item => `${item.quantity} ${item.name}`).join(', ');
+            const message = `שלום, בקשר להזמנה מספר ${orderData.orderId} לפרויקט "${orderData.projectName}" של הלקוח ${orderData.clientName}. הפריטים הם: ${itemsSummary}. אשמח לתאם אספקה.`;
+            const encodedMessage = encodeURIComponent(message);
+            whatsappLink.href = `https://wa.me/${orderData.businessWhatsapp}?text=${encodedMessage}`;
+        }
+        
+        // קריאה לפונקציה בטעינת העמוד
+        window.onload = populateOrderData;
+    </script>
+</body>
+</html>
