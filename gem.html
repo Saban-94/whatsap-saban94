@@ -2,281 +2,439 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>הזמנה - {{PROJECT_NAME}}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>מרכז הבקרה - ח.סבן</title>
+    <!-- Icons and Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- LeafletJS for Maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Leaflet MarkerCluster for professional map view -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+
+    <!-- Web App Manifest -->
+    <link rel="manifest" href="./manifest.json">
+    
+    <!-- OneSignal Push Notifications -->
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(function(OneSignal) {
+        OneSignal.init({
+          appId: "546472ac-f9ab-4c6c-beb2-e41c72af9a35",
+        });
+      });
+    </script>
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap');
-        
         :root {
-            --primary-color: #008069;
-            --secondary-color: #128C7E;
-            --text-color: #333;
-            --bg-light: #f7f9fc;
-            --border-color: #e0e0e0;
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --background-color: #ecf0f1;
+            --surface-color: #ffffff;
+            --text-color: #34495e;
+            --light-gray: #bdc3c7;
+            --status-new: #3498db;
+            --status-progress: #f1c40f;
+            --status-ready: #e67e22;
+            --status-shipped: #2ecc71;
+            --status-cancelled: #e74c3c;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-        
         body {
             font-family: 'Assistant', sans-serif;
-            line-height: 1.5;
+            margin: 0;
+            background-color: var(--background-color);
             color: var(--text-color);
-            background-color: var(--bg-light);
-        }
-        
-        .page-container {
-            max-width: 800px; /* A4 width approximation */
-            min-height: 1120px; /* A4 height approximation */
-            margin: 20px auto;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-            padding: 25px;
-            border: 1px solid var(--border-color);
-        }
-        
-        .header {
+            overscroll-behavior: none;
             display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            border-bottom: 2px solid var(--primary-color);
-            padding-bottom: 20px;
-            margin-bottom: 20px;
+            flex-direction: column;
+            height: 100vh;
         }
 
-        .header .logo {
-             font-size: 28px;
-             font-weight: 700;
-             color: var(--primary-color);
+        .view { display: none; width: 100%; height: 100%; overflow: hidden; }
+
+        /* Login View */
+        #login-view {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        #login-view h1 { color: var(--primary-color); }
+        #login-view input {
+            padding: 12px;
+            border: 1px solid var(--light-gray);
+            border-radius: 8px;
+            margin-bottom: 15px;
+            width: 80%;
+            max-width: 300px;
+            text-align: right;
+        }
+        #login-view button {
+            padding: 12px 25px;
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #login-view button:hover { background-color: #2980b9; }
+
+
+        /* Dashboard View */
+        #dashboard-view {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        .dashboard-header {
+            background: var(--surface-color);
+            padding: 10px 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        .segmented-control {
+            display: flex;
+            width: 100%;
+            background-color: #e4e4e7;
+            border-radius: 9px;
+            padding: 4px;
+        }
+        .segmented-control button {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            background: transparent;
+            border-radius: 7px;
+            font-weight: 600;
+            color: #52525b;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+        .segmented-control button.active {
+            background-color: var(--surface-color);
+            color: var(--primary-color);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
 
-        .header .order-details {
-            text-align: left;
+        .dashboard-content {
+            flex-grow: 1;
+            overflow: hidden;
+            position: relative;
+        }
+        .content-pane {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            opacity: 0;
+            transform: scale(0.98);
+            pointer-events: none;
+        }
+        .content-pane.active {
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: auto;
+        }
+
+        /* Kanban Board Styles */
+        #kanban-board-container {
+            display: flex;
+            gap: 10px;
+            padding: 15px;
+            overflow-x: auto;
+            height: 100%;
+            box-sizing: border-box;
+        }
+        .kanban-column {
+            flex: 0 0 280px;
+            background-color: var(--background-color);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+        }
+        .kanban-column-header {
+            padding: 12px;
+            font-weight: 700;
+            border-bottom: 2px solid var(--light-gray);
+            display: flex;
+            align-items: center;
+        }
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-left: 8px;
+        }
+        .kanban-cards {
+            padding: 8px;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+        .kanban-card {
+            background: var(--surface-color);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            border-right: 5px solid;
+            cursor: pointer;
+        }
+        .kanban-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .card-id { font-weight: 700; font-size: 0.9em; margin-bottom: 4px; }
+        .card-client { font-size: 1.1em; margin-bottom: 8px; }
+        .card-date { font-size: 0.8em; color: #7f8c8d; }
+        
+        .status-new .status-dot, .kanban-card.status-new { border-color: var(--status-new); }
+        .status-progress .status-dot, .kanban-card.status-progress { border-color: var(--status-progress); }
+        .status-ready .status-dot, .kanban-card.status-ready { border-color: var(--status-ready); }
+        .status-shipped .status-dot, .kanban-card.status-shipped { border-color: var(--status-shipped); }
+        .status-cancelled .status-dot, .kanban-card.status-cancelled { border-color: var(--status-cancelled); }
+
+        /* Map Styles */
+        #map-container {
+            width: 100%;
+            height: 100%;
+        }
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+        .leaflet-popup-content-wrapper {
+            border-radius: 8px;
+        }
+        .leaflet-popup-content {
+            font-family: 'Assistant', sans-serif;
             font-size: 14px;
         }
-        .header .order-details p {
-            margin-bottom: 4px;
-        }
-        .header .order-details strong {
-            font-weight: 600;
-        }
-
-        .customer-info {
-            background-color: var(--bg-light);
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-            border: 1px solid var(--border-color);
-        }
-        .customer-info h2 {
-            font-size: 18px;
-            margin-bottom: 10px;
-            color: var(--secondary-color);
-        }
-        .customer-info p {
-            font-size: 15px;
-        }
-
-        .items-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 25px;
-        }
-        .items-table thead {
-            background-color: var(--primary-color);
-            color: white;
-        }
-        .items-table th, .items-table td {
-            padding: 12px;
-            text-align: right;
-            border: 1px solid var(--border-color);
-        }
-        .items-table th {
-            font-weight: 600;
-        }
-        .items-table tbody tr:nth-child(even) {
-            background-color: var(--bg-light);
-        }
-        .items-table td.quantity {
-            text-align: center;
-            font-weight: 600;
-        }
-
-        .notes {
-            padding: 15px;
-            background-color: #fffbe6;
-            border: 1px solid #ffe58f;
-            border-radius: 8px;
-            margin-bottom: 25px;
-        }
-
-        .action-buttons {
-            text-align: center;
-            padding-top: 20px;
-            border-top: 1px solid var(--border-color);
-        }
-        .action-buttons a {
-            display: inline-block;
-            text-decoration: none;
-            color: white;
-            padding: 12px 25px;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            margin: 0 10px;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .action-buttons a:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-        .whatsapp-btn {
-            background-color: #25D366;
-        }
-        .print-btn {
-            background-color: #4A90E2;
-        }
-
-        /* Print-specific styles */
-        @media print {
-            body {
-                background-color: white;
-                font-size: 12pt;
-            }
-            .page-container {
-                margin: 0;
-                padding: 0;
-                border: none;
-                box-shadow: none;
-                border-radius: 0;
-                max-width: 100%;
-                min-height: auto;
-            }
-            .action-buttons {
-                display: none;
-            }
-            .header, .customer-info, .items-table {
-                page-break-inside: avoid;
-            }
-        }
+        .popup-title { font-weight: 700; font-size: 1.1em; margin-bottom: 5px; }
+        .popup-address { color: #555; }
+        
     </style>
 </head>
 <body>
 
-    <div class="page-container">
-        <header class="header">
-            <div class="logo">ח. סבן - חומרי בניין</div>
-            <div class="order-details">
-                <p><strong>מספר הזמנה:</strong> <span id="order-id"></span></p>
-                <p><strong>תאריך:</strong> <span id="order-date"></span></p>
-            </div>
-        </header>
-
-        <section class="customer-info">
-            <h2>פרטי הזמנה</h2>
-            <p><strong>שם לקוח:</strong> <span id="client-name"></span></p>
-            <p><strong>פרויקט:</strong> <span id="project-name"></span></p>
-            <p><strong>כתובת למשלוח:</strong> <span id="delivery-address"></span></p>
-        </section>
-
-        <section class="items-section">
-            <table class="items-table">
-                <thead>
-                    <tr>
-                        <th style="width: 60%;">שם פריט</th>
-                        <th style="width: 40%;">כמות</th>
-                    </tr>
-                </thead>
-                <tbody id="items-tbody">
-                    <!-- Rows will be injected by JavaScript -->
-                </tbody>
-            </table>
-        </section>
-        
-        <section class="notes">
-            <strong>הערות:</strong>
-            <p id="order-notes">אין הערות מיוחדות.</p>
-        </section>
-
-        <footer class="action-buttons">
-            <a href="#" id="whatsapp-link" class="whatsapp-btn" target="_blank">
-               📞 שתף בוואטסאפ
-            </a>
-            <a href="javascript:window.print()" class="print-btn">
-               🖨️ הדפס
-            </a>
-        </footer>
+    <div id="login-view" class="view">
+        <h1>כניסה למערכת</h1>
+        <input type="text" id="clientId" placeholder="הכנס מספר לקוח">
+        <button onclick="login()">התחבר</button>
+        <button onclick="navigateTo('dashboard')" style="margin-top: 20px; background-color: #16a085;">לדשבורד (זמני)</button>
     </div>
 
+    <div id="dashboard-view" class="view">
+        <div class="dashboard-header">
+            <div class="segmented-control">
+                <button id="btn-kanban" class="active" onclick="switchDashboardView('kanban')">
+                    <i class="fa-solid fa-table-columns"></i> הזמנות
+                </button>
+                <button id="btn-map" onclick="switchDashboardView('map')">
+                    <i class="fa-solid fa-map-location-dot"></i> מפה
+                </button>
+            </div>
+        </div>
+        <div class="dashboard-content">
+            <div id="kanban-pane" class="content-pane active">
+                <div id="kanban-board-container">
+                    <!-- Kanban columns will be generated here -->
+                </div>
+            </div>
+            <div id="map-pane" class="content-pane">
+                <div id="map-container">
+                    <div id="map"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- כאן יכולים להיות שאר ה-views שלך, כמו הצ'אט -->
+
     <script>
-        // --- הדגמת נתונים ---
-        // במערכת האמיתית, השרת יצטרך לספק אובייקט כזה
-        // לפונקציה שיוצרת את ה-HTML.
-        const orderData = {
-            orderId: 'FREE-1759829116428',
-            clientName: 'תחסין',
-            projectName: 'סביון',
-            deliveryAddress: 'הסתדרות 29, רעננה',
-            orderDate: '07/10/2025',
-            notes: 'אספקה לתאריך 09/10/2025, שעה 17:24',
-            businessWhatsapp: '972501234567', // מספר הוואטסאפ של העסק
-            items: [
-                { name: 'חוט שיזור', quantity: '80 ק״ג' },
-                { name: 'חבילות מסמר 10', quantity: '5' },
-                { name: 'חבילות מסמר 6', quantity: '6' },
-                { name: 'חבילות מסמר 3סמ דק', quantity: '2' },
-                { name: 'חבילה מסמר 4סמ', quantity: '2' },
-                { name: 'חוט קשירה', quantity: '40 ק״ג' },
-                { name: 'חבילות ניילון', quantity: '6' },
-                { name: 'דסקיות ברזל 9״', quantity: '30 י״ח' },
-                { name: 'דסקיות 4״', quantity: '20 י״ח' },
-                { name: 'מסטרינה בנאים', quantity: '2' },
-                { name: 'חוט בנאים', quantity: '4 י״ח' },
-                { name: 'בורג עץ 3.5 ס״מ', quantity: '2000' },
-                { name: 'מקצץ', quantity: '2' },
-                { name: 'פלס 1 מטר', quantity: '1' },
-                { name: 'מטר 5 מטר', quantity: '3' }
-            ]
+    document.addEventListener('DOMContentLoaded', function () {
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwYyJ8dZ1iW1v0W2Yc2bY4a1xY_Xy_3Z2_n2e8f1k3a0f7l3j9p8o7i6t5u4r3e2a1s/exec";
+        let map; // הגדרת משתנה המפה ברמה הגלובלית של הסקריפט
+
+        // Function to call Google Apps Script
+        async function callAppScript(action, payload = {}) {
+            // כאן תוסיף לוגיקת טעינה, למשל הצגת ספינר
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action, ...payload }),
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                return await response.json();
+            } catch (error) {
+                console.error('Error calling App Script:', error);
+                // כאן תוסיף לוגיקת טיפול בשגיאה, למשל הצגת הודעה למשתמש
+                throw error;
+            } finally {
+                // כאן תסיר את לוגיקת הטעינה
+            }
+        }
+
+        // --- Navigation ---
+        window.navigateTo = function(viewName) {
+            document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
+            const viewElement = document.getElementById(`${viewName}-view`);
+            if (viewElement) {
+                viewElement.style.display = 'flex'; // או block, תלוי ב-CSS
+                if (viewName === 'dashboard') {
+                    renderDashboard();
+                }
+            }
+        }
+
+        window.login = function() {
+            const clientId = document.getElementById('clientId').value;
+            if (clientId) {
+                localStorage.setItem('clientId', clientId);
+                navigateTo('dashboard'); // או לאן שתרצה לנווט אחרי לוגין
+            } else {
+                alert('יש להזין מספר לקוח');
+            }
+        }
+
+        // --- Dashboard Logic ---
+        const STATUSES = {
+            'חדשה': { title: 'חדשות', color: 'var(--status-new)', icon: 'fa-sparkles' },
+            'בטיפול': { title: 'בטיפול', color: 'var(--status-progress)', icon: 'fa-arrows-rotate' },
+            'מוכנה למשלוח': { title: 'מוכנה למשלוח', color: 'var(--status-ready)', icon: 'fa-box-check' },
+            'נשלחה': { title: 'נשלחה', color: 'var(--status-shipped)', icon: 'fa-truck-fast' },
+            'בוטלה': { title: 'בוטלו', color: 'var(--status-cancelled)', icon: 'fa-ban' }
         };
 
-        // פונקציה למילוי הטופס בנתונים
-        function populateOrderData() {
-            // מילוי פרטי ההזמנה
-            document.getElementById('order-id').textContent = orderData.orderId;
-            document.getElementById('order-date').textContent = orderData.orderDate;
-            document.getElementById('client-name').textContent = orderData.clientName;
-            document.getElementById('project-name').textContent = orderData.projectName;
-            document.getElementById('delivery-address').textContent = orderData.deliveryAddress;
-            if (orderData.notes) {
-                document.getElementById('order-notes').textContent = orderData.notes;
+        async function renderDashboard() {
+            try {
+                const data = await callAppScript('getDashboardData');
+                renderKanbanBoard(data.orders);
+                initializeMap(data.orders);
+            } catch (error) {
+                document.getElementById('kanban-board-container').innerHTML = `<p>שגיאה בטעינת הנתונים.</p>`;
             }
-
-            // יצירת שורות בטבלת הפריטים
-            const itemsTbody = document.getElementById('items-tbody');
-            itemsTbody.innerHTML = ''; // ניקוי טבלה קיימת
-            orderData.items.forEach(item => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${item.name}</td>
-                    <td class="quantity">${item.quantity}</td>
-                `;
-                itemsTbody.appendChild(row);
-            });
-            
-            // יצירת קישור וואטסאפ דינמי
-            const whatsappLink = document.getElementById('whatsapp-link');
-            const itemsSummary = orderData.items.map(item => `${item.quantity} ${item.name}`).join(', ');
-            const message = `שלום, בקשר להזמנה מספר ${orderData.orderId} לפרויקט "${orderData.projectName}" של הלקוח ${orderData.clientName}. הפריטים הם: ${itemsSummary}. אשמח לתאם אספקה.`;
-            const encodedMessage = encodeURIComponent(message);
-            whatsappLink.href = `https://wa.me/${orderData.businessWhatsapp}?text=${encodedMessage}`;
         }
         
-        // קריאה לפונקציה בטעינת העמוד
-        window.onload = populateOrderData;
+        function renderKanbanBoard(orders) {
+            const container = document.getElementById('kanban-board-container');
+            container.innerHTML = ''; // Clear previous content
+
+            const columns = {};
+            for (const statusKey in STATUSES) {
+                columns[statusKey] = [];
+            }
+            
+            orders.forEach(order => {
+                if (columns[order.status]) {
+                    columns[order.status].push(order);
+                } else {
+                    // Fallback for unknown statuses
+                    if (!columns['אחר']) columns['אחר'] = [];
+                    columns['אחר'].push(order);
+                }
+            });
+
+            for (const statusKey in STATUSES) {
+                const statusInfo = STATUSES[statusKey];
+                const columnEl = document.createElement('div');
+                columnEl.className = 'kanban-column';
+                columnEl.innerHTML = `
+                    <div class="kanban-column-header ${'status-' + statusKey.replace(' ','-')}">
+                        <span class="status-dot" style="background-color: ${statusInfo.color};"></span>
+                        ${statusInfo.title} (${columns[statusKey].length})
+                    </div>
+                    <div class="kanban-cards"></div>
+                `;
+
+                const cardsContainer = columnEl.querySelector('.kanban-cards');
+                columns[statusKey].forEach(order => {
+                    const cardEl = document.createElement('div');
+                    cardEl.className = `kanban-card status-${order.status.replace(' ','-')}`;
+                    cardEl.style.borderColor = statusInfo.color;
+                    cardEl.innerHTML = `
+                        <div class="card-id">${order.id || 'N/A'}</div>
+                        <div class="card-client">${order.clientName || 'לקוח לא ידוע'}</div>
+                        <div class="card-date">${new Date(order.date).toLocaleDateString('he-IL')}</div>
+                    `;
+                    // Add click event listener to show order details
+                    cardEl.onclick = () => alert(`Order Details: ${JSON.stringify(order, null, 2)}`);
+                    cardsContainer.appendChild(cardEl);
+                });
+                container.appendChild(columnEl);
+            }
+        }
+        
+        function initializeMap(orders) {
+            if (map) { // אם המפה כבר קיימת, הסר אותה כדי למנוע כפילות
+                map.remove();
+            }
+
+            map = L.map('map').setView([31.7683, 35.2137], 7); // Center on Israel
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                maxZoom: 19
+            }).addTo(map);
+
+            const markers = L.markerClusterGroup();
+            
+            orders.forEach(order => {
+                if (order.lat && order.lon) {
+                    const statusInfo = STATUSES[order.status] || { color: 'gray', icon: 'fa-question-circle' };
+                    // We can't easily put FontAwesome icons as markers without a plugin, 
+                    // so we'll use popups to convey information.
+                    const marker = L.marker([order.lat, order.lon]);
+                    marker.bindPopup(`
+                        <div class="popup-title">${order.clientName || 'הזמנה'}</div>
+                        <div class="popup-address">סטטוס: ${order.status}</div>
+                        <div class="popup-address">${order.address || 'כתובת לא צוינה'}</div>
+                    `);
+                    markers.addLayer(marker);
+                }
+            });
+
+            map.addLayer(markers);
+            
+            // This is a fix to ensure the map renders correctly when its container becomes visible
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 350);
+        }
+
+        window.switchDashboardView = function(view) {
+            document.getElementById('kanban-pane').classList.toggle('active', view === 'kanban');
+            document.getElementById('map-pane').classList.toggle('active', view === 'map');
+            document.getElementById('btn-kanban').classList.toggle('active', view === 'kanban');
+            document.getElementById('btn-map').classList.toggle('active', view === 'map');
+
+            if (view === 'map') {
+                // Ensure map is rendered correctly
+                setTimeout(() => {
+                    if (map) map.invalidateSize();
+                }, 100);
+            }
+        }
+        
+        // --- Init ---
+        const clientId = localStorage.getItem('clientId');
+        if (clientId) {
+            document.getElementById('clientId').value = clientId;
+            navigateTo('dashboard');
+        } else {
+            navigateTo('login');
+        }
+
+    });
     </script>
 </body>
 </html>
