@@ -17,6 +17,8 @@
             --surface-color: #ffffff;
             --text-color: #34495e;
             --light-gray: #bdc3c7;
+            --error-color: #e74c3c;
+            --success-color: #2ecc71;
         }
 
         body {
@@ -44,7 +46,7 @@
         .chat-input-container textarea { flex-grow: 1; border: 1px solid var(--light-gray); border-radius: 20px; padding: 10px 15px; font-size: 16px; resize: none; }
         .chat-input-container button { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--secondary-color); margin: 0 8px; }
 
-        /* --- NEW: Product Search Modal Styles --- */
+        /* --- Product Search Modal Styles --- */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5);
@@ -77,7 +79,6 @@
         }
         #product-results-container { flex-grow: 1; overflow-y: auto; }
         
-        /* Product Card */
         .product-card {
             display: flex; background: var(--surface-color); border-radius: 8px;
             margin-bottom: 10px; padding: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
@@ -98,6 +99,31 @@
             padding: 8px 12px; border-radius: 6px; cursor: pointer;
         }
         .loader { text-align: center; padding: 20px; }
+
+        /* --- NEW: Debugging Console Styles --- */
+        #debug-log-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 25vh;
+            overflow-y: auto;
+            z-index: 9999;
+            border-top: 2px solid var(--secondary-color);
+        }
+        #debug-log-container .log-entry {
+            padding: 2px 5px;
+            border-bottom: 1px solid #444;
+        }
+        #debug-log-container .log-info { color: #fff; }
+        #debug-log-container .log-success { color: var(--success-color); }
+        #debug-log-container .log-error { color: var(--error-color); font-weight: bold; }
+        #debug-log-container .log-warn { color: #f39c12; }
         
     </style>
 </head>
@@ -111,14 +137,12 @@
         </div>
         <div id="chat-canvas"></div>
         <div class="chat-input-container">
-            <!-- NEW: Product search button -->
             <button id="search-product-btn" onclick="openProductSearch()"><i class="fa-solid fa-store"></i></button>
             <textarea id="message-input" placeholder="הקלד הודעה..." rows="1"></textarea>
             <button id="send-btn"><i class="fa-solid fa-paper-plane"></i></button>
         </div>
     </div>
     
-    <!-- NEW: Product Search Modal -->
     <div id="product-search-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -134,6 +158,11 @@
         </div>
     </div>
 
+    <!-- NEW: Debugging Console -->
+    <div id="debug-log-container">
+        <div>[יומן אבחון]</div>
+    </div>
+
 
     <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -141,91 +170,142 @@
         let productCatalog = [];
         let isCatalogLoaded = false;
         
+        // --- NEW: Diagnostic Logging Function ---
+        const debugLogContainer = document.getElementById('debug-log-container');
+        function logToScreen(message, type = 'info') {
+            console[type === 'error' ? 'error' : 'log'](message); // Also log to browser console
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            debugLogContainer.appendChild(entry);
+            debugLogContainer.scrollTop = debugLogContainer.scrollHeight;
+        }
+        
+        logToScreen('האפליקציה אותחלה', 'success');
+
         async function callAppScript(action, payload = {}) {
+            logToScreen(`=> שולח בקשה לשרת: [${action}]`);
             try {
                 const response = await fetch(SCRIPT_URL, {
                     method: 'POST', body: JSON.stringify({ action, ...payload }),
                 });
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                return await response.json();
+                if (!response.ok) {
+                    throw new Error(`שגיאת רשת! סטטוס: ${response.status}`);
+                }
+                const data = await response.json();
+                logToScreen(`<= התקבלה תגובה מהשרת עבור [${action}]`, 'success');
+                if (!data.success) {
+                   logToScreen(`השרת החזיר שגיאה: ${data.error}`, 'error');
+                }
+                return data;
             } catch (error) {
-                console.error('Error calling App Script:', error);
+                logToScreen(`שגיאה קריטית בתקשורת עם השרת: ${error.message}`, 'error');
                 throw error;
             }
         }
 
-        // --- NEW: Product Search Logic ---
         const modal = document.getElementById('product-search-modal');
         const searchInput = document.getElementById('product-search-input');
         const resultsContainer = document.getElementById('product-results-container');
 
         window.openProductSearch = async function() {
+            logToScreen('פותח חלון חיפוש מוצרים...');
             modal.classList.add('visible');
             if (!isCatalogLoaded) {
+                logToScreen('קטלוג עדיין לא נטען, מתחיל שליפה מהשרת...');
                 try {
                     const response = await callAppScript('getProductCatalog');
-                    if (response.success) {
+                    if (response.success && Array.isArray(response.catalog)) {
                         productCatalog = response.catalog;
                         isCatalogLoaded = true;
-                        renderProductResults(productCatalog); // Show all products initially
+                        logToScreen(`קטלוג נטען בהצלחה! נמצאו ${productCatalog.length} מוצרים.`, 'success');
+                        renderProductResults(productCatalog);
                     } else {
-                        resultsContainer.innerHTML = `<div class="loader">שגיאה בטעינת הקטלוג: ${response.error}</div>`;
+                        logToScreen(`שגיאה בנתונים שהתקבלו מהשרת: ${response.error || 'תגובה לא תקינה'}`, 'error');
+                        resultsContainer.innerHTML = `<div class="loader">שגיאה בטעינת הקטלוג.</div>`;
                     }
                 } catch (e) {
-                    resultsContainer.innerHTML = `<div class="loader">שגיאה חמורה בטעינת הקטלוג. ודא שכתובת ה-URL של הסקריפט נכונה.</div>`;
+                    logToScreen(`נכשלה שליפת הקטלוג מהשרת: ${e.message}`, 'error');
+                    resultsContainer.innerHTML = `<div class="loader">שגיאה חמורה בתקשורת. בדוק את יומן האבחון.</div>`;
                 }
+            } else {
+                logToScreen('הקטלוג כבר טעון בזיכרון.');
             }
         }
         
         window.closeProductSearch = function() {
+            logToScreen('סוגר חלון חיפוש.');
             modal.classList.remove('visible');
         }
         
         searchInput.addEventListener('input', () => {
-            if (!isCatalogLoaded) return;
+            if (!isCatalogLoaded) {
+                logToScreen('הקלדה זוהתה, אך הקטלוג עדיין לא טעון. מתעלם.', 'warn');
+                return;
+            }
             const searchTerm = searchInput.value.toLowerCase().trim();
+            logToScreen(`מאזין להקלדה... מחפש: "${searchTerm}"`);
+            
             if (searchTerm === '') {
+                logToScreen('שדה החיפוש ריק, מציג את כל המוצרים.');
                 renderProductResults(productCatalog);
                 return;
             }
             
             const filteredProducts = productCatalog.filter(p => 
-                p.name.toLowerCase().includes(searchTerm) ||
-                p.sku.toLowerCase().includes(searchTerm) ||
-                p.keywords.toLowerCase().includes(searchTerm)
+                (p.name && p.name.toLowerCase().includes(searchTerm)) ||
+                (p.sku && p.sku.toLowerCase().includes(searchTerm)) ||
+                (p.keywords && p.keywords.toLowerCase().includes(searchTerm))
             );
+            logToScreen(`סינון הסתיים. נמצאו ${filteredProducts.length} תוצאות.`);
             renderProductResults(filteredProducts);
         });
         
         function renderProductResults(products) {
-            if (products.length === 0) {
-                resultsContainer.innerHTML = `<div class="loader">לא נמצאו מוצרים תואמים.</div>`;
-                return;
-            }
-            
-            resultsContainer.innerHTML = products.map(p => `
-                <div class="product-card">
-                    <img src="${p.image}" alt="${p.name}" onerror="this.src='https://placehold.co/400x300/e2e8f0/64748b?text=תמונה+שבורה'">
-                    <div class="product-info">
-                        <h3>${p.name}</h3>
-                        <div class="sku">מק"ט: ${p.sku}</div>
-                        <div class="product-actions">
-                            <input type="number" id="qty-${p.sku}" value="1" min="1">
-                            <button onclick="addToOrder('${p.sku}')"><i class="fa-solid fa-cart-plus"></i> הוסף</button>
+            logToScreen(`מרנדר ${products.length} כרטיסיות מוצר...`);
+            try {
+                if (products.length === 0) {
+                    resultsContainer.innerHTML = `<div class="loader">לא נמצאו מוצרים תואמים.</div>`;
+                    return;
+                }
+                
+                resultsContainer.innerHTML = products.map(p => `
+                    <div class="product-card">
+                        <img src="${p.image}" alt="${p.name}" onerror="this.src='https://placehold.co/400x300/e2e8f0/64748b?text=תמונה+שבורה'">
+                        <div class="product-info">
+                            <h3>${p.name || 'שם חסר'}</h3>
+                            <div class="sku">מק"ט: ${p.sku || 'לא ידוע'}</div>
+                            <div class="product-actions">
+                                <input type="number" id="qty-${p.sku}" value="1" min="1">
+                                <button onclick="addToOrder('${p.sku}')"><i class="fa-solid fa-cart-plus"></i> הוסף</button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            `).join('');
+                `).join('');
+                 logToScreen('רינדור הושלם בהצלחה.', 'success');
+            } catch (error) {
+                 logToScreen(`שגיאה קריטית בזמן רינדור כרטיסיות המוצרים: ${error.message}`, 'error');
+                 resultsContainer.innerHTML = `<div class="loader">אירעה שגיאה בהצגת המוצרים.</div>`;
+            }
         }
 
         window.addToOrder = function(sku) {
+             if (!sku) {
+                logToScreen('ניסיון להוסיף מוצר ללא מק"ט!', 'error');
+                return;
+            }
             const product = productCatalog.find(p => p.sku === sku);
-            const quantity = document.getElementById(`qty-${sku}`).value;
-            if (!product || !quantity) return;
+            const quantityInput = document.getElementById(`qty-${sku}`);
+            const quantity = quantityInput ? quantityInput.value : '1';
+            
+            if (!product) {
+                logToScreen(`לא נמצא מוצר עם מק"ט ${sku} להוספה.`, 'error');
+                return;
+            }
 
             const orderText = `${quantity} ${product.name}`;
+            logToScreen(`מוסיף להזמנה: "${orderText}"`);
             
-            // Add the text to the chat input and close the modal
             const messageInput = document.getElementById('message-input');
             if(messageInput.value){
                 messageInput.value += `\n${orderText}`;
@@ -235,9 +315,6 @@
             
             closeProductSearch();
             messageInput.focus();
-            
-            // Optional: Show a confirmation toast
-            // showToast(`${orderText} הוסף להזמנה`);
         }
     });
     </script>
