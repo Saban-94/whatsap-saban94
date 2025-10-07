@@ -171,7 +171,10 @@
 
         function renderDashboard() {
             let containerHtml = '<h4>מכולות פעילות</h4>';
-            const containers = dashboardData.orders.filter(o => o.type === 'container');
+            // --- FIX: Added safety check for dashboardData and dashboardData.orders ---
+            const orders = (dashboardData && dashboardData.orders) || [];
+            const containers = orders.filter(o => o && o.type === 'container');
+
             if (containers.length > 0) {
                  containers.forEach(o => {
                     const startDate = new Date(o.startDate);
@@ -200,7 +203,7 @@
             }
 
             let materialsHtml = '<h4>הזמנות חומרים</h4>';
-            const materials = dashboardData.orders.filter(o => o.type === 'material');
+            const materials = orders.filter(o => o && o.type === 'material');
             if(materials.length > 0) {
                 materialsHtml += materials.map(o => `<div class="card"><h4>${o.project}</h4><p><strong>סטטוס:</strong> ${o.status}</p><p><small>${o.items}</small></p></div>`).join('');
             } else {
