@@ -14,45 +14,51 @@
             --border-color: #e9edef;
         }
         body { font-family: 'Assistant', sans-serif; margin: 0; background-color: var(--bg-main); display: flex; justify-content: center; align-items: center; height: 100vh; }
-        .app-container { width: 100%; max-width: 450px; height: 100%; max-height: 800px; background-color: var(--bg-main); display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-radius: 12px; overflow: hidden; }
-        .chat-header { background-color: var(--primary-color); color: white; padding: 15px; display: flex; align-items: center; }
+        .app-container { width: 100%; max-width: 450px; height: 100%; max-height: 800px; background-color: var(--bg-main); display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-radius: 12px; overflow: hidden; position: relative; }
+        .chat-header { background-color: var(--primary-color); color: white; padding: 15px; display: flex; align-items: center; position: sticky; top: 0; z-index: 10; }
         .chat-header img { width: 40px; height: 40px; border-radius: 50%; margin-left: 15px; }
         .chat-header h1 { font-size: 18px; font-weight: 600; }
         .chat-canvas { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; }
         .message-bubble { max-width: 80%; padding: 10px 15px; border-radius: 12px; margin-bottom: 10px; line-height: 1.5; word-wrap: break-word; }
         .message-bubble.user { background-color: var(--bg-bubble-user); align-self: flex-start; border-top-right-radius: 0; }
         .message-bubble.bot { background-color: var(--bg-bubble-bot); align-self: flex-end; border-top-left-radius: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-        .chat-input-area { display: flex; padding: 10px; background-color: white; border-top: 1px solid var(--border-color); }
+        .chat-input-area { display: flex; padding: 10px; background-color: white; border-top: 1px solid var(--border-color); align-items: center; }
         .chat-input-area textarea { flex: 1; border: none; padding: 12px; border-radius: 20px; background-color: var(--bg-main); resize: none; font-family: 'Assistant', sans-serif; font-size: 16px; }
         .chat-input-area textarea:focus { outline: none; }
-        .chat-input-area button { background: var(--primary-color); color: white; border: none; width: 45px; height: 45px; border-radius: 50%; font-size: 20px; cursor: pointer; margin-right: 10px; }
+        .chat-input-area button { background: var(--primary-color); color: white; border: none; width: 45px; height: 45px; border-radius: 50%; font-size: 20px; cursor: pointer; margin-right: 5px; margin-left: 5px; flex-shrink: 0; }
         
-        /* Order Preview Bubble Styles */
-        .order-preview-card { border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; }
-        .order-preview-card h3 { margin-top: 0; margin-bottom: 10px; font-size: 16px; color: var(--primary-color); }
-        .order-preview-card ul { list-style: none; padding: 0; margin: 0; }
-        .order-preview-card li { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
-        .order-preview-card li:last-child { border-bottom: none; }
-        .order-preview-card .item-name { display: flex; align-items: center; }
-        .order-preview-card .view-image-icon { cursor: pointer; margin-left: 8px; color: var(--secondary-color); font-size: 18px; }
-        .order-preview-card .item-quantity { font-weight: 600; }
-        .order-preview-card .unrecognized { color: #e74c3c; font-style: italic; }
-        .order-preview-actions { margin-top: 15px; display: flex; justify-content: space-around; }
-        .order-preview-actions button { background: none; border: 1px solid var(--primary-color); color: var(--primary-color); padding: 8px 16px; border-radius: 20px; cursor: pointer; font-weight: 600; }
-        .order-preview-actions button.confirm { background: var(--primary-color); color: white; }
-
-        /* Product Info Card Styles */
+        /* Order Preview & Product Info Cards */
+        .order-preview-card, .product-info-card { border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; }
         .product-info-card { display: flex; flex-direction: column; align-items: center; text-align: center; }
         .product-info-card img { width: 100%; max-width: 200px; border-radius: 8px; margin-bottom: 10px; }
-        .product-info-card h3 { margin: 5px 0; font-size: 18px; }
-        .product-info-card p { margin: 5px 0; color: var(--text-light); font-size: 14px; }
-        .product-info-card .sku { font-size: 12px; color: #aaa; }
-
-        /* Image Modal Styles */
+        .order-preview-card ul { list-style: none; padding: 0; margin: 0; }
+        .order-preview-card li { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+        .order-preview-card .view-image-icon { cursor: pointer; margin-left: 8px; color: var(--secondary-color); font-size: 18px; }
+        .order-preview-actions { margin-top: 15px; display: flex; justify-content: space-around; }
+        .order-preview-actions button { background: none; border: 1px solid var(--primary-color); color: var(--primary-color); padding: 8px 16px; border-radius: 20px; cursor: pointer; font-weight: 600; }
+        
+        /* Image Modal */
         .image-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 1000; }
-        .image-modal-content { max-width: 90%; max-height: 80%; }
-        .image-modal-content img { width: 100%; height: 100%; object-fit: contain; }
-        .image-modal-close { position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; font-weight: bold; cursor: pointer; }
+        .image-modal-content img { max-width: 90%; max-height: 80%; object-fit: contain; }
+        .image-modal-close { position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; cursor: pointer; }
+        
+        /* Catalog Modal Styles */
+        .catalog-modal { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 20; display: none; flex-direction: column; }
+        .catalog-header { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: var(--primary-color); color: white; }
+        .catalog-header h2 { font-size: 18px; margin: 0; }
+        .catalog-header .close-button { font-size: 28px; cursor: pointer; }
+        .catalog-search { padding: 10px; }
+        .catalog-search input { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 20px; font-family: 'Assistant', sans-serif; font-size: 16px; }
+        .catalog-categories { display: flex; overflow-x: auto; padding: 0 10px 10px; gap: 8px; }
+        .category-chip { background: #e0e0e0; border-radius: 16px; padding: 6px 12px; font-size: 14px; cursor: pointer; white-space: nowrap; }
+        .category-chip.active { background: var(--secondary-color); color: white; }
+        .catalog-grid { flex: 1; overflow-y: auto; padding: 10px; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+        .product-card-catalog { border: 1px solid var(--border-color); border-radius: 8px; text-align: center; padding: 10px; background: white; }
+        .product-card-catalog img { width: 100%; height: 100px; object-fit: cover; border-radius: 4px; }
+        .product-card-catalog h4 { font-size: 14px; margin: 8px 0 4px; }
+        .product-card-catalog button { background: var(--primary-color); color: white; border: none; padding: 8px; border-radius: 20px; cursor: pointer; width: 100%; }
+        .catalog-footer { padding: 10px; border-top: 1px solid var(--border-color); }
+        .catalog-footer button { width: 100%; background: var(--secondary-color); color: white; border: none; padding: 12px; border-radius: 20px; font-size: 16px; cursor: pointer; }
 
     </style>
 </head>
@@ -62,16 +68,30 @@
             <img src="https://i.postimg.cc/rsxW32Jj/logo.png" alt="Logo">
             <h1 id="client-name-header">ח. סבן</h1>
         </header>
-        <div class="chat-canvas" id="chat-canvas">
-            <!-- Messages will be appended here -->
-        </div>
+        <div class="chat-canvas" id="chat-canvas"></div>
         <div class="chat-input-area">
             <button id="send-button"><i class="fas fa-paper-plane"></i></button>
-            <textarea id="chat-input" placeholder="הדבק כאן הזמנה או שאל על מוצר..." rows="1"></textarea>
+            <textarea id="chat-input" placeholder="הדבק הזמנה או שאל על מוצר..." rows="1"></textarea>
+            <button id="catalog-button" title="פתח קטלוג"><i class="fas fa-book-open"></i></button>
+        </div>
+        
+        <!-- Catalog Modal -->
+        <div id="catalog-modal" class="catalog-modal">
+            <header class="catalog-header">
+                <h2>קטלוג מוצרים</h2>
+                <span id="close-catalog" class="close-button">&times;</span>
+            </header>
+            <div class="catalog-search">
+                <input type="text" id="catalog-search-input" placeholder="חיפוש מוצר...">
+            </div>
+            <div id="catalog-categories" class="catalog-categories"></div>
+            <div id="catalog-grid" class="catalog-grid"></div>
+            <footer class="catalog-footer">
+                <button id="add-to-order-btn">הוסף להזמנה (<span id="cart-count">0</span>)</button>
+            </footer>
         </div>
     </div>
     
-    <!-- Image Modal Structure -->
     <div id="imageModal" class="image-modal">
         <span class="image-modal-close" id="imageModalClose">&times;</span>
         <div class="image-modal-content">
@@ -81,61 +101,141 @@
 
     <script>
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxAYZlUObLhqQXlx0Q6vr6TxurOMl-clEon510woccuDMKf-mgsE7bgl63F3lT2VzAD/exec";
-        const CLIENT_ID = '60100'; // Example client ID
+        const CLIENT_ID = '60100';
         let confirmedOrderItems = null;
+        let allProducts = [];
+        let cart = {};
 
         document.addEventListener('DOMContentLoaded', () => {
             const sendButton = document.getElementById('send-button');
             const chatInput = document.getElementById('chat-input');
-            const imageModal = document.getElementById('imageModal');
-            const modalImage = document.getElementById('modalImage');
-            const closeModal = document.getElementById('imageModalClose');
+            const catalogButton = document.getElementById('catalog-button');
+            const closeCatalogButton = document.getElementById('close-catalog');
+            const searchInput = document.getElementById('catalog-search-input');
+            const addToOrderBtn = document.getElementById('add-to-order-btn');
 
             sendButton.addEventListener('click', handleSendMessage);
             chatInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage();
-                }
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }
             });
+
+            catalogButton.addEventListener('click', openCatalog);
+            closeCatalogButton.addEventListener('click', closeCatalog);
+            searchInput.addEventListener('input', handleFilter);
+            addToOrderBtn.addEventListener('click', finalizeCatalogSelection);
             
-            closeModal.onclick = () => imageModal.style.display = "none";
-            imageModal.onclick = (e) => {
-                if (e.target === imageModal) imageModal.style.display = "none";
-            }
+            // Image Modal listeners
+            const imageModal = document.getElementById('imageModal');
+            document.getElementById('imageModalClose').onclick = () => imageModal.style.display = "none";
+            imageModal.onclick = (e) => { if (e.target === imageModal) imageModal.style.display = "none"; }
             
-            // Initial message
-            addMessageToCanvas({ html: 'שלום! אפשר להדביק כאן רשימת קניות, או לשאול אותי על מוצר (למשל: "פרטים על מלט").', type: 'bot' });
+            addMessageToCanvas({ html: 'שלום! אפשר להדביק כאן רשימת קניות, לשאול על מוצר, או לפתוח את הקטלוג.', type: 'bot' });
         });
         
         window.showImageModal = (imageUrl, productName) => {
-            modalImage.src = imageUrl;
-            modalImage.alt = productName;
+            document.getElementById('modalImage').src = imageUrl;
+            document.getElementById('modalImage').alt = productName;
             document.getElementById('imageModal').style.display = 'flex';
+        }
+
+        async function openCatalog() {
+            document.getElementById('catalog-modal').style.display = 'flex';
+            if (allProducts.length === 0) {
+                const loadingHtml = '<p>טוען קטלוג...</p>';
+                document.getElementById('catalog-grid').innerHTML = loadingHtml;
+                const response = await callServer('getCatalog');
+                if (response.success) {
+                    allProducts = response.data;
+                    renderCategories(allProducts);
+                    renderCatalog(allProducts);
+                } else {
+                    document.getElementById('catalog-grid').innerHTML = '<p>שגיאה בטעינת הקטלוג.</p>';
+                }
+            }
+        }
+
+        function closeCatalog() {
+            document.getElementById('catalog-modal').style.display = 'none';
+        }
+
+        function renderCategories(products) {
+            const categoriesContainer = document.getElementById('catalog-categories');
+            const categories = ['הכל', ...new Set(products.map(p => p.category).filter(Boolean))];
+            categoriesContainer.innerHTML = categories.map((cat, index) => 
+                `<span class="category-chip ${index === 0 ? 'active' : ''}" onclick="handleFilter(this, '${cat}')">${cat}</span>`
+            ).join('');
+        }
+        
+        function renderCatalog(products) {
+            const grid = document.getElementById('catalog-grid');
+            grid.innerHTML = products.map(p => `
+                <div class="product-card-catalog">
+                    <img src="${p.imageUrl || 'https://placehold.co/150x100/e0e0e0/777?text=אין+תמונה'}" alt="${p.name}" onerror="this.src='https://placehold.co/150x100/e0e0e0/777?text=אין+תמונה';">
+                    <h4>${p.name}</h4>
+                    <button onclick="addToCart('${p.name}')">הוסף</button>
+                </div>
+            `).join('');
+        }
+
+        function handleFilter(element, category) {
+            const searchInput = document.getElementById('catalog-search-input');
+            const searchTerm = searchInput.value.toLowerCase();
+            
+            document.querySelectorAll('.category-chip').forEach(chip => chip.classList.remove('active'));
+            if(element) element.classList.add('active');
+
+            const activeCategory = document.querySelector('.category-chip.active').innerText;
+
+            const filteredProducts = allProducts.filter(p => {
+                const matchesCategory = activeCategory === 'הכל' || p.category === activeCategory;
+                const matchesSearch = p.name.toLowerCase().includes(searchTerm) || (p.allTerms && p.allTerms.some(t => t.toLowerCase().includes(searchTerm)));
+                return matchesCategory && matchesSearch;
+            });
+            renderCatalog(filteredProducts);
+        }
+
+        function addToCart(productName) {
+            if (cart[productName]) {
+                cart[productName].quantity++;
+            } else {
+                const product = allProducts.find(p => p.name === productName);
+                cart[productName] = { ...product, quantity: 1 };
+            }
+            updateCartCount();
+        }
+
+        function updateCartCount() {
+            const count = Object.values(cart).reduce((sum, item) => sum + item.quantity, 0);
+            document.getElementById('cart-count').innerText = count;
+        }
+
+        function finalizeCatalogSelection() {
+            const chatInput = document.getElementById('chat-input');
+            const orderText = Object.values(cart).map(item => `${item.name} ${item.quantity}`).join('\n');
+            chatInput.value = (chatInput.value + '\n' + orderText).trim();
+            cart = {};
+            updateCartCount();
+            closeCatalog();
         }
 
         async function handleSendMessage() {
             const input = document.getElementById('chat-input');
             const text = input.value.trim();
             if (!text) return;
-
             addMessageToCanvas({ html: text, type: 'user' });
             input.value = '';
-            
             addMessageToCanvas({ html: '...חושב', type: 'bot', id: 'thinking' });
-
-            // Check if it's a product query or a pasted order
             const productQueryMatch = text.match(/^(?:פרטים על|מידע על|מה זה)\s(.+)/);
             if (productQueryMatch) {
                 const productName = productQueryMatch[1];
                 const response = await callServer('getProductInfo', { productName });
                 renderProductInfo(response);
-            } else if (text.includes('\n') || text.split(' ').length > 3) { // Heuristic for pasted order
+            } else if (text.includes('\n') || text.split(' ').length > 2) {
                 const response = await callServer('analyzePastedOrder', { text });
                 renderOrderPreview(response);
             } else {
                  removeMessage('thinking');
-                 addMessageToCanvas({html: "לא הבנתי את הבקשה. אפשר לנסות להדביק רשימה או לשאול 'פרטים על [שם מוצר]'", type:'bot'})
+                 addMessageToCanvas({html: "לא הבנתי. אפשר להדביק רשימה, לשאול 'פרטים על [שם מוצר]' או לפתוח את הקטלוג.", type:'bot'})
             }
         }
 
@@ -144,13 +244,7 @@
             if (response && response.success) {
                 const product = response.data;
                 const imageUrl = product.imageUrl || 'https://placehold.co/200x150/e0e0e0/777?text=אין+תמונה';
-                const html = `
-                    <div class="product-info-card">
-                        <img src="${imageUrl}" alt="${product.name}" onerror="this.src='https://placehold.co/200x150/e0e0e0/777?text=אין+תמונה';">
-                        <h3>${product.name}</h3>
-                        ${product.sku ? `<p class="sku">מק"ט: ${product.sku}</p>` : ''}
-                        <p>${product.description}</p>
-                    </div>`;
+                const html = `<div class="product-info-card"><img src="${imageUrl}" alt="${product.name}" onerror="this.src='https://placehold.co/200x150/e0e0e0/777?text=אין+תמונה';"><h3>${product.name}</h3>${product.sku ? `<p class="sku">מק"ט: ${product.sku}</p>` : ''}<p>${product.description}</p></div>`;
                 addMessageToCanvas({ html: html, type: 'bot' });
             } else {
                 addMessageToCanvas({ html: response.error || 'לא מצאתי מידע על המוצר.', type: 'bot' });
@@ -160,26 +254,9 @@
         function renderOrderPreview(response) {
             removeMessage('thinking');
             if (response && response.success) {
-                confirmedOrderItems = response.data.parsedItems; // Store for confirmation
-                const itemsHtml = confirmedOrderItems.map(item => `
-                    <li>
-                        <span class="item-name ${!item.isRecognized ? 'unrecognized' : ''}">
-                            ${item.imageUrl ? `<span class="view-image-icon" onclick="showImageModal('${item.imageUrl}', '${item.name}')">👁️</span>` : ''}
-                            ${item.name}
-                        </span>
-                        <span class="item-quantity">${item.quantity}</span>
-                    </li>
-                `).join('');
-
-                const html = `
-                    <div class="order-preview-card">
-                        <h3>סיכום הזמנה לאישור:</h3>
-                        <ul>${itemsHtml}</ul>
-                        <div class="order-preview-actions">
-                            <button onclick="handleConfirmOrder()">✅ אשר ובצע הזמנה</button>
-                            <button onclick="handleEditOrder()">✏️ בטל</button>
-                        </div>
-                    </div>`;
+                confirmedOrderItems = response.data.parsedItems;
+                const itemsHtml = confirmedOrderItems.map(item => `<li><span class="item-name ${!item.isRecognized ? 'unrecognized' : ''}">${item.imageUrl ? `<span class="view-image-icon" onclick="showImageModal('${item.imageUrl}', '${item.name}')">👁️</span>` : ''} ${item.name}</span><span class="item-quantity">${item.quantity}</span></li>`).join('');
+                const html = `<div class="order-preview-card"><h3>סיכום הזמנה לאישור:</h3><ul>${itemsHtml}</ul><div class="order-preview-actions"><button onclick="handleConfirmOrder()">✅ אשר ובצע הזמנה</button><button onclick="handleEditOrder()">✏️ בטל</button></div></div>`;
                 addMessageToCanvas({ html: html, type: 'bot' });
             } else {
                 addMessageToCanvas({ html: response.error || 'שגיאה בניתוח ההזמנה.', type: 'bot' });
@@ -190,26 +267,16 @@
             if (!confirmedOrderItems) return;
             addMessageToCanvas({ html: 'מאשר הזמנה...', type: 'user' });
             addMessageToCanvas({ html: '...יוצר הזמנה סופית', type: 'bot', id: 'creating' });
-
-            const orderData = {
-                items: confirmedOrderItems,
-                // In a real app, you'd collect these from the user
-                projectName: 'פרויקט כללי',
-                deliveryAddress: 'לא צוינה',
-                notes: 'הזמנה מהירה מהצ\'אט'
-            };
-
+            const orderData = { items: confirmedOrderItems, projectName: 'פרויקט כללי', deliveryAddress: 'לא צוינה', notes: 'הזמנה מהירה מהצ\'אט' };
             const response = await callServer('createFreeFormOrder', { orderData, clientId: CLIENT_ID });
             removeMessage('creating');
-
             if (response && response.success) {
                 const result = response.data;
-                const successHtml = `הזמנה <b>${result.orderId}</b> נוצרה בהצלחה! <br><a href="${result.htmlUrl}" target="_blank">פתח קישור להזמנה</a>`;
-                addMessageToCanvas({ html: successHtml, type: 'bot' });
+                addMessageToCanvas({ html: `הזמנה <b>${result.orderId}</b> נוצרה בהצלחה! <br><a href="${result.htmlUrl}" target="_blank">פתח קישור להזמנה</a>`, type: 'bot' });
             } else {
                 addMessageToCanvas({ html: `שגיאה ביצירת ההזמנה: ${response.error}`, type: 'bot' });
             }
-            confirmedOrderItems = null; // Clear after use
+            confirmedOrderItems = null;
         }
         
         function handleEditOrder(){
@@ -250,3 +317,4 @@
     </script>
 </body>
 </html>
+
