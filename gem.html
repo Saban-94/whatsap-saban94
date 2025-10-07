@@ -46,6 +46,7 @@
             --status-ready: #e67e22;
             --status-shipped: #2ecc71;
             --status-cancelled: #e74c3c;
+            --status-active: #27ae60;
         }
 
         body {
@@ -82,7 +83,9 @@
             background: var(--primary-color); color: white; padding: 10px 15px;
             display: flex; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .chat-header h2 { margin: 0; font-size: 18px; }
+        .chat-header h2 { margin: 0; font-size: 18px; flex-grow: 1; text-align: center; }
+        .chat-header .header-btn { background: none; border: none; color: white; font-size: 20px; cursor: pointer; }
+
         #chat-canvas {
             flex-grow: 1; overflow-y: auto; padding: 15px; background-image: url('https://i.pinimg.com/736x/8c/98/99/8c98994518b575bfd8c949e91d20548b.jpg');
         }
@@ -94,33 +97,6 @@
         .bot { background-color: var(--bot-bubble-bg); align-self: flex-end; border-bottom-right-radius: 0; }
         .system { background-color: #fcf8e3; align-self: center; text-align: center; font-size: 0.9em; width: 100%; }
         
-        /* Order Card Bubble */
-        .order-card-bubble {
-            background-color: var(--surface-color);
-            border-radius: 12px;
-            padding: 0;
-            margin: 5px 0 15px 0;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            align-self: center;
-            width: 100%;
-            max-width: 100%;
-        }
-        .order-card-header {
-            padding: 10px 15px;
-            border-bottom: 1px solid #eee;
-            border-top-right-radius: 12px;
-            border-top-left-radius: 12px;
-            color: white;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .order-card-header .id { font-weight: 700; }
-        .order-card-header .date { font-size: 0.9em; }
-        .order-card-body { padding: 15px; font-size: 1.1em; }
-        .order-card-body .client-name { font-weight: 600; margin-bottom: 5px; }
-        .order-card-body .address { font-size: 0.9em; color: #7f8c8d; }
-
         /* Chat Input */
         .chat-input-container {
             display: flex; align-items: center; padding: 10px;
@@ -136,40 +112,107 @@
         }
         #send-btn { color: var(--primary-color); }
         
-        /* Action Menu */
-        #menu-btn-container { position: relative; }
-        #action-menu {
-            position: absolute; bottom: 50px; right: 0;
+        /* Dashboard View */
+        #dashboard-view { height: 100%; }
+        .dashboard-header {
+            background: var(--surface-color);
+            padding: 10px 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .dashboard-header h2 { margin: 0; flex-grow: 1; text-align: center; }
+        .back-to-chat-btn {
+            background: none; border: none; font-size: 20px;
+            color: var(--primary-color); cursor: pointer;
+        }
+        .segmented-control {
+            display: flex;
+            background-color: #e4e4e7;
+            border-radius: 9px;
+            padding: 4px;
+        }
+        .segmented-control button {
+            padding: 6px 12px;
+            border: none;
+            background: transparent;
+            border-radius: 7px;
+            font-weight: 600;
+            color: #52525b;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+        .segmented-control button.active {
             background-color: var(--surface-color);
-            border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            width: 200px; padding: 8px; z-index: 100;
-            display: none; /* Initially hidden */
+            color: var(--primary-color);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
-        #action-menu button {
-            display: block; width: 100%; text-align: right;
-            padding: 10px 12px; font-size: 16px;
-            background: none; border: none; cursor: pointer;
+
+        .dashboard-content {
+            flex-grow: 1;
+            overflow: hidden;
+            position: relative;
         }
-        #action-menu button:hover { background-color: #f5f5f5; }
-        
-        /* Map Overlay */
-        #map-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.7);
-            z-index: 2000; display: none; /* Hidden by default */
-            justify-content: center; align-items: center;
+        .content-pane {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            transition: opacity 0.3s ease;
+            opacity: 0;
+            pointer-events: none;
+            overflow-y: auto;
+            padding: 15px;
+            box-sizing: border-box;
         }
-        #map-container {
-            width: 95%; height: 90%; background: white; border-radius: 12px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3); position: relative;
+        .content-pane.active { opacity: 1; pointer-events: auto; }
+
+        #map-pane { padding: 0; }
+        #dashboard-map { width: 100%; height: 100%; }
+
+        /* Dashboard Order Card */
+        .dash-order-card {
+            background: var(--surface-color);
+            border-radius: 12px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-left: 5px solid; /* Status color is set by JS */
         }
-        #map { width: 100%; height: 100%; border-radius: 12px; }
-        #close-map-btn {
-            position: absolute; top: 10px; right: 10px;
-            width: 30px; height: 30px; line-height: 30px; text-align: center;
-            background: white; border: none; border-radius: 50%;
-            font-size: 18px; cursor: pointer; z-index: 1000;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        .dash-card-header {
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9em;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .dash-card-header .id { font-weight: 700; color: var(--primary-color); }
+        .dash-card-header .status { font-weight: 600; padding: 3px 8px; border-radius: 12px; color: white; font-size: 0.9em; }
+        .dash-card-body { padding: 15px; }
+        .dash-card-body .title { font-size: 1.2em; font-weight: 700; margin-bottom: 5px; }
+        .dash-card-body .address { color: #7f8c8d; }
+
+        /* Container Progress Bar */
+        .progress-bar-container { margin-top: 15px; }
+        .progress-bar-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8em;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        .progress-bar-track {
+            width: 100%;
+            height: 8px;
+            background-color: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background-color: var(--secondary-color);
+            border-radius: 4px;
+            transition: width 0.5s ease-in-out;
         }
     </style>
 </head>
@@ -182,33 +225,43 @@
     </div>
 
     <div id="chat-view" class="view">
-        <div class="chat-header"><h2>צ'אט הזמנות</h2></div>
+        <div class="chat-header">
+            <button class="header-btn" onclick="navigateTo('dashboard')"><i class="fa-solid fa-table-columns"></i></button>
+            <h2>צ'אט הזמנות</h2>
+            <div style="width: 24px;"></div> <!-- Spacer -->
+        </div>
         <div id="chat-canvas" style="display: flex; flex-direction: column;"></div>
         <div class="chat-input-container">
-            <div id="menu-btn-container">
-                <button id="menu-btn" onclick="toggleActionMenu()"><i class="fa-solid fa-plus-circle"></i></button>
-                <div id="action-menu">
-                    <button onclick="showOrdersInChat()"><i class="fa-solid fa-list-check fa-fw"></i> הצג הזמנות</button>
-                    <button onclick="showMapOverlay()"><i class="fa-solid fa-map-location-dot fa-fw"></i> הצג מפה</button>
-                </div>
-            </div>
             <textarea id="message-input" placeholder="הקלד הודעה..." rows="1"></textarea>
             <button id="send-btn"><i class="fa-solid fa-paper-plane"></i></button>
         </div>
     </div>
     
-    <div id="map-overlay">
-        <div id="map-container">
-            <button id="close-map-btn" onclick="hideMapOverlay()">&times;</button>
-            <div id="map"></div>
+    <div id="dashboard-view" class="view">
+        <div class="dashboard-header">
+            <button class="back-to-chat-btn" onclick="navigateTo('chat')"><i class="fa-solid fa-arrow-right"></i></button>
+            <h2>דשבורד הזמנות</h2>
+            <div class="segmented-control">
+                <button id="btn-list" class="active" onclick="switchDashboardView('list')"><i class="fa-solid fa-list"></i> רשימה</button>
+                <button id="btn-map" onclick="switchDashboardView('map')"><i class="fa-solid fa-map-location-dot"></i> מפה</button>
+            </div>
+        </div>
+        <div class="dashboard-content">
+            <div id="list-pane" class="content-pane active">
+                <!-- Order cards will be generated here -->
+            </div>
+            <div id="map-pane" class="content-pane">
+                <div id="dashboard-map"></div>
+            </div>
         </div>
     </div>
+
 
     <script>
     document.addEventListener('DOMContentLoaded', function () {
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwYyJ8dZ1iW1v0W2Yc2bY4a1xY_Xy_3Z2_n2e8f1k3a0f7l3j9p8o7i6t5u4r3e2a1s/exec";
-        let map; 
-        let ordersDataCache = null; // Cache for orders data
+        let dashboardMap; 
+        let dashboardDataCache = null;
 
         // --- Core Functions ---
         async function callAppScript(action, payload = {}) {
@@ -223,28 +276,19 @@
                 return await response.json();
             } catch (error) {
                 console.error('Error calling App Script:', error);
-                addMessage({ html: 'שגיאה בתקשורת עם השרת.', type: 'system' });
                 throw error;
-            } finally {
-                // Remove loading indicator logic here
             }
         }
 
-        function addMessage({ html, type }) {
-            const canvas = document.getElementById('chat-canvas');
-            const bubble = document.createElement('div');
-            bubble.className = `message-bubble ${type}`;
-            bubble.innerHTML = html;
-            canvas.appendChild(bubble);
-            canvas.scrollTop = canvas.scrollHeight;
-        }
-
         // --- Navigation ---
-        function navigateTo(viewName) {
+        window.navigateTo = function(viewName) {
             document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
             const viewElement = document.getElementById(`${viewName}-view`);
             if (viewElement) {
                 viewElement.style.display = 'flex';
+                if (viewName === 'dashboard' && !dashboardDataCache) {
+                    loadDashboardData();
+                }
             }
         }
         window.login = function() {
@@ -257,80 +301,87 @@
             }
         }
 
-        // --- Action Menu ---
-        window.toggleActionMenu = function() {
-            const menu = document.getElementById('action-menu');
-            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-        }
-
-        // --- Features ---
-        const STATUS_STYLES = {
-            'חדשה': { title: 'חדשה', color: 'var(--status-new)'},
-            'בטיפול': { title: 'בטיפול', color: 'var(--status-progress)'},
-            'מוכנה למשלוח': { title: 'מוכנה למשלוח', color: 'var(--status-ready)'},
-            'נשלחה': { title: 'נשלחה', color: 'var(--status-shipped)'},
-            'בוטלה': { title: 'בוטלה', color: 'var(--status-cancelled)'}
+        // --- Dashboard Logic ---
+        const STATUS_DEFINITIONS = {
+            'חדשה': { color: 'var(--status-new)' },
+            'בטיפול': { color: 'var(--status-progress)' },
+            'מוכנה למשלוח': { color: 'var(--status-ready)' },
+            'נשלחה': { color: 'var(--status-shipped)' },
+            'בוטלה': { color: 'var(--status-cancelled)' },
+            'פעיל': { color: 'var(--status-active)' }
         };
 
-        window.showOrdersInChat = async function() {
-            toggleActionMenu(); // Close menu
-            addMessage({ html: 'טוען הזמנות...', type: 'system' });
+        async function loadDashboardData() {
+            const listPane = document.getElementById('list-pane');
+            listPane.innerHTML = '<p style="text-align: center;">טוען נתונים...</p>';
             try {
                 const data = await callAppScript('getDashboardData');
-                ordersDataCache = data.orders; // Cache the data
-                if (ordersDataCache && ordersDataCache.length > 0) {
-                    ordersDataCache.forEach(order => {
-                        const statusStyle = STATUS_STYLES[order.status] || { color: '#7f8c8d' };
-                        const orderCardHtml = `
-                            <div class="order-card-header" style="background-color: ${statusStyle.color};">
-                                <span class="id">${order.id || 'N/A'}</span>
-                                <span class="date">${new Date(order.date).toLocaleDateString('he-IL')}</span>
-                            </div>
-                            <div class="order-card-body">
-                                <div class="client-name">${order.clientName || 'לקוח לא ידוע'}</div>
-                                <div class="address">${order.address || 'כתובת לא צוינה'}</div>
-                            </div>
-                        `;
-                        addMessage({ html: orderCardHtml, type: 'order-card-bubble' });
-                    });
-                } else {
-                    addMessage({ html: 'לא נמצאו הזמנות פעילות.', type: 'system' });
-                }
+                dashboardDataCache = data.orders;
+                renderDashboardList(dashboardDataCache);
+                initializeDashboardMap(dashboardDataCache);
             } catch (error) {
-                addMessage({ html: 'שגיאה בטעינת הזמנות.', type: 'system' });
+                listPane.innerHTML = '<p style="text-align: center;">שגיאה בטעינת הנתונים.</p>';
             }
         }
 
-        window.showMapOverlay = async function() {
-            toggleActionMenu();
-            const overlay = document.getElementById('map-overlay');
-            overlay.style.display = 'flex';
+        function renderDashboardList(orders) {
+            const container = document.getElementById('list-pane');
+            container.innerHTML = '';
+            if (!orders || orders.length === 0) {
+                container.innerHTML = '<p style="text-align: center;">לא נמצאו הזמנות.</p>';
+                return;
+            }
 
-            if (!ordersDataCache) { // Fetch data if not cached
-                try {
-                    const data = await callAppScript('getDashboardData');
-                    ordersDataCache = data.orders;
-                } catch(error) {
-                    alert('לא ניתן לטעון את נתוני המפה');
-                    hideMapOverlay();
-                    return;
+            orders.forEach(order => {
+                const card = document.createElement('div');
+                card.className = 'dash-order-card';
+                
+                const statusInfo = STATUS_DEFINITIONS[order.status] || { color: 'var(--light-gray)' };
+                card.style.borderColor = statusInfo.color;
+
+                let cardBodyHtml = `
+                    <div class="title">${order.type === 'container' ? 'השכרת מכולה' : (order.projectName || 'הזמנה כללית')}</div>
+                    <div class="address">${order.address || 'כתובת לא צוינה'}</div>
+                `;
+
+                // Add container progress bar if applicable
+                if (order.type === 'container' && order.startDate) {
+                    const today = new Date();
+                    const startDate = new Date(order.startDate);
+                    const daysPassed = Math.max(0, Math.round((today - startDate) / (1000 * 60 * 60 * 24)));
+                    const progressPercent = Math.min(100, (daysPassed / 10) * 100);
+
+                    cardBodyHtml += `
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-label">
+                                <span>${startDate.toLocaleDateString('he-IL')}</span>
+                                <span>יום ${daysPassed} מתוך 10</span>
+                            </div>
+                            <div class="progress-bar-track">
+                                <div class="progress-bar-fill" style="width: ${progressPercent}%;"></div>
+                            </div>
+                        </div>
+                    `;
                 }
-            }
-            
-            initializeMap(ordersDataCache);
+
+                card.innerHTML = `
+                    <div class="dash-card-header">
+                        <span class="id">${order.id}</span>
+                        <span class="status" style="background-color: ${statusInfo.color};">${order.status}</span>
+                    </div>
+                    <div class="dash-card-body">${cardBodyHtml}</div>
+                `;
+                container.appendChild(card);
+            });
         }
 
-        window.hideMapOverlay = function() {
-            document.getElementById('map-overlay').style.display = 'none';
-        }
+        function initializeDashboardMap(orders) {
+            if (dashboardMap) dashboardMap.remove();
 
-        function initializeMap(orders) {
-            if (map) map.remove();
-
-            map = L.map('map').setView([31.7683, 35.2137], 7.5); // Center on Israel
+            dashboardMap = L.map('dashboard-map').setView([31.7683, 35.2137], 7.5);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
                 attribution: '© OpenStreetMap contributors © CARTO', maxZoom: 19
-            }).addTo(map);
+            }).addTo(dashboardMap);
 
             const markers = L.markerClusterGroup();
             orders.forEach(order => {
@@ -340,28 +391,29 @@
                     markers.addLayer(marker);
                 }
             });
-            map.addLayer(markers);
+            dashboardMap.addLayer(markers);
             
-            setTimeout(() => map.invalidateSize(), 100); // Critical for rendering in a modal
+            setTimeout(() => dashboardMap.invalidateSize(), 350);
+        }
+
+        window.switchDashboardView = function(view) {
+            document.getElementById('list-pane').classList.toggle('active', view === 'list');
+            document.getElementById('map-pane').classList.toggle('active', view === 'map');
+            document.getElementById('btn-list').classList.toggle('active', view === 'list');
+            document.getElementById('btn-map').classList.toggle('active', view === 'map');
+
+            if (view === 'map' && dashboardMap) {
+                setTimeout(() => dashboardMap.invalidateSize(), 100);
+            }
         }
 
         // --- Init ---
         const clientId = localStorage.getItem('clientId');
         if (clientId) {
-            document.getElementById('clientId').value = clientId;
             navigateTo('chat');
         } else {
             navigateTo('login');
         }
-
-        // Close menu if clicking outside
-        document.addEventListener('click', function(event) {
-            const menu = document.getElementById('action-menu');
-            const menuButton = document.getElementById('menu-btn');
-            if (!menu.contains(event.target) && !menuButton.contains(event.target.parentElement)) {
-                menu.style.display = 'none';
-            }
-        });
     });
     </script>
 </body>
