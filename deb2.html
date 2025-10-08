@@ -1,0 +1,1686 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>מרכז הבקרה - ח.סבן</title>
+    <!-- Icons and Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- LeafletJS for Maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- OneSignal Push Notifications -->
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(function(OneSignal) {
+        OneSignal.init({
+          appId: "546472ac-f9ab-4c6c-beb2-e41c72af9849",
+          safari_web_id: "web.onesignal.auto.6c06a0d2-34ff-4fcc-9e26-5a3b8a4b7b5f",
+          allowLocalhostAsSecureOrigin: true,
+        });
+      });
+    </script>
+
+    <style>
+        :root {
+            --wa-bg: #EFEAE2; --wa-teal-green: #008069; --wa-green: #128C7E; --wa-light-green: #25D366;
+            --wa-outgoing-bubble: #D9FDD3; --wa-incoming-bubble: #FFFFFF;
+            --wa-header-bg: #F0F2F5; --wa-system-bubble: #E2F2FF;
+            --wa-text-primary: #111b21; --wa-text-secondary: #667781;
+            --wa-danger: #d9534f; --wa-warning: #f0ad4e; --wa-info: #5bc0de; --wa-orange: #ff6b35;
+            --wa-purple: #6f42c1; --wa-pink: #e83e8c;
+            --font-family: 'Assistant', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            --radius: 12px;
+            --shadow: 0 2px 10px rgba(0,0,0,0.1);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        * { 
+            box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent; 
+        }
+        
+        html, body { 
+            height: 100%; 
+            margin: 0; 
+            padding: 0; 
+            overflow: hidden; 
+            font-family: var(--font-family); 
+            background-color: var(--wa-teal-green); 
+        }
+        
+        #app-container { 
+            display: flex; 
+            flex-direction: column; 
+            height: 100%; 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background-color: #fff; 
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2); 
+            position: relative; 
+            overflow: hidden; 
+        }
+        
+        .screen { 
+            display: none; 
+            flex-direction: column; 
+            height: 100%; 
+            animation: fadeIn 0.3s; 
+        }
+        
+        .screen.active { 
+            display: flex; 
+        }
+        
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(10px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+
+        /* Login Screen */
+        #login-screen {
+            background: linear-gradient(135deg, var(--wa-teal-green) 0%, var(--wa-green) 100%);
+            justify-content: center; 
+            align-items: center; 
+            padding: 20px;
+        }
+        
+        .login-box { 
+            text-align: center; 
+            width: 100%; 
+            max-width: 340px; 
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+        }
+        
+        .login-box .logo { 
+            width: 100px; 
+            height: 100px; 
+            border-radius: 20px; 
+            margin-bottom: 20px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+            object-fit: cover;
+        }
+        
+        .login-input { 
+            width: 100%; 
+            padding: 16px; 
+            font-size: 1.1rem; 
+            border-radius: var(--radius); 
+            border: 2px solid #e0e0e0; 
+            margin-bottom: 15px; 
+            text-align: center; 
+            transition: var(--transition);
+        }
+        
+        .login-input:focus {
+            border-color: var(--wa-teal-green);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0, 128, 105, 0.1);
+        }
+        
+        .login-button { 
+            width: 100%; 
+            padding: 16px; 
+            border: none; 
+            border-radius: var(--radius); 
+            background: var(--wa-teal-green); 
+            color: #fff; 
+            font-size: 1.2rem; 
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: var(--transition);
+        }
+        
+        .login-button:active { 
+            transform: scale(0.98); 
+        }
+        
+        /* App Header */
+        .app-header { 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+            padding: 10px 15px; 
+            background: var(--wa-header-bg); 
+            flex-shrink: 0; 
+            border-bottom: 1px solid #e0e0e0; 
+        }
+        
+        .avatar { 
+            width: 40px; 
+            height: 40px; 
+            border-radius: 50%; 
+            object-fit: cover; 
+        }
+        
+        .header-info { 
+            flex-grow: 1; 
+            text-align: right; 
+        }
+        
+        .client-name { 
+            font-weight: 600; 
+            color: var(--wa-text-primary); 
+            font-size: 1.1rem; 
+        }
+        
+        .client-status { 
+            font-size: 0.8rem; 
+            color: var(--wa-text-secondary); 
+            display: flex; 
+            align-items: center; 
+            justify-content: flex-end; 
+            gap: 5px; 
+        }
+        
+        .status-dot { 
+            width: 8px; 
+            height: 8px; 
+            background: var(--wa-light-green); 
+            border-radius: 50%; 
+            animation: pulse 2s infinite; 
+        }
+        
+        @keyframes pulse { 
+            0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); } 
+            70% { box-shadow: 0 0 0 10px rgba(37, 211, 102, 0); } 
+            100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); } 
+        }
+        
+        .app-content { 
+            flex-grow: 1; 
+            overflow-y: auto; 
+            background-color: var(--wa-bg); 
+            padding: 15px; 
+            background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); 
+        }
+        
+        .fab { 
+            position: fixed; 
+            bottom: 20px; 
+            left: 20px; 
+            width: 60px; 
+            height: 60px; 
+            background: var(--wa-light-green); 
+            color: #fff; 
+            border-radius: 50%; 
+            border: none; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
+            font-size: 1.5rem; 
+            z-index: 100; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            cursor: pointer; 
+            transition: var(--transition);
+        }
+        
+        .fab:hover { 
+            transform: scale(1.1); 
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3); 
+        }
+        
+        .fab.free-order { 
+            bottom: 90px; 
+            background: var(--wa-orange); 
+        }
+
+        /* Enhanced Dashboard Cards */
+        .order-card { 
+            background: #fff; 
+            border-radius: 16px; 
+            padding: 0;
+            margin-bottom: 15px; 
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: var(--transition);
+            border: 1px solid #e8e8e8;
+        }
+        
+        .order-card:hover { 
+            transform: translateY(-3px); 
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15); 
+        }
+        
+        .order-card-header {
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        }
+        
+        .order-title {
+            font-weight: 700;
+            color: var(--wa-text-primary);
+            font-size: 1.1rem;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .order-badges {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+        
+        .status-badge { 
+            display: inline-flex; 
+            align-items: center;
+            padding: 4px 10px; 
+            border-radius: 12px; 
+            font-size: 0.75rem; 
+            font-weight: 600; 
+            white-space: nowrap;
+        }
+        
+        .status-open { background-color: #e2f2ff; color: #0066cc; }
+        .status-pending { background-color: #fff3cd; color: #856404; }
+        .status-delivered { background-color: #d4edda; color: #155724; }
+        .status-completed { background-color: #d1ecf1; color: #0c5460; }
+        .status-cancelled { background-color: #f8d7da; color: #721c24; }
+        
+        .order-type-badge {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.7rem;
+        }
+        
+        .type-container { background-color: var(--wa-teal-green); }
+        .type-material { background-color: var(--wa-info); }
+        .type-crane { background-color: var(--wa-warning); }
+        
+        .order-card-body {
+            padding: 15px;
+        }
+        
+        .order-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .detail-label {
+            font-size: 0.75rem;
+            color: var(--wa-text-secondary);
+            margin-bottom: 2px;
+        }
+        
+        .detail-value {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--wa-text-primary);
+        }
+        
+        .order-card-map {
+            height: 140px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+            position: relative;
+            background: #f8f9fa;
+        }
+        
+        .map-overlay {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            left: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.3));
+            padding: 10px;
+            color: white;
+            font-size: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .map-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .map-action-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.9);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            color: var(--wa-text-primary);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .map-action-btn:hover {
+            background: white;
+            transform: scale(1.1);
+        }
+        
+        .order-card-footer {
+            padding: 15px;
+            border-top: 1px solid #f0f0f0;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .card-button { 
+            flex: 1; 
+            padding: 10px; 
+            border-radius: 8px; 
+            border: 1px solid var(--wa-teal-green); 
+            background: transparent; 
+            color: var(--wa-teal-green); 
+            cursor: pointer; 
+            font-weight: 600; 
+            transition: var(--transition);
+            font-size: 0.85rem;
+        }
+        
+        .card-button:hover { 
+            background: var(--wa-teal-green); 
+            color: white; 
+        }
+        
+        .card-button.primary {
+            background: var(--wa-teal-green);
+            color: white;
+        }
+        
+        .card-button.primary:hover {
+            background: var(--wa-green);
+        }
+        
+        /* Dashboard Stats */
+        .dashboard-stats { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 10px; 
+            margin-bottom: 15px; 
+        }
+        
+        .stat-card { 
+            background: white; 
+            border-radius: 12px; 
+            padding: 12px; 
+            text-align: center; 
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .stat-value { 
+            font-size: 1.5rem; 
+            font-weight: 700; 
+            color: var(--wa-teal-green); 
+        }
+        
+        .stat-label { 
+            font-size: 0.8rem; 
+            color: var(--wa-text-secondary); 
+            margin-top: 5px; 
+        }
+        
+        /* Quick Actions */
+        .quick-actions { 
+            display: grid; 
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 10px; 
+            margin-bottom: 15px; 
+        }
+        
+        .quick-action-btn { 
+            background: white; 
+            border: 1px solid #e0e0e0; 
+            border-radius: 12px; 
+            padding: 15px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            cursor: pointer; 
+            transition: var(--transition);
+        }
+        
+        .quick-action-btn:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
+            border-color: var(--wa-teal-green); 
+        }
+        
+        .quick-action-icon { 
+            font-size: 1.5rem; 
+            color: var(--wa-teal-green); 
+            margin-bottom: 8px; 
+        }
+        
+        .quick-action-text { 
+            font-size: 0.85rem; 
+            font-weight: 600; 
+            color: var(--wa-text-primary); 
+        }
+        
+        /* Search Bar */
+        .search-container { 
+            position: relative; 
+            margin-bottom: 15px; 
+        }
+        
+        .search-input { 
+            width: 100%; 
+            padding: 12px 40px 12px 15px; 
+            border-radius: 20px; 
+            border: 1px solid #ddd; 
+            font-size: 0.95rem; 
+            background: white;
+            transition: var(--transition);
+        }
+        
+        .search-input:focus {
+            border-color: var(--wa-teal-green);
+            box-shadow: 0 0 0 3px rgba(0, 128, 105, 0.1);
+            outline: none;
+        }
+        
+        .search-icon { 
+            position: absolute; 
+            left: 15px; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            color: var(--wa-text-secondary); 
+        }
+        
+        /* Dashboard Filters */
+        .filters-container { 
+            display: flex; 
+            gap: 8px; 
+            margin-bottom: 15px; 
+            overflow-x: auto; 
+            padding-bottom: 5px; 
+        }
+        
+        .filter-button { 
+            padding: 8px 15px; 
+            border-radius: 20px; 
+            border: 1px solid #ddd; 
+            background: #fff; 
+            font-size: 0.85rem; 
+            white-space: nowrap; 
+            cursor: pointer; 
+            transition: var(--transition);
+        }
+        
+        .filter-button.active { 
+            background: var(--wa-teal-green); 
+            color: #fff; 
+            border-color: var(--wa-teal-green); 
+        }
+        
+        .filter-button:hover { 
+            background: #f0f0f0; 
+        }
+        
+        /* Toast Notifications */
+        .toast { 
+            position: fixed; 
+            top: 20px; 
+            right: 20px; 
+            left: 20px; 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background: #fff; 
+            padding: 12px 15px; 
+            border-radius: var(--radius); 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15); 
+            z-index: 1000; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+            animation: slideDown 0.3s; 
+        }
+        
+        .toast.success { border-right: 4px solid var(--wa-light-green); }
+        .toast.info { border-right: 4px solid var(--wa-info); }
+        .toast.warning { border-right: 4px solid var(--wa-warning); }
+        .toast.error { border-right: 4px solid var(--wa-danger); }
+        
+        .toast-icon { font-size: 1.2rem; }
+        .toast.success .toast-icon { color: var(--wa-light-green); }
+        .toast.info .toast-icon { color: var(--wa-info); }
+        .toast.warning .toast-icon { color: var(--wa-warning); }
+        .toast.error .toast-icon { color: var(--wa-danger); }
+        
+        .toast-content { flex-grow: 1; }
+        .toast-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--wa-text-secondary); }
+        
+        @keyframes slideDown { 
+            from { transform: translateY(-20px); opacity: 0; } 
+            to { transform: translateY(0); opacity: 1; } 
+        }
+        
+        /* Chat Styles */
+        .message-bubble { 
+            max-width: 85%; 
+            padding: 12px 16px; 
+            border-radius: 18px; 
+            line-height: 1.5; 
+            word-wrap: break-word; 
+            box-shadow: 0 1px 1px rgba(0,0,0,0.1); 
+            position: relative; 
+            margin-bottom: 10px; 
+            animation: messageAppear 0.3s ease-out;
+        }
+        
+        @keyframes messageAppear {
+            from {
+                opacity: 0;
+                transform: translateY(10px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        .message-bubble.outgoing { 
+            background: var(--wa-outgoing-bubble); 
+            margin-left: auto; 
+            border-bottom-right-radius: 4px;
+        }
+        
+        .message-bubble.incoming { 
+            background: var(--wa-incoming-bubble); 
+            margin-right: auto; 
+            border-bottom-left-radius: 4px;
+        }
+        
+        .message-bubble.system { 
+            background: var(--wa-system-bubble); 
+            text-align: center; 
+            align-self: center; 
+            font-size: 0.85rem; 
+            max-width: 95%;
+        }
+        
+        .map-in-bubble { 
+            height: 150px; 
+            border-radius: 12px; 
+            margin-top: 8px; 
+            z-index: 1; 
+            border: 1px solid #e0e0e0;
+        }
+
+        .chat-footer { 
+            padding: 10px; 
+            background: var(--wa-header-bg); 
+            display: flex; 
+            align-items: flex-end; 
+            gap: 8px; 
+            position: relative; 
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .chat-input-wrapper { 
+            flex-grow: 1; 
+            background: #fff; 
+            border-radius: 24px; 
+            display: flex; 
+            align-items: center; 
+            padding: 0 10px; 
+            border: 1px solid #e0e0e0;
+            transition: var(--transition);
+        }
+        
+        .chat-input-wrapper:focus-within {
+            border-color: var(--wa-teal-green);
+            box-shadow: 0 0 0 2px rgba(0, 128, 105, 0.1);
+        }
+        
+        .chat-input { 
+            flex-grow: 1; 
+            border: none; 
+            background: transparent; 
+            font-size: 1rem; 
+            resize: none; 
+            padding: 12px 5px; 
+            max-height: 100px; 
+            outline: none; 
+            font-family: var(--font-family); 
+            line-height: 1.4;
+        }
+        
+        .attach-button { 
+            background: transparent; 
+            border: none; 
+            cursor: pointer; 
+            font-size: 1.5rem; 
+            color: var(--wa-text-secondary); 
+            padding: 10px; 
+            transition: var(--transition);
+            border-radius: 50%;
+        }
+        
+        .attach-button:hover { 
+            color: var(--wa-teal-green); 
+            background: rgba(0, 128, 105, 0.1);
+        }
+        
+        .send-button { 
+            background-color: var(--wa-teal-green); 
+            color: #fff; 
+            border-radius: 50%; 
+            width: 48px; 
+            height: 48px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            border: none; 
+            flex-shrink: 0; 
+            font-size: 1.2rem; 
+            cursor: pointer; 
+            transition: var(--transition);
+        }
+        
+        .send-button:hover { 
+            background-color: var(--wa-green); 
+            transform: scale(1.05); 
+        }
+        
+        .send-button:disabled { 
+            background-color: #ccc; 
+            cursor: not-allowed; 
+            transform: none; 
+        }
+        
+        #attachment-menu { 
+            position: absolute; 
+            bottom: calc(100% + 5px); 
+            left: 10px; 
+            background: #fff; 
+            border-radius: 16px; 
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.15); 
+            padding: 10px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 5px; 
+            transform: translateY(10px); 
+            opacity: 0; 
+            pointer-events: none; 
+            transition: var(--transition);
+            z-index: 10; 
+            border: 1px solid #e0e0e0;
+        }
+        
+        #attachment-menu.visible { 
+            transform: translateY(0); 
+            opacity: 1; 
+            pointer-events: auto; 
+        }
+        
+        .attachment-item { 
+            display: flex; 
+            align-items: center; 
+            gap: 15px; 
+            padding: 12px; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            transition: var(--transition);
+        }
+        
+        .attachment-item:hover { 
+            background-color: #f8f9fa; 
+        }
+        
+        .attachment-item .icon-wrapper { 
+            width: 40px; 
+            height: 40px; 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            color: white; 
+            font-size: 18px; 
+        }
+
+        /* Order Details Modal */
+        .order-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        
+        .order-modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow);
+        }
+        
+        .order-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .order-modal-title {
+            color: var(--wa-teal-green);
+            margin: 0;
+            font-size: 1.3rem;
+        }
+        
+        .order-modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--wa-text-secondary);
+        }
+        
+        .order-info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .info-label {
+            font-size: 0.8rem;
+            color: var(--wa-text-secondary);
+            margin-bottom: 5px;
+        }
+        
+        .info-value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--wa-text-primary);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 480px) {
+            .dashboard-stats { grid-template-columns: repeat(3, 1fr); }
+            .quick-actions { grid-template-columns: repeat(2, 1fr); }
+            .order-details { grid-template-columns: 1fr; }
+            .order-card-footer { flex-direction: column; }
+            .order-info-grid { grid-template-columns: 1fr; }
+        }
+
+    </style>
+</head>
+<body>
+    <div id="app-container">
+        <!-- Screens are populated dynamically -->
+        <div id="login-screen" class="screen active"></div>
+        <div id="dashboard-screen" class="screen"></div>
+        <div id="chat-screen" class="screen"></div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const API_URL = "https://saban-proxy.hsaban2025.workers.dev/";
+        let clientData = null, dashboardData = null, mapInstances = {};
+        let refreshInterval = null;
+        let currentFilters = { type: 'all', status: 'all' };
+        let searchQuery = '';
+
+        const screens = { 
+            login: document.getElementById('login-screen'), 
+            dashboard: document.getElementById('dashboard-screen'), 
+            chat: document.getElementById('chat-screen') 
+        };
+
+        // Sample data for demonstration
+        const sampleOrders = [
+            {
+                id: 'CON-001',
+                type: 'container',
+                project: 'בניין רחוב הרצל 12',
+                status: 'active',
+                date: '2024-01-15',
+                dueDate: '2024-02-15',
+                items: 'מכולה 40 רגל',
+                address: 'רחוב הרצל 12, תל אביב',
+                lat: 32.0853,
+                lon: 34.7818,
+                progress: 75,
+                notes: 'מכולה לפרויקט בניין חדש. יש להציב בחניון הצדדי.'
+            },
+            {
+                id: 'MAT-001',
+                type: 'material',
+                project: 'מלון דן פנורמה',
+                status: 'pending',
+                date: '2024-01-20',
+                dueDate: '2024-01-25',
+                items: '10 שקי מלט, 5 מ"ק חול, 3 טון חצץ',
+                address: 'שדרות רוטשילד 80, תל אביב',
+                lat: 32.0640,
+                lon: 34.7740,
+                progress: 30,
+                notes: 'חומרים לשלב הבנייה הראשון. יש לאחסן במחסן האחורי.'
+            },
+            {
+                id: 'CRN-001',
+                type: 'crane',
+                project: 'גשר הכרמל',
+                status: 'completed',
+                date: '2024-01-10',
+                dueDate: '2024-01-12',
+                items: 'מנוף 50 טון',
+                address: 'כביש 4, חיפה',
+                lat: 32.8000,
+                lon: 34.9833,
+                progress: 100,
+                notes: 'מנוף להרמת קורות פלדה. העבודה הושלמה בהצלחה.'
+            }
+        ];
+
+        function navigateTo(screenName) {
+            // Clean up existing maps
+            Object.values(mapInstances).forEach(map => {
+                if (map && typeof map.remove === 'function') {
+                    try {
+                        map.remove();
+                    } catch (e) {
+                        console.log('Error removing map:', e);
+                    }
+                }
+            });
+            mapInstances = {};
+            
+            // Hide all screens and show the active one
+            Object.values(screens).forEach(s => s.classList.remove('active'));
+            if (screens[screenName]) {
+                screens[screenName].classList.add('active');
+            }
+            
+            // Start/stop auto-refresh based on screen
+            if (screenName === 'dashboard') {
+                startAutoRefresh();
+                // Initialize maps after a short delay to ensure DOM is ready
+                setTimeout(initializeDashboardMaps, 300);
+            } else {
+                stopAutoRefresh();
+            }
+        }
+
+        function startAutoRefresh() {
+            if (refreshInterval) clearInterval(refreshInterval);
+            refreshInterval = setInterval(refreshDashboard, 30000);
+        }
+
+        function stopAutoRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+            }
+        }
+
+        async function apiPost(body) {
+            try {
+                // For demo purposes, simulate API calls
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                if (body.action === 'getDashboardData') {
+                    return {
+                        success: true,
+                        data: {
+                            client: {
+                                id: body.clientId,
+                                name: 'ח. סבן בניין',
+                                avatar: 'https://i.postimg.cc/tCpLp7B6/image.png'
+                            },
+                            dashboard: {
+                                orders: sampleOrders
+                            }
+                        }
+                    };
+                }
+                
+                return { success: true, data: {} };
+            } catch (error) {
+                console.error("API Call Error:", error);
+                return { success: false, error: error.message };
+            }
+        }
+        
+        function showToast(message, type = 'info', duration = 4000) {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <div class="toast-icon">
+                    ${type === 'success' ? '<i class="fas fa-check-circle"></i>' : 
+                      type === 'error' ? '<i class="fas fa-exclamation-circle"></i>' :
+                      type === 'warning' ? '<i class="fas fa-exclamation-triangle"></i>' :
+                      '<i class="fas fa-info-circle"></i>'}
+                </div>
+                <div class="toast-content">${message}</div>
+                <button class="toast-close"><i class="fas fa-times"></i></button>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            // Close button
+            toast.querySelector('.toast-close').onclick = () => {
+                toast.remove();
+            };
+            
+            // Auto remove after duration
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.remove();
+                }
+            }, duration);
+        }
+        
+        function renderLogin() {
+             screens.login.innerHTML = `
+                <div class="login-box">
+                    <img src="https://i.postimg.cc/tCpLp7B6/image.png" alt="לוגו" class="logo">
+                    <h2>ח. סבן - מרכז הבקרה</h2>
+                    <p style="color: var(--wa-text-secondary); margin-bottom: 20px;">המערכת החכמה לניהול הזמנות ומכולות</p>
+                    <input type="text" id="client-id-input" class="login-input" placeholder="הקלד מספר לקוח" value="60100">
+                    <button id="login-btn" class="login-button">כניסה למערכת</button>
+                </div>`;
+                
+            const loginBtn = document.getElementById('login-btn');
+            const clientIdInput = document.getElementById('client-id-input');
+            
+            loginBtn.onclick = async () => {
+                const clientId = clientIdInput.value.trim();
+                if (!clientId) {
+                    showToast('אנא הזן מספר לקוח', 'error');
+                    return;
+                }
+                
+                loginBtn.disabled = true;
+                loginBtn.textContent = 'מתחבר...';
+                
+                const response = await apiPost({ action: 'getDashboardData', clientId });
+                if (response && response.success) {
+                    clientData = response.data.client;
+                    dashboardData = response.data.dashboard;
+                    
+                    renderDashboard();
+                    navigateTo('dashboard');
+                    showToast(`ברוך הבא, ${clientData.name}!`, 'success');
+                } else {
+                    showToast(`כניסה נכשלה: ${response.error || 'אנא בדוק את מספר הלקוח.'}`, 'error');
+                }
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'כניסה למערכת';
+            };
+            
+            clientIdInput.onkeypress = (e) => { 
+                if (e.key === 'Enter') loginBtn.click(); 
+            };
+        }
+
+        function renderDashboard() {
+            // Use sample data if no dashboard data
+            const orders = dashboardData?.orders || sampleOrders;
+            
+            // Filter and search orders
+            let filteredOrders = orders.filter(order => {
+                // Type filter
+                if (currentFilters.type !== 'all' && order.type !== currentFilters.type) {
+                    return false;
+                }
+                
+                // Status filter
+                if (currentFilters.status !== 'all' && order.status !== currentFilters.status) {
+                    return false;
+                }
+                
+                // Search query
+                if (searchQuery) {
+                    const query = searchQuery.toLowerCase();
+                    return (
+                        (order.project && order.project.toLowerCase().includes(query)) ||
+                        (order.items && order.items.toLowerCase().includes(query)) ||
+                        (order.address && order.address.toLowerCase().includes(query)) ||
+                        (order.id && order.id.toLowerCase().includes(query))
+                    );
+                }
+                
+                return true;
+            });
+            
+            // Calculate stats
+            const totalOrders = filteredOrders.length;
+            const activeOrders = filteredOrders.filter(o => o.status === 'active').length;
+            const pendingOrders = filteredOrders.filter(o => o.status === 'pending').length;
+            
+            screens.dashboard.innerHTML = `
+                <header class="app-header">
+                    <img src="${clientData?.avatar || 'https://i.postimg.cc/tCpLp7B6/image.png'}" alt="Avatar" class="avatar">
+                    <div class="header-info">
+                        <div class="client-name">${clientData?.name || 'ח. סבן בניין'}</div>
+                        <div class="client-status">
+                            <div class="status-dot"></div>
+                            מחובר למערכת
+                        </div>
+                    </div>
+                    <button onclick="app.logout()" style="background:none; border:none; font-size:1.2rem; color:var(--wa-text-secondary); cursor:pointer;">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </header>
+                <div class="app-content">
+                    <!-- Dashboard Stats -->
+                    <div class="dashboard-stats">
+                        <div class="stat-card">
+                            <div class="stat-value">${totalOrders}</div>
+                            <div class="stat-label">סה"כ הזמנות</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${activeOrders}</div>
+                            <div class="stat-label">פעילות</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${pendingOrders}</div>
+                            <div class="stat-label">ממתינות</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Actions -->
+                    <div class="quick-actions">
+                        <div class="quick-action-btn" onclick="app.navigateTo('chat')">
+                            <div class="quick-action-icon"><i class="fas fa-comments"></i></div>
+                            <div class="quick-action-text">שירות לקוחות</div>
+                        </div>
+                        <div class="quick-action-btn" onclick="app.refreshDashboard()">
+                            <div class="quick-action-icon"><i class="fas fa-rotate"></i></div>
+                            <div class="quick-action-text">רענון נתונים</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Search Bar -->
+                    <div class="search-container">
+                        <input type="text" class="search-input" id="search-input" placeholder="חפש הזמנה, פרויקט או כתובת..." value="${searchQuery}">
+                        <i class="fas fa-search search-icon"></i>
+                    </div>
+                    
+                    <!-- Filters -->
+                    <div class="filters-container">
+                        <button class="filter-button ${currentFilters.type === 'all' ? 'active' : ''}" data-filter="type" data-value="all">הכל</button>
+                        <button class="filter-button ${currentFilters.type === 'container' ? 'active' : ''}" data-filter="type" data-value="container">מכולות</button>
+                        <button class="filter-button ${currentFilters.type === 'material' ? 'active' : ''}" data-filter="type" data-value="material">חומרים</button>
+                        <button class="filter-button ${currentFilters.type === 'crane' ? 'active' : ''}" data-filter="type" data-value="crane">מנופים</button>
+                    </div>
+                    
+                    <div class="filters-container">
+                        <button class="filter-button ${currentFilters.status === 'all' ? 'active' : ''}" data-filter="status" data-value="all">כל הסטטוסים</button>
+                        <button class="filter-button ${currentFilters.status === 'active' ? 'active' : ''}" data-filter="status" data-value="active">פעיל</button>
+                        <button class="filter-button ${currentFilters.status === 'pending' ? 'active' : ''}" data-filter="status" data-value="pending">ממתין</button>
+                        <button class="filter-button ${currentFilters.status === 'completed' ? 'active' : ''}" data-filter="status" data-value="completed">הושלם</button>
+                    </div>
+                    
+                    <!-- Orders Display -->
+                    <div id="orders-container">
+                        ${filteredOrders.length > 0 ? 
+                            filteredOrders.map(order => renderOrderCard(order)).join('') 
+                            : `
+                            <div style="text-align: center; padding: 40px 20px; color: var(--wa-text-secondary);">
+                                <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;"></i>
+                                <p>לא נמצאו הזמנות התואמות לחיפוש שלך</p>
+                                <button class="card-button" onclick="app.clearFilters()" style="margin-top: 15px;">נקה חיפוש</button>
+                            </div>
+                        `}
+                    </div>
+                </div>
+                
+                <!-- Floating Action Buttons -->
+                <button class="fab" onclick="app.navigateTo('chat')">
+                    <i class="fas fa-comment"></i>
+                </button>
+            `;
+            
+            // Add event listeners
+            const searchInput = document.getElementById('search-input');
+            if (searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    searchQuery = e.target.value;
+                    renderDashboard();
+                });
+            }
+            
+            document.querySelectorAll('.filter-button').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const filterType = e.target.dataset.filter;
+                    const filterValue = e.target.dataset.value;
+                    currentFilters[filterType] = filterValue;
+                    renderDashboard();
+                });
+            });
+        }
+        
+        function renderOrderCard(order) {
+            const statusMap = {
+                'active': { text: 'פעיל', class: 'status-open' },
+                'pending': { text: 'ממתין', class: 'status-pending' },
+                'completed': { text: 'הושלם', class: 'status-completed' }
+            };
+            
+            const typeMap = {
+                'container': { text: 'מכולה', class: 'type-container', icon: 'fas fa-box' },
+                'material': { text: 'חומרים', class: 'type-material', icon: 'fas fa-pallet' },
+                'crane': { text: 'מנוף', class: 'type-crane', icon: 'fas fa-crane' }
+            };
+            
+            const status = statusMap[order.status] || { text: order.status, class: 'status-open' };
+            const type = typeMap[order.type] || { text: order.type, class: 'type-container', icon: 'fas fa-box' };
+            
+            const orderDate = order.date ? new Date(order.date).toLocaleDateString('he-IL') : 'לא צוין';
+            const dueDate = order.dueDate ? new Date(order.dueDate).toLocaleDateString('he-IL') : 'לא צוין';
+            
+            return `
+                <div class="order-card" data-order-id="${order.id}">
+                    <div class="order-card-header">
+                        <div class="order-title">
+                            <i class="${type.icon}" style="color: var(--wa-teal-green);"></i>
+                            ${order.project}
+                        </div>
+                        <div class="order-badges">
+                            <span class="status-badge ${status.class}">${status.text}</span>
+                            <div class="order-type-badge ${type.class}">
+                                <i class="${type.icon}" style="font-size: 0.7rem;"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="order-card-body">
+                        <div class="order-details">
+                            <div class="detail-item">
+                                <span class="detail-label">מספר הזמנה</span>
+                                <span class="detail-value">#${order.id}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">תאריך הזמנה</span>
+                                <span class="detail-value">${orderDate}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">פריטים</span>
+                                <span class="detail-value">${order.items}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">תאריך יעד</span>
+                                <span class="detail-value">${dueDate}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <span class="detail-label">כתובת</span>
+                            <span class="detail-value">${order.address}</span>
+                        </div>
+                        
+                        ${order.lat && order.lon ? `
+                            <div class="order-card-map" id="map-${order.id}">
+                                <div class="map-overlay">
+                                    <span>${order.address}</span>
+                                    <div class="map-actions">
+                                        <button class="map-action-btn" onclick="app.zoomToLocation('${order.id}', ${order.lat}, ${order.lon})">
+                                            <i class="fas fa-search-plus"></i>
+                                        </button>
+                                        <button class="map-action-btn" onclick="app.openInMaps(${order.lat}, ${order.lon})">
+                                            <i class="fas fa-external-link-alt"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="order-card-footer">
+                        <button class="card-button" onclick="app.viewOrderDetails('${order.id}')">
+                            <i class="fas fa-info-circle"></i> פרטים
+                        </button>
+                        <button class="card-button primary" onclick="app.contactAboutOrder('${order.id}')">
+                            <i class="fas fa-comment"></i> צור קשר
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function initializeDashboardMaps() {
+            const orders = dashboardData?.orders || sampleOrders;
+            
+            orders.forEach(order => {
+                if (order.lat && order.lon) {
+                    setTimeout(() => {
+                        initMap(`map-${order.id}`, order.lat, order.lon, order.address);
+                    }, 100);
+                }
+            });
+        }
+        
+        function initMap(elementId, lat, lng, title) {
+            const mapElement = document.getElementById(elementId);
+            if (!mapElement || mapInstances[elementId]) return;
+            
+            try {
+                const map = L.map(elementId, {
+                    zoomControl: false,
+                    dragging: false,
+                    scrollWheelZoom: false,
+                    doubleClickZoom: false,
+                    boxZoom: false
+                }).setView([lat, lng], 15);
+                
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; OpenStreetMap contributors'
+                }).addTo(map);
+                
+                L.marker([lat, lng]).addTo(map)
+                    .bindPopup(title);
+                
+                mapInstances[elementId] = map;
+                
+                // Fix map size
+                setTimeout(() => {
+                    map.invalidateSize();
+                }, 200);
+            } catch (error) {
+                console.error('Error initializing map:', error);
+            }
+        }
+        
+        function renderChat() {
+            screens.chat.innerHTML = `
+                <header class="app-header">
+                    <button onclick="app.navigateTo('dashboard')" style="background:none; border:none; font-size:1.2rem; cursor:pointer; color:var(--wa-text-primary);">
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                    <div class="header-info">
+                        <div class="client-name">שירות לקוחות</div>
+                        <div class="client-status">
+                            <div class="status-dot"></div>
+                            מחובר
+                        </div>
+                    </div>
+                    <img src="https://i.postimg.cc/tCpLp7B6/image.png" alt="Avatar" class="avatar">
+                </header>
+                
+                <div class="app-content" id="chat-messages" style="display:flex; flex-direction:column; padding:15px; gap: 10px;">
+                    <!-- Messages will be added here dynamically -->
+                </div>
+                
+                <div class="chat-footer">
+                    <div id="attachment-menu">
+                        <div class="attachment-item" onclick="app.attachFile('image')">
+                            <div class="icon-wrapper" style="background: var(--wa-light-green);">
+                                <i class="fas fa-image"></i>
+                            </div>
+                            <span>תמונה</span>
+                        </div>
+                        <div class="attachment-item" onclick="app.attachFile('document')">
+                            <div class="icon-wrapper" style="background: var(--wa-info);">
+                                <i class="fas fa-file"></i>
+                            </div>
+                            <span>מסמך</span>
+                        </div>
+                        <div class="attachment-item" onclick="app.shareLocation()">
+                            <div class="icon-wrapper" style="background: var(--wa-warning);">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <span>מיקום</span>
+                        </div>
+                    </div>
+                    
+                    <div class="chat-input-wrapper">
+                        <button class="attach-button" id="attach-btn">
+                            <i class="fas fa-paperclip"></i>
+                        </button>
+                        <textarea class="chat-input" id="chat-input" placeholder="הקלד הודעה..." rows="1"></textarea>
+                    </div>
+                    <button class="send-button" id="send-btn">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            `;
+            
+            initializeChat();
+            
+            // Add welcome message
+            setTimeout(() => {
+                addChatMessage('system', 'ברוך הבא לשירות הלקוחות של ח.סבן! כיצד אוכל לעזור לך היום?');
+                
+                // Add quick suggestions
+                setTimeout(() => {
+                    addChatMessage('incoming', `
+                        <div style="margin-bottom: 10px;">אני יכול לעזור עם:</div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                            <div class="suggestion-item" onclick="app.sendSuggestion('הזמנה חדשה')" style="background: var(--wa-outgoing-bubble); padding: 8px 12px; border-radius: 18px; cursor: pointer; font-size: 0.9rem;">הזמנה חדשה</div>
+                            <div class="suggestion-item" onclick="app.sendSuggestion('מעקב אחר הזמנה')" style="background: var(--wa-outgoing-bubble); padding: 8px 12px; border-radius: 18px; cursor: pointer; font-size: 0.9rem;">מעקב הזמנה</div>
+                            <div class="suggestion-item" onclick="app.sendSuggestion('דיווח על תקלה')" style="background: var(--wa-outgoing-bubble); padding: 8px 12px; border-radius: 18px; cursor: pointer; font-size: 0.9rem;">דיווח תקלה</div>
+                        </div>
+                    `);
+                }, 1000);
+            }, 500);
+        }
+        
+        function initializeChat() {
+            const chatInput = document.getElementById('chat-input');
+            const sendBtn = document.getElementById('send-btn');
+            const attachBtn = document.getElementById('attach-btn');
+            const attachmentMenu = document.getElementById('attachment-menu');
+            
+            if (!chatInput || !sendBtn) return;
+            
+            chatInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+            });
+            
+            chatInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendChatMessage();
+                }
+            });
+            
+            sendBtn.onclick = sendChatMessage;
+            
+            if (attachBtn) {
+                attachBtn.onclick = () => {
+                    if (attachmentMenu) {
+                        attachmentMenu.classList.toggle('visible');
+                    }
+                };
+            }
+        }
+        
+        function addChatMessage(type, content) {
+            const chatMessages = document.getElementById('chat-messages');
+            if (!chatMessages) return;
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message-bubble ${type}`;
+            
+            if (type === 'system') {
+                messageDiv.innerHTML = `<i class="fas fa-robot"></i> ${content}`;
+            } else {
+                messageDiv.innerHTML = content;
+            }
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        function sendChatMessage() {
+            const chatInput = document.getElementById('chat-input');
+            if (!chatInput) return;
+            
+            const message = chatInput.value.trim();
+            if (!message) return;
+            
+            addChatMessage('outgoing', message);
+            chatInput.value = '';
+            chatInput.style.height = 'auto';
+            
+            // Simulate AI response
+            setTimeout(() => {
+                const response = generateAIResponse(message);
+                addChatMessage('incoming', response);
+            }, 1000);
+        }
+        
+        function generateAIResponse(message) {
+            if (message.includes('הזמנה') || message.includes('מכולה') || message.includes('חומר')) {
+                return 'אשמח לעזור עם ההזמנה שלך. איזה סוג הזמנה אתה צריך?';
+            } else if (message.includes('מחיר') || message.includes('עלות')) {
+                return 'אשמח לספק מידע על מחירים. איזה מוצר או שירות אתה צריך?';
+            } else if (message.includes('תקלה') || message.includes('בעיה')) {
+                return 'אני מצטער לשמוע שיש תקלה. אנא פרט מה הבעיה ואוכל להעביר אותה לצוות הטכני.';
+            } else {
+                return 'תודה על הפנייה. נציג שירות ישוב אליך בהקדם.';
+            }
+        }
+
+        function showOrderDetails(orderId) {
+            const orders = dashboardData?.orders || sampleOrders;
+            const order = orders.find(o => o.id === orderId);
+            
+            if (!order) {
+                showToast('הזמנה לא נמצאה', 'error');
+                return;
+            }
+            
+            const statusMap = {
+                'active': 'פעיל',
+                'pending': 'ממתין', 
+                'completed': 'הושלם'
+            };
+            
+            const typeMap = {
+                'container': 'מכולה',
+                'material': 'חומרים',
+                'crane': 'מנוף'
+            };
+            
+            const modal = document.createElement('div');
+            modal.className = 'order-modal';
+            modal.innerHTML = `
+                <div class="order-modal-content">
+                    <div class="order-modal-header">
+                        <h3 class="order-modal-title">פרטי הזמנה #${order.id}</h3>
+                        <button class="order-modal-close">&times;</button>
+                    </div>
+                    
+                    <div class="order-info-grid">
+                        <div class="info-item">
+                            <span class="info-label">פרויקט</span>
+                            <span class="info-value">${order.project}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">סוג הזמנה</span>
+                            <span class="info-value">${typeMap[order.type] || order.type}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">סטטוס</span>
+                            <span class="info-value">${statusMap[order.status] || order.status}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">מספר הזמנה</span>
+                            <span class="info-value">#${order.id}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">תאריך הזמנה</span>
+                            <span class="info-value">${new Date(order.date).toLocaleDateString('he-IL')}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">תאריך יעד</span>
+                            <span class="info-value">${new Date(order.dueDate).toLocaleDateString('he-IL')}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="info-item" style="margin-bottom: 15px;">
+                        <span class="info-label">פריטים</span>
+                        <span class="info-value">${order.items}</span>
+                    </div>
+                    
+                    <div class="info-item" style="margin-bottom: 15px;">
+                        <span class="info-label">כתובת</span>
+                        <span class="info-value">${order.address}</span>
+                    </div>
+                    
+                    ${order.notes ? `
+                        <div class="info-item" style="margin-bottom: 20px;">
+                            <span class="info-label">הערות</span>
+                            <span class="info-value">${order.notes}</span>
+                        </div>
+                    ` : ''}
+                    
+                    ${order.lat && order.lon ? `
+                        <div class="order-card-map" id="modal-map-${order.id}" style="height: 200px; margin-bottom: 20px;">
+                            <div class="map-overlay">
+                                <span>${order.address}</span>
+                                <div class="map-actions">
+                                    <button class="map-action-btn" onclick="app.zoomToLocation('modal-map-${order.id}', ${order.lat}, ${order.lon})">
+                                        <i class="fas fa-search-plus"></i>
+                                    </button>
+                                    <button class="map-action-btn" onclick="app.openInMaps(${order.lat}, ${order.lon})">
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    <div style="display: flex; gap: 10px;">
+                        <button class="card-button primary" style="flex: 1;" onclick="app.contactAboutOrder('${order.id}')">
+                            <i class="fas fa-comment"></i> צור קשר
+                        </button>
+                        <button class="card-button" style="flex: 1;" onclick="this.closest('.order-modal').remove()">
+                            <i class="fas fa-times"></i> סגור
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Initialize map in modal
+            if (order.lat && order.lon) {
+                setTimeout(() => {
+                    initMap(`modal-map-${order.id}`, order.lat, order.lon, order.address);
+                }, 100);
+            }
+            
+            // Close modal
+            modal.querySelector('.order-modal-close').onclick = () => {
+                modal.remove();
+            };
+            
+            // Close on background click
+            modal.onclick = (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            };
+        }
+
+        // Global app object with all functions
+        window.app = {
+            navigateTo,
+            refreshDashboard: function() {
+                showToast('מעדכן נתונים...', 'info');
+                setTimeout(() => {
+                    renderDashboard();
+                    showToast('הנתונים עודכנו', 'success', 2000);
+                }, 1000);
+            },
+            logout: function() {
+                clientData = null;
+                dashboardData = null;
+                stopAutoRefresh();
+                navigateTo('login');
+                showToast('התנתקת מהמערכת', 'info');
+            },
+            clearFilters: function() {
+                currentFilters = { type: 'all', status: 'all' };
+                searchQuery = '';
+                renderDashboard();
+            },
+            zoomToLocation: function(elementId, lat, lng) {
+                const map = mapInstances[elementId];
+                if (map) {
+                    map.setView([lat, lng], 17);
+                }
+            },
+            openInMaps: function(lat, lng) {
+                const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+                window.open(url, '_blank');
+            },
+            viewOrderDetails: showOrderDetails,
+            contactAboutOrder: function(orderId) {
+                navigateTo('chat');
+                setTimeout(() => {
+                    addChatMessage('outgoing', `אני מעוניין במידע על ההזמנה #${orderId}`);
+                    setTimeout(() => {
+                        addChatMessage('incoming', `כמובן, אני יכול לעזור עם ההזמנה #${orderId}. מה תרצה לדעת?`);
+                    }, 1000);
+                }, 500);
+            },
+            attachFile: function(type) {
+                showToast(`מצרף ${type === 'image' ? 'תמונה' : 'מסמך'}...`, 'info');
+            },
+            shareLocation: function() {
+                if (navigator.geolocation) {
+                    showToast('מאתר מיקום...', 'info');
+                    navigator.geolocation.getCurrentPosition(
+                        position => {
+                            const lat = position.coords.latitude;
+                            const lng = position.coords.longitude;
+                            addChatMessage('outgoing', `שיתוף מיקום: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+                            showToast('מיקום שותף בהצלחה', 'success');
+                        },
+                        error => {
+                            showToast('לא ניתן לאחזר מיקום', 'error');
+                        }
+                    );
+                } else {
+                    showToast('הדפדפן לא תומך במיקום', 'error');
+                }
+            },
+            sendSuggestion: function(text) {
+                const chatInput = document.getElementById('chat-input');
+                if (chatInput) {
+                    chatInput.value = text;
+                    chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    sendChatMessage();
+                }
+            }
+        };
+
+        // Initialize the app
+        renderLogin();
+    });
+    </script>
+</body>
+</html>
