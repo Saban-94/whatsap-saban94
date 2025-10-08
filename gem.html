@@ -193,15 +193,99 @@
         const cartBadge = document.getElementById('cart-badge');
         const cartItemsContainer = document.getElementById('cart-items-container');
 
-        async function callAppScript(action, payload = {}) { /* ... existing code ... */ }
+        // [FIX] More robust communication function with better error handling
+        async function callAppScript(action, payload = {}) {
+            console.log(`=> Request: [${action}]`);
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action, ...payload }),
+                    headers: { 'Content-Type': 'application/json' }
+                });
 
-        window.openProductSearch = async function() { /* ... existing code ... */ }
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error(`Network error! Status: ${response.status}`, errorText);
+                    throw new Error(`שגיאת רשת! ודא שכתובת ה-URL נכונה והפריסה פעילה.`);
+                }
+
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.includes("application/json")) {
+                    const data = await response.json();
+                    console.log(`<= Response for [${action}]`, data);
+                    if (data.success === false) {
+                        console.error(`Server Error for [${action}]: ${data.error}`);
+                    }
+                    return data;
+                } else {
+                    const textData = await response.text();
+                    console.error("Received non-JSON response from server:", textData);
+                    throw new Error("שרת החזיר תשובה בפורמט לא תקין.");
+                }
+            } catch (error) {
+                console.error(`Critical fetch error for [${action}]: ${error.message}`, error);
+                throw error;
+            }
+        }
+
+        window.openProductSearch = async function() {
+            searchModal.classList.add('visible');
+            if (!isCatalogLoaded) {
+                resultsContainer.innerHTML = `<div class="loader">טוען קטלוג...</div>`;
+                try {
+                    const response = await callAppScript('getProductCatalog');
+                    if (response.success && Array.isArray(response.catalog)) {
+                        productCatalog = response.catalog;
+                        isCatalogLoaded = true;
+                        renderProductResults(productCatalog);
+                    } else {
+                        resultsContainer.innerHTML = `<div class="loader">שגיאה בטעינת הקטלוג.</div>`;
+                    }
+                } catch (e) {
+                    resultsContainer.innerHTML = `<div class="loader">${e.message}</div>`;
+                }
+            }
+        }
+
         window.closeProductSearch = () => searchModal.classList.remove('visible');
         
-        searchInput.addEventListener('input', () => { /* ... existing code ... */ });
-        function renderProductResults(products) { /* ... existing code ... */ }
+        // [FIX] Reliable click handling using Event Delegation
+        resultsContainer.addEventListener('click', (event) => {
+            const card = event.target.closest('.product-card');
+            if (card && card.dataset.sku) {
+                openProductDetail(card.dataset.sku);
+            }
+        });
 
-        window.openProductDetail = function(sku) {
+        searchInput.addEventListener('input', () => {
+             if (!isCatalogLoaded) return;
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            const filteredProducts = productCatalog.filter(p => 
+                (p.name && p.name.toLowerCase().includes(searchTerm)) ||
+                (p.sku && p.sku.toString().toLowerCase().includes(searchTerm)) ||
+                (p.keywords && p.keywords.toLowerCase().includes(searchTerm))
+            );
+            renderProductResults(filteredProducts);
+        });
+        
+        // [FIX] Using data-sku instead of onclick
+        function renderProductResults(products) {
+            if (products.length === 0) {
+                resultsContainer.innerHTML = `<div class="loader">לא נמצאו מוצרים תואמים.</div>`;
+                return;
+            }
+            resultsContainer.innerHTML = products.map(p => `
+                <div class="product-card" data-sku="${p.sku}">
+                    <img src="${p.image}" alt="${p.name}" onerror="this.src='https://placehold.co/80x80/e2e8f0/64748b?text=תמונה'">
+                    <div class="product-info">
+                        <h3>${p.name || 'שם חסר'}</h3>
+                        <div class="sku">מק"ט: ${p.sku || 'לא ידוע'}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openProductDetail(sku) {
             const product = productCatalog.find(p => p.sku == sku);
             if (!product) return;
             
@@ -326,14 +410,6 @@
             messageInput.focus();
         }
     });
-
-    // Dummy functions for snippets to work
-    async function callAppScript(action, payload = {}) {
-        console.log(`Calling ${action}`);
-        if(action === 'getProductCatalog') return {success: true, catalog: []};
-        return {success: true};
-    }
-    function renderProductResults(products) {}
     </script>
 </body>
 </html>
