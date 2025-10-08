@@ -339,10 +339,6 @@
             margin-top: 10px;
             position: relative;
             background: #f8f9fa;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--wa-text-secondary);
         }
         
         .map-overlay {
@@ -772,103 +768,86 @@
             font-size: 18px; 
         }
 
-        /* File upload preview */
-        .file-preview { 
-            max-width: 200px; 
-            border-radius: 12px; 
-            margin-top: 8px; 
-            border: 1px solid #e0e0e0;
-        }
-        
-        .file-link { 
-            color: var(--wa-teal-green); 
-            text-decoration: none; 
-            font-weight: 600; 
-            display: inline-flex;
+        /* Order Details Modal */
+        .order-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
             align-items: center;
-            gap: 5px;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
         }
         
-        .file-link:hover { 
-            text-decoration: underline; 
-        }
-
-        /* Loading animation */
-        .typing-indicator { 
-            display: inline-block; 
-        }
-        
-        .typing-dot { 
-            display: inline-block; 
-            width: 8px; 
-            height: 8px; 
-            border-radius: 50%; 
-            background-color: var(--wa-text-secondary); 
-            margin: 0 2px; 
-            animation: typingAnimation 1.4s infinite ease-in-out; 
-        }
-        
-        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
-        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
-        
-        @keyframes typingAnimation {
-            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
-            40% { transform: scale(1); opacity: 1; }
-        }
-        
-        /* AI Product Recognition */
-        .product-recognition {
+        .order-modal-content {
             background: white;
-            border-radius: 12px;
-            padding: 15px;
-            margin: 10px 0;
-            border: 2px solid var(--wa-light-green);
+            border-radius: 16px;
+            padding: 20px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
             box-shadow: var(--shadow);
         }
         
-        .recognition-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 10px;
-            color: var(--wa-teal-green);
-            font-weight: 600;
-        }
-        
-        .recognized-products {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        
-        .product-item {
+        .order-modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px;
-            background: #f8f9fa;
-            border-radius: 8px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e0e0e0;
         }
         
-        .product-name {
-            font-weight: 600;
+        .order-modal-title {
+            color: var(--wa-teal-green);
+            margin: 0;
+            font-size: 1.3rem;
         }
         
-        .product-quantity {
-            background: var(--wa-teal-green);
-            color: white;
-            padding: 4px 8px;
-            border-radius: 12px;
+        .order-modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--wa-text-secondary);
+        }
+        
+        .order-info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .info-label {
             font-size: 0.8rem;
-            font-weight: 600;
+            color: var(--wa-text-secondary);
+            margin-bottom: 5px;
         }
         
+        .info-value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--wa-text-primary);
+        }
+
         /* Responsive Design */
         @media (max-width: 480px) {
             .dashboard-stats { grid-template-columns: repeat(3, 1fr); }
             .quick-actions { grid-template-columns: repeat(2, 1fr); }
             .order-details { grid-template-columns: 1fr; }
             .order-card-footer { flex-direction: column; }
+            .order-info-grid { grid-template-columns: 1fr; }
         }
 
     </style>
@@ -908,7 +887,8 @@
                 address: 'רחוב הרצל 12, תל אביב',
                 lat: 32.0853,
                 lon: 34.7818,
-                progress: 75
+                progress: 75,
+                notes: 'מכולה לפרויקט בניין חדש. יש להציב בחניון הצדדי.'
             },
             {
                 id: 'MAT-001',
@@ -917,11 +897,12 @@
                 status: 'pending',
                 date: '2024-01-20',
                 dueDate: '2024-01-25',
-                items: '10 שקי מלט, 5 מ"ק חול',
-                address: 'שדרות רoth 80, חיפה',
-                lat: 32.7940,
-                lon: 34.9896,
-                progress: 30
+                items: '10 שקי מלט, 5 מ"ק חול, 3 טון חצץ',
+                address: 'שדרות רוטשילד 80, תל אביב',
+                lat: 32.0640,
+                lon: 34.7740,
+                progress: 30,
+                notes: 'חומרים לשלב הבנייה הראשון. יש לאחסן במחסן האחורי.'
             },
             {
                 id: 'CRN-001',
@@ -934,7 +915,8 @@
                 address: 'כביש 4, חיפה',
                 lat: 32.8000,
                 lon: 34.9833,
-                progress: 100
+                progress: 100,
+                notes: 'מנוף להרמת קורות פלדה. העבודה הושלמה בהצלחה.'
             }
         ];
 
@@ -969,7 +951,7 @@
 
         function startAutoRefresh() {
             if (refreshInterval) clearInterval(refreshInterval);
-            refreshInterval = setInterval(refreshDashboard, 30000); // Refresh every 30 seconds
+            refreshInterval = setInterval(refreshDashboard, 30000);
         }
 
         function stopAutoRefresh() {
@@ -1124,7 +1106,7 @@
                             מחובר למערכת
                         </div>
                     </div>
-                    <button onclick="logout()" style="background:none; border:none; font-size:1.2rem; color:var(--wa-text-secondary); cursor:pointer;">
+                    <button onclick="app.logout()" style="background:none; border:none; font-size:1.2rem; color:var(--wa-text-secondary); cursor:pointer;">
                         <i class="fas fa-sign-out-alt"></i>
                     </button>
                 </header>
@@ -1147,11 +1129,11 @@
                     
                     <!-- Quick Actions -->
                     <div class="quick-actions">
-                        <div class="quick-action-btn" onclick="navigateTo('chat')">
+                        <div class="quick-action-btn" onclick="app.navigateTo('chat')">
                             <div class="quick-action-icon"><i class="fas fa-comments"></i></div>
                             <div class="quick-action-text">שירות לקוחות</div>
                         </div>
-                        <div class="quick-action-btn" onclick="refreshDashboard()">
+                        <div class="quick-action-btn" onclick="app.refreshDashboard()">
                             <div class="quick-action-icon"><i class="fas fa-rotate"></i></div>
                             <div class="quick-action-text">רענון נתונים</div>
                         </div>
@@ -1186,14 +1168,14 @@
                             <div style="text-align: center; padding: 40px 20px; color: var(--wa-text-secondary);">
                                 <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;"></i>
                                 <p>לא נמצאו הזמנות התואמות לחיפוש שלך</p>
-                                <button class="card-button" onclick="clearFilters()" style="margin-top: 15px;">נקה חיפוש</button>
+                                <button class="card-button" onclick="app.clearFilters()" style="margin-top: 15px;">נקה חיפוש</button>
                             </div>
                         `}
                     </div>
                 </div>
                 
                 <!-- Floating Action Buttons -->
-                <button class="fab" onclick="navigateTo('chat')">
+                <button class="fab" onclick="app.navigateTo('chat')">
                     <i class="fas fa-comment"></i>
                 </button>
             `;
@@ -1281,10 +1263,10 @@
                                 <div class="map-overlay">
                                     <span>${order.address}</span>
                                     <div class="map-actions">
-                                        <button class="map-action-btn" onclick="zoomToLocation('${order.id}', ${order.lat}, ${order.lon})">
+                                        <button class="map-action-btn" onclick="app.zoomToLocation('${order.id}', ${order.lat}, ${order.lon})">
                                             <i class="fas fa-search-plus"></i>
                                         </button>
-                                        <button class="map-action-btn" onclick="openInMaps(${order.lat}, ${order.lon})">
+                                        <button class="map-action-btn" onclick="app.openInMaps(${order.lat}, ${order.lon})">
                                             <i class="fas fa-external-link-alt"></i>
                                         </button>
                                     </div>
@@ -1294,10 +1276,10 @@
                     </div>
                     
                     <div class="order-card-footer">
-                        <button class="card-button" onclick="viewOrderDetails('${order.id}')">
+                        <button class="card-button" onclick="app.viewOrderDetails('${order.id}')">
                             <i class="fas fa-info-circle"></i> פרטים
                         </button>
-                        <button class="card-button primary" onclick="contactAboutOrder('${order.id}')">
+                        <button class="card-button primary" onclick="app.contactAboutOrder('${order.id}')">
                             <i class="fas fa-comment"></i> צור קשר
                         </button>
                     </div>
@@ -1351,7 +1333,7 @@
         function renderChat() {
             screens.chat.innerHTML = `
                 <header class="app-header">
-                    <button onclick="navigateTo('dashboard')" style="background:none; border:none; font-size:1.2rem; cursor:pointer; color:var(--wa-text-primary);">
+                    <button onclick="app.navigateTo('dashboard')" style="background:none; border:none; font-size:1.2rem; cursor:pointer; color:var(--wa-text-primary);">
                         <i class="fas fa-arrow-right"></i>
                     </button>
                     <div class="header-info">
@@ -1370,19 +1352,19 @@
                 
                 <div class="chat-footer">
                     <div id="attachment-menu">
-                        <div class="attachment-item" onclick="attachFile('image')">
+                        <div class="attachment-item" onclick="app.attachFile('image')">
                             <div class="icon-wrapper" style="background: var(--wa-light-green);">
                                 <i class="fas fa-image"></i>
                             </div>
                             <span>תמונה</span>
                         </div>
-                        <div class="attachment-item" onclick="attachFile('document')">
+                        <div class="attachment-item" onclick="app.attachFile('document')">
                             <div class="icon-wrapper" style="background: var(--wa-info);">
                                 <i class="fas fa-file"></i>
                             </div>
                             <span>מסמך</span>
                         </div>
-                        <div class="attachment-item" onclick="shareLocation()">
+                        <div class="attachment-item" onclick="app.shareLocation()">
                             <div class="icon-wrapper" style="background: var(--wa-warning);">
                                 <i class="fas fa-map-marker-alt"></i>
                             </div>
@@ -1407,6 +1389,18 @@
             // Add welcome message
             setTimeout(() => {
                 addChatMessage('system', 'ברוך הבא לשירות הלקוחות של ח.סבן! כיצד אוכל לעזור לך היום?');
+                
+                // Add quick suggestions
+                setTimeout(() => {
+                    addChatMessage('incoming', `
+                        <div style="margin-bottom: 10px;">אני יכול לעזור עם:</div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                            <div class="suggestion-item" onclick="app.sendSuggestion('הזמנה חדשה')" style="background: var(--wa-outgoing-bubble); padding: 8px 12px; border-radius: 18px; cursor: pointer; font-size: 0.9rem;">הזמנה חדשה</div>
+                            <div class="suggestion-item" onclick="app.sendSuggestion('מעקב אחר הזמנה')" style="background: var(--wa-outgoing-bubble); padding: 8px 12px; border-radius: 18px; cursor: pointer; font-size: 0.9rem;">מעקב הזמנה</div>
+                            <div class="suggestion-item" onclick="app.sendSuggestion('דיווח על תקלה')" style="background: var(--wa-outgoing-bubble); padding: 8px 12px; border-radius: 18px; cursor: pointer; font-size: 0.9rem;">דיווח תקלה</div>
+                        </div>
+                    `);
+                }, 1000);
             }, 500);
         }
         
@@ -1481,82 +1475,206 @@
                 return 'אשמח לעזור עם ההזמנה שלך. איזה סוג הזמנה אתה צריך?';
             } else if (message.includes('מחיר') || message.includes('עלות')) {
                 return 'אשמח לספק מידע על מחירים. איזה מוצר או שירות אתה צריך?';
+            } else if (message.includes('תקלה') || message.includes('בעיה')) {
+                return 'אני מצטער לשמוע שיש תקלה. אנא פרט מה הבעיה ואוכל להעביר אותה לצוות הטכני.';
             } else {
                 return 'תודה על הפנייה. נציג שירות ישוב אליך בהקדם.';
             }
         }
 
-        // Global functions
-        window.navigateTo = navigateTo;
-        
-        window.refreshDashboard = function() {
-            showToast('מעדכן נתונים...', 'info');
-            setTimeout(() => {
-                renderDashboard();
-                showToast('הנתונים עודכנו', 'success', 2000);
-            }, 1000);
-        };
-        
-        window.logout = function() {
-            clientData = null;
-            dashboardData = null;
-            stopAutoRefresh();
-            navigateTo('login');
-            showToast('התנתקת מהמערכת', 'info');
-        };
-        
-        window.clearFilters = function() {
-            currentFilters = { type: 'all', status: 'all' };
-            searchQuery = '';
-            renderDashboard();
-        };
-        
-        window.zoomToLocation = function(orderId, lat, lng) {
-            const map = mapInstances[`map-${orderId}`];
-            if (map) {
-                map.setView([lat, lng], 17);
+        function showOrderDetails(orderId) {
+            const orders = dashboardData?.orders || sampleOrders;
+            const order = orders.find(o => o.id === orderId);
+            
+            if (!order) {
+                showToast('הזמנה לא נמצאה', 'error');
+                return;
             }
-        };
-        
-        window.openInMaps = function(lat, lng) {
-            const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
-            window.open(url, '_blank');
-        };
-        
-        window.viewOrderDetails = function(orderId) {
-            showToast(`מציג פרטי הזמנה #${orderId}`, 'info');
-        };
-        
-        window.contactAboutOrder = function(orderId) {
-            navigateTo('chat');
-            setTimeout(() => {
-                addChatMessage('outgoing', `אני מעוניין במידע על ההזמנה #${orderId}`);
+            
+            const statusMap = {
+                'active': 'פעיל',
+                'pending': 'ממתין', 
+                'completed': 'הושלם'
+            };
+            
+            const typeMap = {
+                'container': 'מכולה',
+                'material': 'חומרים',
+                'crane': 'מנוף'
+            };
+            
+            const modal = document.createElement('div');
+            modal.className = 'order-modal';
+            modal.innerHTML = `
+                <div class="order-modal-content">
+                    <div class="order-modal-header">
+                        <h3 class="order-modal-title">פרטי הזמנה #${order.id}</h3>
+                        <button class="order-modal-close">&times;</button>
+                    </div>
+                    
+                    <div class="order-info-grid">
+                        <div class="info-item">
+                            <span class="info-label">פרויקט</span>
+                            <span class="info-value">${order.project}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">סוג הזמנה</span>
+                            <span class="info-value">${typeMap[order.type] || order.type}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">סטטוס</span>
+                            <span class="info-value">${statusMap[order.status] || order.status}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">מספר הזמנה</span>
+                            <span class="info-value">#${order.id}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">תאריך הזמנה</span>
+                            <span class="info-value">${new Date(order.date).toLocaleDateString('he-IL')}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">תאריך יעד</span>
+                            <span class="info-value">${new Date(order.dueDate).toLocaleDateString('he-IL')}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="info-item" style="margin-bottom: 15px;">
+                        <span class="info-label">פריטים</span>
+                        <span class="info-value">${order.items}</span>
+                    </div>
+                    
+                    <div class="info-item" style="margin-bottom: 15px;">
+                        <span class="info-label">כתובת</span>
+                        <span class="info-value">${order.address}</span>
+                    </div>
+                    
+                    ${order.notes ? `
+                        <div class="info-item" style="margin-bottom: 20px;">
+                            <span class="info-label">הערות</span>
+                            <span class="info-value">${order.notes}</span>
+                        </div>
+                    ` : ''}
+                    
+                    ${order.lat && order.lon ? `
+                        <div class="order-card-map" id="modal-map-${order.id}" style="height: 200px; margin-bottom: 20px;">
+                            <div class="map-overlay">
+                                <span>${order.address}</span>
+                                <div class="map-actions">
+                                    <button class="map-action-btn" onclick="app.zoomToLocation('modal-map-${order.id}', ${order.lat}, ${order.lon})">
+                                        <i class="fas fa-search-plus"></i>
+                                    </button>
+                                    <button class="map-action-btn" onclick="app.openInMaps(${order.lat}, ${order.lon})">
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    <div style="display: flex; gap: 10px;">
+                        <button class="card-button primary" style="flex: 1;" onclick="app.contactAboutOrder('${order.id}')">
+                            <i class="fas fa-comment"></i> צור קשר
+                        </button>
+                        <button class="card-button" style="flex: 1;" onclick="this.closest('.order-modal').remove()">
+                            <i class="fas fa-times"></i> סגור
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Initialize map in modal
+            if (order.lat && order.lon) {
                 setTimeout(() => {
-                    addChatMessage('incoming', `כמובן, אני יכול לעזור עם ההזמנה #${orderId}. מה תרצה לדעת?`);
+                    initMap(`modal-map-${order.id}`, order.lat, order.lon, order.address);
+                }, 100);
+            }
+            
+            // Close modal
+            modal.querySelector('.order-modal-close').onclick = () => {
+                modal.remove();
+            };
+            
+            // Close on background click
+            modal.onclick = (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            };
+        }
+
+        // Global app object with all functions
+        window.app = {
+            navigateTo,
+            refreshDashboard: function() {
+                showToast('מעדכן נתונים...', 'info');
+                setTimeout(() => {
+                    renderDashboard();
+                    showToast('הנתונים עודכנו', 'success', 2000);
                 }, 1000);
-            }, 500);
-        };
-        
-        window.attachFile = function(type) {
-            showToast(`מצרף ${type === 'image' ? 'תמונה' : 'מסמך'}...`, 'info');
-        };
-        
-        window.shareLocation = function() {
-            if (navigator.geolocation) {
-                showToast('מאתר מיקום...', 'info');
-                navigator.geolocation.getCurrentPosition(
-                    position => {
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
-                        addChatMessage('outgoing', `שיתוף מיקום: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
-                        showToast('מיקום שותף בהצלחה', 'success');
-                    },
-                    error => {
-                        showToast('לא ניתן לאחזר מיקום', 'error');
-                    }
-                );
-            } else {
-                showToast('הדפדפן לא תומך במיקום', 'error');
+            },
+            logout: function() {
+                clientData = null;
+                dashboardData = null;
+                stopAutoRefresh();
+                navigateTo('login');
+                showToast('התנתקת מהמערכת', 'info');
+            },
+            clearFilters: function() {
+                currentFilters = { type: 'all', status: 'all' };
+                searchQuery = '';
+                renderDashboard();
+            },
+            zoomToLocation: function(elementId, lat, lng) {
+                const map = mapInstances[elementId];
+                if (map) {
+                    map.setView([lat, lng], 17);
+                }
+            },
+            openInMaps: function(lat, lng) {
+                const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+                window.open(url, '_blank');
+            },
+            viewOrderDetails: showOrderDetails,
+            contactAboutOrder: function(orderId) {
+                navigateTo('chat');
+                setTimeout(() => {
+                    addChatMessage('outgoing', `אני מעוניין במידע על ההזמנה #${orderId}`);
+                    setTimeout(() => {
+                        addChatMessage('incoming', `כמובן, אני יכול לעזור עם ההזמנה #${orderId}. מה תרצה לדעת?`);
+                    }, 1000);
+                }, 500);
+            },
+            attachFile: function(type) {
+                showToast(`מצרף ${type === 'image' ? 'תמונה' : 'מסמך'}...`, 'info');
+            },
+            shareLocation: function() {
+                if (navigator.geolocation) {
+                    showToast('מאתר מיקום...', 'info');
+                    navigator.geolocation.getCurrentPosition(
+                        position => {
+                            const lat = position.coords.latitude;
+                            const lng = position.coords.longitude;
+                            addChatMessage('outgoing', `שיתוף מיקום: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+                            showToast('מיקום שותף בהצלחה', 'success');
+                        },
+                        error => {
+                            showToast('לא ניתן לאחזר מיקום', 'error');
+                        }
+                    );
+                } else {
+                    showToast('הדפדפן לא תומך במיקום', 'error');
+                }
+            },
+            sendSuggestion: function(text) {
+                const chatInput = document.getElementById('chat-input');
+                if (chatInput) {
+                    chatInput.value = text;
+                    chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    sendChatMessage();
+                }
             }
         };
 
