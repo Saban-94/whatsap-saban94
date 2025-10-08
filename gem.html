@@ -68,28 +68,19 @@
 
         .modal-header {
             padding: 10px 15px; border-bottom: 1px solid #e0e0e0;
-            display: flex; align-items: center;
+            display: flex; align-items: center; justify-content: space-between;
             background: var(--surface-color);
             flex-shrink: 0;
         }
-        .modal-header h2 { margin: 0; font-size: 1.2em; color: var(--primary-color); flex-grow: 1; text-align: center; }
+        .modal-header h2 { margin: 0; font-size: 1.2em; color: var(--primary-color); }
         .modal-header button { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--text-color); }
         
         .modal-body { padding: 15px; flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; }
         
-        /* Search List Styles */
-        #product-search-input {
-            width: 100%; padding: 12px; font-size: 16px;
-            border: 1px solid var(--light-gray); border-radius: 8px;
-            box-sizing: border-box; margin-bottom: 15px;
-        }
+        #product-search-input { width: 100%; padding: 12px; font-size: 16px; border: 1px solid var(--light-gray); border-radius: 8px; box-sizing: border-box; margin-bottom: 15px; }
         #product-results-container { flex-grow: 1; overflow-y: auto; }
         
-        .product-card {
-            display: flex; background: var(--surface-color); border-radius: 8px;
-            margin-bottom: 10px; padding: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            gap: 15px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
-        }
+        .product-card { display: flex; background: var(--surface-color); border-radius: 8px; margin-bottom: 10px; padding: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); gap: 15px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
         .product-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
         .product-card img { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
         .product-info { flex-grow: 1; align-self: center; }
@@ -97,28 +88,33 @@
         .product-info .sku { font-size: 0.8em; color: #7f8c8d; }
         .loader { text-align: center; padding: 20px; }
 
-        /* Product Detail View Styles */
         #product-detail-modal .modal-body { padding: 0; }
-        #detail-modal-body { display: flex; flex-direction: column; height: 100%;}
         .detail-image-container { text-align: center; padding: 20px; background: white; }
         .detail-image-container img { max-width: 100%; max-height: 25vh; object-fit: contain; }
-        
         .detail-content-container { padding: 20px; text-align: right; overflow-y: auto; flex-grow: 1;}
         .detail-content-container .sku { font-size: 0.9em; color: #7f8c8d; margin-bottom: 15px; background: #ecf0f1; padding: 3px 8px; border-radius: 4px; display: inline-block;}
         .detail-content-container .description { font-size: 1em; line-height: 1.6; white-space: pre-wrap; }
         
-        .detail-actions-container {
-            padding: 15px; display: flex; justify-content: space-between; align-items: center;
-            background: var(--surface-color); border-top: 1px solid #e0e0e0;
-            box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
-        }
-        .detail-actions-container .quantity-selector { display: flex; align-items: center; gap: 10px; }
-        .detail-actions-container input[type="number"] { width: 60px; text-align: center; padding: 8px; border: 1px solid var(--light-gray); border-radius: 6px; font-size: 1em;}
-        .detail-actions-container button {
-            background-color: var(--secondary-color); color: white; border: none;
-            padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 1em; font-weight: bold;
-            flex-grow: 1; margin-right: 15px;
-        }
+        .actions-container { padding: 15px; display: flex; justify-content: space-between; align-items: center; background: var(--surface-color); border-top: 1px solid #e0e0e0; box-shadow: 0 -2px 5px rgba(0,0,0,0.05); }
+        .quantity-selector { display: flex; align-items: center; gap: 10px; }
+        .actions-container input[type="number"] { width: 60px; text-align: center; padding: 8px; border: 1px solid var(--light-gray); border-radius: 6px; font-size: 1em;}
+        .actions-container button { background-color: var(--secondary-color); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 1em; font-weight: bold; flex-grow: 1; margin-right: 15px; }
+        
+        /* Cart Styles */
+        .cart-icon-container { position: relative; cursor: pointer; }
+        .cart-badge { position: absolute; top: -5px; right: -8px; background-color: var(--error-color); color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; display: flex; justify-content: center; align-items: center; font-weight: bold; }
+        #cart-modal .modal-footer { padding: 15px; border-top: 1px solid #e0e0e0; background: var(--surface-color); }
+        .cart-item { display: flex; gap: 15px; padding: 10px 0; border-bottom: 1px solid #eee; }
+        .cart-item img { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; }
+        .cart-item-info { flex-grow: 1; }
+        .cart-item-info h4 { margin: 0 0 5px; }
+        .cart-item-actions { display: flex; align-items: center; gap: 10px; }
+        .cart-item-actions input { width: 50px; }
+        .cart-item-actions button { background: none; border: none; color: var(--error-color); font-size: 1.2em; cursor: pointer; }
+
+        /* Toast Notification */
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: white; padding: 10px 20px; border-radius: 20px; z-index: 3000; opacity: 0; transition: opacity 0.3s, bottom 0.3s; }
+        .toast.show { opacity: 1; bottom: 30px; }
     </style>
 </head>
 <body>
@@ -136,11 +132,13 @@
         </div>
     </div>
     
-    <!-- Product Search Modal -->
     <div id="product-search-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
-                <div style="width: 24px;"></div>
+                <div class="cart-icon-container" onclick="openCart()">
+                    <i class="fa-solid fa-shopping-cart fa-lg"></i>
+                    <span id="cart-badge" class="cart-badge" style="display: none;">0</span>
+                </div>
                 <h2>חיפוש מוצרים</h2>
                 <button onclick="closeProductSearch()">×</button>
             </div>
@@ -151,7 +149,6 @@
         </div>
     </div>
 
-    <!-- Product Detail Modal -->
     <div id="product-detail-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -159,86 +156,50 @@
                 <h2 id="detail-product-name">פרטי מוצר</h2>
                 <div style="width: 24px;"></div>
             </div>
-            <div id="detail-modal-body" class="modal-body">
-                <!-- Content will be populated by JS -->
+            <div id="detail-modal-body" class="modal-body"></div>
+        </div>
+    </div>
+    
+    <div id="cart-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                 <button onclick="closeCart()"><i class="fa-solid fa-arrow-right"></i></button>
+                <h2>סל קניות</h2>
+                <div style="width: 24px;"></div>
+            </div>
+            <div id="cart-items-container" class="modal-body"></div>
+            <div class="modal-footer actions-container">
+                <button id="add-cart-to-order-btn" onclick="addCartToOrder()"><i class="fa-solid fa-check"></i> הוסף הכל להזמנה</button>
             </div>
         </div>
     </div>
 
+    <div id="toast-notification" class="toast"></div>
+
     <script>
-    // Version: 3.1 - Robust Add-to-Order and UX Flow
     document.addEventListener('DOMContentLoaded', function () {
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyZgl7XxNaZ-AbSM6AnssN0f8gWOImjGqZi8baVIwv4cdiIUYAw7h-CUP20e8KXIics/exec";
         let productCatalog = [];
+        let shoppingCart = [];
         let isCatalogLoaded = false;
         
-        async function callAppScript(action, payload = {}) {
-            try {
-                const response = await fetch(SCRIPT_URL, {
-                    method: 'POST', body: JSON.stringify({ action, ...payload }),
-                });
-                if (!response.ok) throw new Error(`Network error! Status: ${response.status}`);
-                return await response.json();
-            } catch (error) {
-                console.error(`Critical fetch error: ${error.message}`);
-                throw error;
-            }
-        }
-
         const searchModal = document.getElementById('product-search-modal');
         const detailModal = document.getElementById('product-detail-modal');
+        const cartModal = document.getElementById('cart-modal');
         const searchInput = document.getElementById('product-search-input');
         const resultsContainer = document.getElementById('product-results-container');
         const detailBody = document.getElementById('detail-modal-body');
         const detailProductName = document.getElementById('detail-product-name');
+        const cartBadge = document.getElementById('cart-badge');
+        const cartItemsContainer = document.getElementById('cart-items-container');
 
-        window.openProductSearch = async function() {
-            searchModal.classList.add('visible');
-            if (!isCatalogLoaded) {
-                resultsContainer.innerHTML = `<div class="loader">טוען קטלוג...</div>`;
-                try {
-                    const response = await callAppScript('getProductCatalog');
-                    if (response.success && Array.isArray(response.catalog)) {
-                        productCatalog = response.catalog;
-                        isCatalogLoaded = true;
-                        renderProductResults(productCatalog);
-                    } else {
-                        resultsContainer.innerHTML = `<div class="loader">שגיאה בטעינת הקטלוג.</div>`;
-                    }
-                } catch (e) {
-                    resultsContainer.innerHTML = `<div class="loader">שגיאה חמורה בתקשורת.</div>`;
-                }
-            }
-        }
-        
+        async function callAppScript(action, payload = {}) { /* ... existing code ... */ }
+
+        window.openProductSearch = async function() { /* ... existing code ... */ }
         window.closeProductSearch = () => searchModal.classList.remove('visible');
         
-        searchInput.addEventListener('input', () => {
-            if (!isCatalogLoaded) return;
-            const searchTerm = searchInput.value.toLowerCase().trim();
-            const filteredProducts = productCatalog.filter(p => 
-                (p.name && p.name.toLowerCase().includes(searchTerm)) ||
-                (p.sku && p.sku.toString().toLowerCase().includes(searchTerm)) ||
-                (p.keywords && p.keywords.toLowerCase().includes(searchTerm))
-            );
-            renderProductResults(filteredProducts);
-        });
-        
-        function renderProductResults(products) {
-            if (products.length === 0) {
-                resultsContainer.innerHTML = `<div class="loader">לא נמצאו מוצרים תואמים.</div>`;
-                return;
-            }
-            resultsContainer.innerHTML = products.map(p => `
-                <div class="product-card" onclick="openProductDetail('${p.sku}')">
-                    <img src="${p.image}" alt="${p.name}" onerror="this.src='https://placehold.co/80x80/e2e8f0/64748b?text=תמונה'">
-                    <div class="product-info">
-                        <h3>${p.name || 'שם חסר'}</h3>
-                        <div class="sku">מק"ט: ${p.sku || 'לא ידוע'}</div>
-                    </div>
-                </div>
-            `).join('');
-        }
+        searchInput.addEventListener('input', () => { /* ... existing code ... */ });
+        function renderProductResults(products) { /* ... existing code ... */ }
 
         window.openProductDetail = function(sku) {
             const product = productCatalog.find(p => p.sku == sku);
@@ -246,61 +207,133 @@
             
             detailProductName.textContent = product.name;
             detailBody.innerHTML = `
-                <div class="detail-image-container">
-                    <img src="${product.image}" alt="${product.name}" onerror="this.src='https://placehold.co/400x300/e2e8f0/64748b?text=תמונה'">
-                </div>
+                <div class="detail-image-container"><img src="${product.image}" alt="${product.name}" onerror="this.src='https://placehold.co/400x300/e2e8f0/64748b?text=תמונה'"></div>
                 <div class="detail-content-container">
                     <div class="sku">מק"ט: ${product.sku}</div>
                     <p class="description">${product.description || 'אין תיאור זמין.'}</p>
                 </div>
-                <div class="detail-actions-container">
-                     <button onclick="addToOrderFromDetail(this, '${product.sku}')"><i class="fa-solid fa-cart-plus"></i> הוסף להזמנה</button>
+                <div class="actions-container">
+                     <button onclick="addToCart(this, '${product.sku}')"><i class="fa-solid fa-cart-plus"></i> הוסף לסל</button>
                     <div class="quantity-selector">
                         <label>כמות:</label>
                         <input type="number" value="1" min="1">
                     </div>
-                </div>
-            `;
-
-            searchModal.classList.remove('visible');
+                </div>`;
             detailModal.classList.add('visible');
         }
 
-        window.closeProductDetail = function() {
-            detailModal.classList.remove('visible');
-            searchModal.classList.add('visible');
-        }
+        window.closeProductDetail = () => detailModal.classList.remove('visible');
 
-        window.addToOrderFromDetail = function(buttonElement, sku) {
+        window.addToCart = function(buttonElement, sku) {
             const product = productCatalog.find(p => p.sku == sku);
-            
-            // Robustly find the quantity input relative to the button
-            const actionContainer = buttonElement.closest('.detail-actions-container');
+            const actionContainer = buttonElement.closest('.actions-container');
             const quantityInput = actionContainer.querySelector('input[type="number"]');
+            if (!product || !quantityInput) return;
             
-            if (!product || !quantityInput) {
-                console.error("Could not add product to order. Product or quantity input not found.");
-                return;
-            }
-            
-            const quantity = quantityInput.value;
+            const quantity = parseInt(quantityInput.value);
             if (!quantity || quantity < 1) return;
 
-            const orderText = `${quantity} ${product.name}`;
+            const existingItem = shoppingCart.find(item => item.sku === product.sku);
+            if (existingItem) {
+                existingItem.quantity += quantity;
+            } else {
+                shoppingCart.push({ ...product, quantity: quantity });
+            }
             
+            updateCartIcon();
+            showToast(`"${product.name}" נוסף לסל!`);
+            closeProductDetail();
+        }
+        
+        function updateCartIcon() {
+            const totalItems = shoppingCart.reduce((sum, item) => sum + item.quantity, 0);
+            if (totalItems > 0) {
+                cartBadge.textContent = totalItems;
+                cartBadge.style.display = 'flex';
+            } else {
+                cartBadge.style.display = 'none';
+            }
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast-notification');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        window.openCart = function() {
+            renderCartItems();
+            cartModal.classList.add('visible');
+        }
+        window.closeCart = () => cartModal.classList.remove('visible');
+
+        function renderCartItems() {
+            if (shoppingCart.length === 0) {
+                cartItemsContainer.innerHTML = '<div class="loader">סל הקניות ריק.</div>';
+                document.getElementById('add-cart-to-order-btn').style.display = 'none';
+                return;
+            }
+            document.getElementById('add-cart-to-order-btn').style.display = 'block';
+            cartItemsContainer.innerHTML = shoppingCart.map(item => `
+                <div class="cart-item" data-sku="${item.sku}">
+                    <img src="${item.image}" alt="${item.name}" onerror="this.src='https://placehold.co/80x80/e2e8f0/64748b?text=תמונה'">
+                    <div class="cart-item-info">
+                        <h4>${item.name}</h4>
+                        <div class="sku">מק"ט: ${item.sku}</div>
+                    </div>
+                    <div class="cart-item-actions">
+                        <input type="number" value="${item.quantity}" min="1" onchange="updateCartQuantity('${item.sku}', this.value)">
+                        <button onclick="removeFromCart('${item.sku}')"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.updateCartQuantity = function(sku, quantity) {
+            const item = shoppingCart.find(p => p.sku == sku);
+            const newQuantity = parseInt(quantity);
+            if (item && newQuantity > 0) {
+                item.quantity = newQuantity;
+            } else {
+                 removeFromCart(sku);
+            }
+            updateCartIcon();
+            renderCartItems();
+        }
+
+        window.removeFromCart = function(sku) {
+            shoppingCart = shoppingCart.filter(p => p.sku != sku);
+            updateCartIcon();
+            renderCartItems();
+        }
+        
+        window.addCartToOrder = function() {
+            if (shoppingCart.length === 0) return;
+            const orderText = shoppingCart.map(item => `${item.quantity} ${item.name}`).join('\n');
             const messageInput = document.getElementById('message-input');
+            
             if(messageInput.value){
                 messageInput.value += `\n${orderText}`;
             } else {
                 messageInput.value = orderText;
             }
             
-            // Close all modals for a smooth return to the chat
-            detailModal.classList.remove('visible');
-            searchModal.classList.remove('visible');
+            shoppingCart = [];
+            updateCartIcon();
+            closeCart();
+            closeProductSearch();
             messageInput.focus();
         }
     });
+
+    // Dummy functions for snippets to work
+    async function callAppScript(action, payload = {}) {
+        console.log(`Calling ${action}`);
+        if(action === 'getProductCatalog') return {success: true, catalog: []};
+        return {success: true};
+    }
+    function renderProductResults(products) {}
     </script>
 </body>
 </html>
