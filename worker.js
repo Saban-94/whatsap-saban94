@@ -4,7 +4,7 @@ addEventListener('fetch', event => {
 
 async function handleRequest(request) {
   // כתובת ה-API שלך בגוגל - החלף אותה בכתובת שלך!
-  const googleScriptUrl = 'https://script.google.com/macros/s/AKfycbyXyOusbHoN6id8s_b3ZvJpHLv96GSIvz-0avnG5Ax_HFu6vhxiuScevJmgJAtULXGBzw/exec';
+  const googleScriptUrl = 'https://script.google.com/macros/s/AKfycbyWa5oVwe0foW8gN70CNCbadk5OlgdzfOx9aVf7gaKSEit1fJBB_AeW3EgYFrvXBfaAkA/exec';
 
   // 1. שכפול הבקשה המקורית כדי שנוכל לשנות אותה
   let modifiedRequest = new Request(googleScriptUrl, request);
