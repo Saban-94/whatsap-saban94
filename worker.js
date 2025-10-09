@@ -1,7 +1,3 @@
-// 1. העתק את כל הקוד הזה.
-// 2. הדבק אותו בעורך של Cloudflare Worker חדש.
-// 3. החלף את הכתובת בשורה 8 בכתובת ה-API העדכנית שלך מ-Google Apps Script.
-
 addEventListener('fetch', event => {
   event.respondWith(handleRequest(event.request))
 })
