@@ -54,16 +54,6 @@
         .screen.active { display: flex; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --- Diagnostic Panel --- */
-        #diagnostic-panel {
-            position: fixed; top: 0; left: 0; right: 0; max-width: 600px; margin: 0 auto;
-            padding: 8px; background-color: var(--wa-warning); color: white;
-            text-align: center; font-weight: 600; z-index: 9999; font-size: 0.9rem;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: all 0.3s ease;
-        }
-        #diagnostic-panel.success { background-color: var(--wa-light-green); }
-        #diagnostic-panel.error { background-color: var(--wa-danger); }
-
         /* --- Login Screen --- */
         #login-screen {
             background: linear-gradient(135deg, var(--wa-teal-green) 0%, var(--wa-green) 100%);
@@ -81,9 +71,6 @@
         .avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
         .header-info { flex-grow: 1; text-align: right; }
         .client-name { font-weight: 600; color: var(--wa-text-primary); font-size: 1.1rem; }
-        .client-status { font-size: 0.8rem; color: var(--wa-text-secondary); display: flex; align-items: center; justify-content: flex-end; gap: 5px; }
-        .status-dot { width: 8px; height: 8px; background: var(--wa-light-green); border-radius: 50%; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(37, 211, 102, 0); } 100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); } }
         
         /* --- App Content Area --- */
         .app-content { flex-grow: 1; overflow-y: auto; background-color: var(--wa-bg); padding: 15px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc-0f70-73b1-11e7-911d-60d70fcded21.png'); }
@@ -93,162 +80,62 @@
         .fab:hover { transform: scale(1.1); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
 
         /* --- Dashboard Specific Styles --- */
-        .dashboard-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; }
-        .stat-card { background: white; border-radius: 12px; padding: 12px; text-align: center; box-shadow: var(--shadow); }
-        .stat-value { font-size: 1.5rem; font-weight: 700; color: var(--wa-teal-green); }
-        .stat-label { font-size: 0.8rem; color: var(--wa-text-secondary); margin-top: 5px; }
-        
-        .quick-actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
+        .quick-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; }
         .quick-action-btn { background: white; border: 1px solid #e0e0e0; border-radius: 12px; padding: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: var(--transition); text-align: center; }
         .quick-action-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-color: var(--wa-teal-green); }
         .quick-action-icon { font-size: 1.5rem; color: var(--wa-teal-green); margin-bottom: 8px; }
         .quick-action-text { font-size: 0.85rem; font-weight: 600; color: var(--wa-text-primary); }
-
         .search-container { position: relative; margin-bottom: 15px; }
         .search-input { width: 100%; padding: 12px 40px 12px 15px; border-radius: 20px; border: 1px solid #ddd; font-size: 0.95rem; }
         .search-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--wa-text-secondary); }
-        
-        .filters-container { display: flex; gap: 8px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; }
-        .filter-button { padding: 8px 15px; border-radius: 20px; border: 1px solid #ddd; background: #fff; font-size: 0.85rem; white-space: nowrap; cursor: pointer; transition: all 0.2s; }
-        .filter-button.active { background: var(--wa-teal-green); color: #fff; border-color: var(--wa-teal-green); }
 
         /* --- Order Card Styles --- */
         .order-card { background: #fff; border-radius: 16px; padding: 0; margin-bottom: 15px; box-shadow: var(--shadow); overflow: hidden; transition: var(--transition); border-right: 5px solid transparent; }
-        .order-card:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
-        .order-card.overdue { border-right-color: var(--wa-danger); animation: blink-red 1.5s infinite; }
-        @keyframes blink-red { 50% { border-right-color: transparent; } }
         .order-card-header { padding: 15px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: flex-start; }
-        .order-title { font-weight: 700; color: var(--wa-text-primary); font-size: 1.1rem; margin: 0; display: flex; align-items: center; gap: 8px; }
-        .order-badges { display: flex; gap: 5px; align-items: center; }
+        .order-title { font-weight: 700; color: var(--wa-text-primary); font-size: 1.1rem; margin: 0; }
         .status-badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
-        .status-חדשה { background-color: #e2f2ff; color: #0066cc; } /* Open */
-        .status-פעיל { background-color: #d4edda; color: #155724; } /* Delivered/Active */
-        .status-ממתין { background-color: #fff3cd; color: #856404; } /* Pending */
+        .status-חדשה { background-color: #e2f2ff; color: #0066cc; }
+        .status-פעיל { background-color: #d4edda; color: #155724; }
+        .status-ממתין { background-color: #fff3cd; color: #856404; }
         .order-card-body { padding: 15px; }
         .order-details p { margin: 0 0 8px 0; font-size: 0.95rem; color: var(--wa-text-secondary); }
-        .order-card-map { height: 140px; border-radius: 10px; overflow: hidden; margin-top: 10px; z-index: 1; }
-        .progress-bar { width: 100%; background-color: #e9ecef; border-radius: 5px; height: 10px; overflow: hidden; margin-top: 8px; }
-        .progress-bar-fill { height: 100%; background-color: var(--wa-light-green); transition: width 0.5s ease-in-out; }
-        .order-card.overdue .progress-bar-fill { background-color: var(--wa-danger); }
+        .order-card-map { height: 150px; border-radius: 10px; overflow: hidden; margin-top: 10px; z-index: 1; }
         .order-card-footer { padding: 10px 15px; border-top: 1px solid #f0f0f0; display: flex; gap: 10px; background: #f8f9fa; }
         .card-button { flex: 1; padding: 8px; border-radius: 8px; border: 1px solid var(--wa-teal-green); background: transparent; color: var(--wa-teal-green); cursor: pointer; font-weight: 600; transition: var(--transition); }
         .card-button:hover { background: var(--wa-teal-green); color: white; }
 
-        /* --- Custom Map Marker --- */
-        .custom-map-marker {
-            background: none;
-            border: none;
-        }
-
         /* --- Chat Screen Styles --- */
-        .message-bubble { max-width: 85%; padding: 8px 12px; border-radius: 8px; line-height: 1.5; word-wrap: break-word; box-shadow: 0 1px 1px rgba(0,0,0,0.1); position: relative; margin-bottom: 10px; }
-        .message-bubble.outgoing { background: var(--wa-outgoing-bubble); margin-left: auto; }
-        .message-bubble.incoming { background: var(--wa-incoming-bubble); margin-right: auto; }
-        .message-bubble.system { background: var(--wa-system-bubble); text-align: center; align-self: center; font-size: 0.85rem; }
         .chat-footer { padding: 8px; background: var(--wa-header-bg); display: flex; align-items: flex-end; gap: 8px; position: relative; border-top: 1px solid #e0e0e0;}
         .chat-input-wrapper { flex-grow: 1; background: #fff; border-radius: 24px; display: flex; align-items: center; padding: 0 10px; }
-        .chat-input { flex-grow: 1; border: none; background: transparent; font-size: 1rem; resize: none; padding: 12px 5px; max-height: 100px; outline: none; font-family: var(--font-family); }
-        .attach-button { background: transparent; border: none; cursor: pointer; font-size: 1.5rem; color: var(--wa-text-secondary); padding: 10px; }
-        .send-button { background-color: var(--wa-teal-green); color: #fff; border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border: none; flex-shrink: 0; font-size: 1.2rem; cursor: pointer; transition: var(--transition); }
-        .send-button:disabled { background-color: #ccc; cursor: not-allowed; }
-        #attachment-menu { position: absolute; bottom: calc(100% + 5px); left: 10px; background: #fff; border-radius: 16px; box-shadow: var(--shadow); padding: 10px; display: flex; flex-direction: column; gap: 5px; transform: translateY(10px); opacity: 0; pointer-events: none; transition: var(--transition); z-index: 10; }
-        #attachment-menu.visible { transform: translateY(0); opacity: 1; pointer-events: auto; }
-        .attachment-item { display: flex; align-items: center; gap: 15px; padding: 12px; border-radius: 10px; cursor: pointer; }
-        .attachment-item:hover { background-color: #f8f9fa; }
-        .attachment-item .icon-wrapper { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; }
-        .suggestion-item { display: inline-block; background: var(--wa-outgoing-bubble); padding: 6px 12px; margin: 3px; border-radius: 18px; font-size: 0.9rem; cursor: pointer; }
-        .typing-indicator { display: inline-block; }
-        .typing-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: var(--wa-text-secondary); margin: 0 2px; animation: typingAnimation 1.4s infinite ease-in-out; }
-        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
-        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
-        @keyframes typingAnimation { 0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; } 40% { transform: scale(1); opacity: 1; } }
+        .chat-input { flex-grow: 1; border: none; background: transparent; font-size: 1rem; resize: none; padding: 12px 5px; max-height: 100px; outline: none; }
+        .send-button { background-color: var(--wa-teal-green); color: #fff; border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border: none; flex-shrink: 0; font-size: 1.2rem; cursor: pointer; }
         
-        /* --- AI Order Preview --- */
-        .order-preview { background: #fff; border-radius: var(--radius); padding: 15px; margin-bottom: 10px; border: 2px solid var(--wa-light-green); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .order-preview-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
-        .order-preview-actions { display: flex; gap: 10px; margin-top: 15px; }
-        .order-preview-confirm, .order-preview-edit { flex: 1; padding: 10px; border-radius: 6px; font-weight: 600; cursor: pointer; }
-        .order-preview-confirm { border: none; background: var(--wa-light-green); color: #fff; }
-        .order-preview-edit { border: 1px solid var(--wa-teal-green); background: transparent; color: var(--wa-teal-green); }
-
-        /* --- Modals (Free Order, Order Details, Success) --- */
+        /* --- Modals --- */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; animation: fadeIn 0.3s; }
         .modal-content { background: white; border-radius: 16px; padding: 20px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow); animation: slideUp 0.4s ease-out; }
         @keyframes slideUp { from { transform: translateY(20px); } to { transform: translateY(0); } }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #e0e0e0; }
         .modal-title { color: var(--wa-teal-green); margin: 0; font-size: 1.3rem; }
         .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--wa-text-secondary); }
-        .modal-body { padding-top: 10px; }
-        .modal-form label { font-weight: 600; margin-bottom: 5px; display: block; color: var(--wa-text-primary); }
-        .modal-form input, .modal-form textarea { font-family: var(--font-family); border: 1px solid #ddd; border-radius: 8px; padding: 10px; margin-bottom: 10px; width: 100%; }
+        .modal-body p { margin: 0 0 10px; color: var(--wa-text-secondary); }
+        .modal-body strong { color: var(--wa-text-primary); }
         .modal-form button[type="submit"] { background: var(--wa-teal-green); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; width: 100%; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; }
         .modal-form button:disabled { background-color: var(--wa-green); }
-        .address-fields {
-            display: grid;
-            grid-template-columns: 1fr 1fr 80px;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
         .success-modal-content { text-align: center; }
         .success-icon { font-size: 4rem; color: var(--wa-light-green); margin-bottom: 15px; }
 
-        /* --- Help Screen Styles --- */
-        .help-section {
-            background: white;
-            padding: 15px;
-            margin-bottom: 15px;
-            border-radius: var(--radius);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-        .help-section h4 {
-            margin-top: 0;
-            color: var(--wa-teal-green);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .help-section p {
-            line-height: 1.6;
-            color: var(--wa-text-secondary);
-        }
-        .help-section ul {
-            padding-right: 20px;
-            list-style: none;
-        }
-        .help-section li {
-            position: relative;
-            margin-bottom: 10px;
-        }
-        .help-section li::before {
-            content: "\f00c"; /* check icon */
-            font-family: "Font Awesome 6 Free";
-            font-weight: 900;
-            color: var(--wa-light-green);
-            position: absolute;
-            right: -25px;
-            top: 4px;
-        }
-
-        /* --- Toast Notifications --- */
+        /* --- Other Styles --- */
         .toast { position: fixed; top: 20px; left: 20px; right: 20px; max-width: 580px; margin: 0 auto; background: #fff; padding: 12px 15px; border-radius: var(--radius); box-shadow: var(--shadow); z-index: 2000; display: flex; align-items: center; gap: 10px; animation: slideDown 0.4s ease-out; }
         @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .toast.success { border-right: 4px solid var(--wa-light-green); }
         .toast.error { border-right: 4px solid var(--wa-danger); }
         .toast-icon { font-size: 1.2rem; }
-        .toast.success .toast-icon { color: var(--wa-light-green); }
-        .toast.error .toast-icon { color: var(--wa-danger); }
-        .toast-content { flex-grow: 1; }
-        .toast-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--wa-text-secondary); }
-        
-        /* --- Spinner Animation --- */
         @keyframes spin { to { transform: rotate(360deg); } }
         .fa-spinner { animation: spin 1s linear infinite; }
-
     </style>
 </head>
 <body>
     <div id="app-container">
-        <div id="diagnostic-panel">בודק את המערכת...</div>
         <div id="login-screen" class="screen active"></div>
         <div id="dashboard-screen" class="screen"></div>
         <div id="chat-screen" class="screen"></div>
@@ -257,352 +144,318 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
+        // --- Application State and Configuration ---
+        const appState = {
+            API_URL: "https://saban-proxy.hsaban2025.workers.dev/",
+            clientData: null,
+            dashboardData: null,
+            mapInstances: {},
+        };
 
-        class SabanControlApp {
-            constructor() {
-                this.API_URL = "https://saban-proxy.hsaban2025.workers.dev/";
-                this.clientData = null;
-                this.dashboardData = null;
-                this.mapInstances = {};
-                this.refreshInterval = null;
-                this.currentFilters = { type: 'all', status: 'all' };
-                this.searchQuery = '';
-                
-                this.screens = {
-                    login: document.getElementById('login-screen'),
-                    dashboard: document.getElementById('dashboard-screen'),
-                    chat: document.getElementById('chat-screen'),
-                    help: document.getElementById('help-screen')
-                };
+        // --- DOM Elements ---
+        const screens = {
+            login: document.getElementById('login-screen'),
+            dashboard: document.getElementById('dashboard-screen'),
+            chat: document.getElementById('chat-screen'),
+            help: document.getElementById('help-screen')
+        };
 
-                this.init();
-            }
-
-            // --- INITIALIZATION AND NAVIGATION ---
-            async init() {
-                window.app = this;
-                await this.runDiagnostics();
-                this.renderLogin();
-            }
-
-            navigateTo(screenName) {
-                Object.values(this.mapInstances).forEach(map => map && typeof map.remove === 'function' && map.remove());
-                this.mapInstances = {};
-                
-                if (screenName === 'chat' && this.clientData) this.renderChat();
-                if (screenName === 'help') this.renderHelp();
-                
-                Object.values(this.screens).forEach(s => s.classList.remove('active'));
-                if (this.screens[screenName]) {
-                    this.screens[screenName].classList.add('active');
-                }
-                
-                if (screenName === 'dashboard') {
-                    this.startAutoRefresh();
-                    setTimeout(() => this.initializeDashboardMaps(), 100);
-                } else {
-                    this.stopAutoRefresh();
-                }
-            }
-
-            // --- API AND DATA HANDLING ---
-            async apiPost(body) {
-                try {
-                    const response = await fetch(this.API_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(body)
-                    });
-                    if (!response.ok) throw new Error(`שגיאת שרת (HTTP ${response.status})`);
-                    return await response.json();
-                } catch (error) {
-                    console.error("API Call Error:", error);
-                    this.showToast(`שגיאת תקשורת: ${error.message}`, 'error');
-                    return { success: false, error: error.message };
-                }
-            }
+        // --- UTILITY FUNCTIONS ---
+        function showToast(message, type = 'info', duration = 4000) {
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) existingToast.remove();
             
-            async runDiagnostics() {
-                const panel = document.getElementById('diagnostic-panel');
-                panel.textContent = 'בודק תקשורת עם השרת...';
-                panel.className = '';
-                
-                try {
-                    const response = await this.apiPost({ action: 'diagnoseSystem' });
-                    if (response && response.success) {
-                        panel.textContent = '✅ המערכת תקינה ומוכנה לעבודה!';
-                        panel.className = 'success';
-                    } else {
-                        throw new Error(response.error || 'תשובה לא תקינה מהשרת.');
-                    }
-                } catch (error) {
-                    panel.textContent = `❌ כשל בתקשורת: ${error.message}`;
-                    panel.className = 'error';
-                }
-                setTimeout(() => { panel.style.display = 'none'; }, 4000);
-            }
-
-            startAutoRefresh() {
-                if (this.refreshInterval) clearInterval(this.refreshInterval);
-                this.refreshInterval = setInterval(() => this.refreshDashboard(), 60000);
-            }
-
-            stopAutoRefresh() {
-                if (this.refreshInterval) clearInterval(this.refreshInterval);
-            }
-            
-            async refreshDashboard() {
-                if (!this.clientData) return;
-                this.showToast('מרענן נתונים... 🤔', 'info', 2000);
-                const response = await this.apiPost({ action: 'getDashboardData', clientId: this.clientData.id });
-                if (response && response.success) {
-                    this.dashboardData = response.data.dashboard;
-                    this.renderDashboard();
-                }
-            }
-            
-            // --- UI RENDERING ---
-            showToast(message, type = 'info', duration = 4000) {
-                const existingToast = document.querySelector('.toast');
-                if (existingToast) existingToast.remove();
-                
-                const toast = document.createElement('div');
-                toast.className = `toast ${type}`;
-                const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
-                toast.innerHTML = `
-                    <div class="toast-icon"><i class="fas ${icon}"></i></div>
-                    <div class="toast-content">${message}</div>
-                    <button class="toast-close"><i class="fas fa-times"></i></button>`;
-                document.body.appendChild(toast);
-                toast.querySelector('.toast-close').onclick = () => toast.remove();
-                setTimeout(() => toast.parentNode && toast.remove(), duration);
-            }
-            
-            renderLogin() {
-                this.screens.login.innerHTML = `
-                    <div class="login-box">
-                        <img src="https://i.postimg.cc/tCpLp7B6/image.png" alt="לוגו" class="logo">
-                        <h2>ח. סבן - מרכז הבקרה</h2>
-                        <input type="text" id="client-id-input" class="login-input" placeholder="הקלד מספר לקוח" value="60100">
-                        <button id="login-btn" class="login-button"><span>כניסה</span></button>
-                    </div>`;
-                const loginBtn = document.getElementById('login-btn');
-                const clientIdInput = document.getElementById('client-id-input');
-                loginBtn.onclick = async () => {
-                    loginBtn.disabled = true;
-                    loginBtn.innerHTML = `<span>מתחבר...</span><i class="fas fa-spinner fa-spin"></i>`;
-                    const clientId = clientIdInput.value.trim();
-                    if (!clientId) {
-                        this.showToast('אנא הזן מספר לקוח', 'error');
-                        loginBtn.disabled = false;
-                        loginBtn.innerHTML = `<span>כניסה</span>`;
-                        return;
-                    }
-                    const response = await this.apiPost({ action: 'getDashboardData', clientId });
-                    if (response && response.success) {
-                        this.clientData = response.data.client;
-                        this.dashboardData = response.data.dashboard;
-                        this.renderDashboard();
-                        this.navigateTo('dashboard');
-                        this.showToast(`ברוך הבא, ${this.clientData.name}! 👋`, 'success');
-                        
-                        window.OneSignalDeferred.push(function(OneSignal) {
-                            OneSignal.setExternalUserId(clientId);
-                        });
-
-                    } else {
-                        this.showToast(`כניסה נכשלה: ${response.error || 'אנא בדוק את מספר הלקוח.'}`, 'error');
-                    }
-                    loginBtn.disabled = false;
-                    loginBtn.innerHTML = `<span>כניסה</span>`;
-                };
-                clientIdInput.onkeypress = (e) => { if (e.key === 'Enter') loginBtn.click(); };
-            }
-
-            renderDashboard() {
-                let filteredOrders = (this.dashboardData && this.dashboardData.orders) || [];
-                // Filtering logic...
-                const stats = this.dashboardData.stats || { total: 0, active: 0, pending: 0 };
-                this.screens.dashboard.innerHTML = `
-                    <header class="app-header">
-                        <img src="${this.clientData.avatar}" alt="Avatar" class="avatar">
-                        <div class="header-info"><div class="client-name">${this.clientData.name}</div><div class="client-status"><div class="status-dot"></div>מחובר</div></div>
-                    </header>
-                    <div class="app-content">
-                        <div class="quick-actions">
-                            <div class="quick-action-btn" onclick="app.showFreeOrderForm()"><div class="quick-action-icon"><i class="fas fa-plus-circle"></i></div><div class="quick-action-text">הזמנה חדשה</div></div>
-                            <div class="quick-action-btn" onclick="app.navigateTo('chat')"><div class="quick-action-icon"><i class="fas fa-comments"></i></div><div class="quick-action-text">צ'אט חכם</div></div>
-                            <div class="quick-action-btn" onclick="app.navigateTo('help')"><div class="quick-action-icon"><i class="fas fa-question-circle"></i></div><div class="quick-action-text">מרכז מידע</div></div>
-                        </div>
-                        <div class="search-container">
-                            <input type="text" class="search-input" id="search-input" placeholder="חפש הזמנה, פרויקט..." value="${this.searchQuery}">
-                            <i class="fas fa-search search-icon"></i>
-                        </div>
-                        <div id="orders-container">
-                            ${filteredOrders.length > 0 ? filteredOrders.map(order => this.renderOrderCard(order)).join('') : '<p>אין הזמנות להצגה.</p>'}
-                        </div>
-                    </div>
-                `;
-                
-                document.getElementById('search-input').addEventListener('input', (e) => { this.searchQuery = e.target.value; this.renderDashboard(); });
-                setTimeout(() => this.initializeDashboardMaps(), 0);
-            }
-
-            renderOrderCard(order) {
-                const isOverdue = order.type === 'container' && (new Date() - new Date(order.startDate)) / 864e5 > 10;
-                return `
-                    <div class="order-card ${isOverdue ? 'overdue' : ''}" data-order-id="${order.id}">
-                        <div class="order-card-header">
-                            <h4 class="order-title">${order.project}</h4>
-                            <div class="order-badges"><span class="status-badge status-${(order.status || '').replace(' ', '-')}">${order.status || ''}</span></div>
-                        </div>
-                        <div class="order-card-body">
-                            <div class="order-details">
-                                <p><strong>מוצרים:</strong> ${order.items}</p>
-                                <p><small><strong>כתובת:</strong> ${order.address || 'לא צוינה'}</small></p>
-                            </div>
-                            ${order.lat && order.lon ? `<div class="order-card-map" id="map-${order.id}"></div>` : ''}
-                        </div>
-                        <div class="order-card-footer">
-                            <button class="card-button" onclick="app.showOrderDetails('${order.id}')">פרטים ומפה</button>
-                            <button class="card-button" onclick="app.contactAboutOrder('${order.id}')">צור קשר</button>
-                        </div>
-                    </div>`;
-            }
-
-            renderChat() {
-                // ... Chat rendering logic ...
-            }
-            
-            renderHelp() {
-                // ... Help screen rendering logic ...
-            }
-
-            // --- CHAT AND ORDER FUNCTIONALITY ---
-            async handleSendMessage() {
-                // ... Send message logic ...
-            }
-
-            showOrderPreview(preview, originalText) {
-                // ... Order preview logic ...
-            }
-
-            showFreeOrderForm() {
-                const modalHtml = `
-                    <div class="modal-overlay" id="free-order-modal">
-                        <div class="modal-content">
-                            <div class="modal-header"><h3 class="modal-title">📋 הזמנה חדשה</h3><button class="modal-close">✕</button></div>
-                            <form class="modal-form" id="free-order-form">
-                                <label>🏗️ שם הפרויקט</label>
-                                <input type="text" id="project-name" required>
-                                
-                                <label>🚚 כתובת אספקה</label>
-                                <div class="address-fields">
-                                    <input type="text" id="delivery-city" placeholder="עיר" required>
-                                    <input type="text" id="delivery-street" placeholder="רחוב" required>
-                                    <input type="text" id="delivery-number" placeholder="מספר" required>
-                                </div>
-
-                                <label>📦 רשימת מוצרים</label>
-                                <textarea id="products-list" rows="4" placeholder="כל מוצר בשורה נפרדת..." required></textarea>
-                                
-                                <label>📝 הערות</label>
-                                <textarea id="order-notes" rows="2"></textarea>
-                                
-                                <button type="submit"><span>✅ שלח הזמנה</span></button>
-                            </form>
-                        </div>
-                    </div>`;
-                document.body.insertAdjacentHTML('beforeend', modalHtml);
-                const modal = document.getElementById('free-order-modal');
-                modal.querySelector('.modal-close').onclick = () => modal.remove();
-                document.getElementById('free-order-form').onsubmit = (e) => this.handleFreeOrderSubmit(e);
-            }
-            
-            handleFreeOrderSubmit(event) {
-                event.preventDefault();
-                const form = event.target;
-                const submitBtn = form.querySelector('button[type="submit"]');
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = `<span>שולח...</span><i class="fas fa-spinner fa-spin"></i>`;
-
-                // --- Optimistic UI: Close modal and show loading toast immediately ---
-                document.getElementById('free-order-modal').remove();
-                this.showToast('שולח את ההזמנה לשרת... 🤔', 'info', 10000);
-
-                const city = form.querySelector('#delivery-city').value;
-                const street = form.querySelector('#delivery-street').value;
-                const number = form.querySelector('#delivery-number').value;
-                const fullAddress = `${street} ${number}, ${city}`;
-
-                const orderData = {
-                    projectName: form.querySelector('#project-name').value,
-                    deliveryAddress: fullAddress,
-                    products: form.querySelector('#products-list').value,
-                    notes: form.querySelector('#order-notes').value
-                };
-
-                // --- Asynchronous server call ---
-                this.apiPost({ action: 'createFreeFormOrder', orderData, clientId: this.clientData.id }).then(response => {
-                    if (response.success && response.data.orderId) {
-                        this.showOrderSuccessModal(response.data.orderId, orderData, response.data.googleDriveLink);
-                        this.refreshDashboard(); // Refresh data in the background
-                    } else {
-                        this.showToast(`שגיאה: ${response.error || 'לא ניתן היה ליצור הזמנה.'}`, 'error');
-                    }
-                });
-            }
-
-            showOrderSuccessModal(orderId, orderData, googleDriveLink) {
-                 const whatsappMsg = encodeURIComponent(`הזמנה חדשה התקבלה:\nמספר: ${orderId}\nפרויקט: ${orderData.projectName}\nלצפייה: ${googleDriveLink}`);
-                 const whatsappUrl = `https://wa.me/972508860896?text=${whatsappMsg}`;
-                const successModalHtml = `
-                    <div class="modal-overlay" id="success-modal">
-                        <div class="modal-content success-modal-content">
-                             <div class="success-icon"><i class="fas fa-check-circle"></i></div>
-                             <h3 class="modal-title">ההזמנה נשלחה בהצלחה!</h3>
-                             <p style="color: var(--wa-text-secondary); margin: 10px 0 20px;">מספר הזמנה: <b>${orderId}</b></p>
-                             <p>ההזמנה ממתינה לאישור קבלה ממחלקת ההזמנות. תקבל התראה על כל שינוי סטטוס.</p>
-                             <button class="card-button" style="margin-top: 20px; background-color: var(--wa-light-green); color: white; border: none; padding: 12px; font-size: 1rem;" onclick="window.open('${whatsappUrl}', '_blank')">
-                                <i class="fab fa-whatsapp"></i> שלח אישור למחלקת הזמנות
-                             </button>
-                             <button class="card-button" style="margin-top: 10px;" onclick="document.getElementById('success-modal').remove()">סגור</button>
-                        </div>
-                    </div>`;
-                document.body.insertAdjacentHTML('beforeend', successModalHtml);
-            }
-
-            addMessage({ html, type, id }) {
-                // ... Add message to chat logic ...
-            }
-
-            contactAboutOrder(orderId) {
-                const order = this.dashboardData.orders.find(o => o.id === orderId);
-                if (!order) {
-                    this.showToast('שגיאה: לא נמצאו פרטי הזמנה.', 'error');
-                    return;
-                }
-                const orderTypeMap = { 'container': 'הזמנת מכולה', 'material': 'הזמנת חומרי בנין' };
-                const orderTypeText = orderTypeMap[order.type] || 'הזמנה';
-                const message = `שלום, אני מעוניין בפרטים נוספים על ${orderTypeText} מספר ${order.id}.`;
-                
-                this.navigateTo('chat');
-                setTimeout(() => {
-                    const messageInput = document.getElementById('message-input');
-                    if (messageInput) {
-                        messageInput.value = message;
-                        this.handleSendMessage();
-                    }
-                }, 300);
-            }
-
-            // --- ATTACHMENTS, MODALS, MAPS ---
-            // ... Other helper functions (handleFileUpload, showOrderDetails, initMap, etc.)
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+            toast.innerHTML = `<div class="toast-icon"><i class="fas ${icon}"></i></div><div>${message}</div>`;
+            document.body.appendChild(toast);
+            setTimeout(() => { if (toast.parentNode) toast.remove() }, duration);
         }
 
-        // --- Start the App ---
-        new SabanControlApp();
+        async function apiPost(body) {
+            try {
+                const response = await fetch(appState.API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                if (!response.ok) throw new Error(`שגיאת שרת (HTTP ${response.status})`);
+                return await response.json();
+            } catch (error) {
+                console.error("API Call Error:", error);
+                showToast(`שגיאת תקשורת: ${error.message}`, 'error');
+                return { success: false, error: error.message };
+            }
+        }
+
+        function navigateTo(screenName) {
+            Object.values(appState.mapInstances).forEach(map => map && map.remove());
+            appState.mapInstances = {};
+            
+            if (screenName === 'chat' && appState.clientData) renderChat();
+            if (screenName === 'help') renderHelp();
+            
+            Object.values(screens).forEach(s => s.classList.remove('active'));
+            if (screens[screenName]) screens[screenName].classList.add('active');
+
+            if (screenName === 'dashboard') {
+                setTimeout(initializeDashboardMaps, 150);
+            }
+        }
+
+        // --- RENDER FUNCTIONS ---
+        function renderLogin() {
+            screens.login.innerHTML = `
+                <div class="login-box">
+                    <img src="https://i.postimg.cc/tCpLp7B6/image.png" alt="לוגו" class="logo">
+                    <h2>ח. סבן - מרכז הבקרה</h2>
+                    <input type="text" id="client-id-input" class="login-input" placeholder="הקלד מספר לקוח" value="60100">
+                    <button id="login-btn" class="login-button"><span>כניסה</span></button>
+                </div>`;
+            
+            const loginBtn = document.getElementById('login-btn');
+            const clientIdInput = document.getElementById('client-id-input');
+
+            loginBtn.onclick = async () => {
+                loginBtn.disabled = true;
+                loginBtn.innerHTML = `<span>מתחבר...</span><i class="fas fa-spinner fa-spin"></i>`;
+                const clientId = clientIdInput.value.trim();
+
+                if (!clientId) {
+                    showToast('אנא הזן מספר לקוח', 'error');
+                    loginBtn.disabled = false;
+                    loginBtn.innerHTML = `<span>כניסה</span>`;
+                    return;
+                }
+
+                try {
+                    const response = await apiPost({ action: 'getDashboardData', clientId });
+                    if (response && response.success) {
+                        appState.clientData = response.data.client;
+                        appState.dashboardData = response.data.dashboard;
+                        renderDashboard();
+                        navigateTo('dashboard');
+                        showToast(`ברוך הבא, ${appState.clientData.name}! 👋`, 'success');
+                        
+                        try {
+                           window.OneSignalDeferred.push(function(OneSignal) {
+                               OneSignal.setExternalUserId(clientId);
+                           });
+                        } catch(e) { console.error("OneSignal error:", e); }
+
+                    } else {
+                        showToast(`כניסה נכשלה: ${response.error || 'אנא בדוק את מספר הלקוח.'}`, 'error');
+                    }
+                } catch (e) {
+                     showToast(`שגיאת התחברות: ${e.message}`, 'error');
+                } finally {
+                    loginBtn.disabled = false;
+                    loginBtn.innerHTML = `<span>כניסה</span>`;
+                }
+            };
+            clientIdInput.onkeypress = (e) => { if (e.key === 'Enter') loginBtn.click(); };
+        }
+
+        function renderDashboard() {
+            const { orders } = appState.dashboardData;
+            screens.dashboard.innerHTML = `
+                <header class="app-header">
+                    <img src="${appState.clientData.avatar}" alt="Avatar" class="avatar">
+                    <div class="header-info">
+                        <div class="client-name">${appState.clientData.name}</div>
+                    </div>
+                </header>
+                <div class="app-content">
+                    <div class="quick-actions">
+                        <div class="quick-action-btn" onclick="showFreeOrderForm()"><div class="quick-action-icon"><i class="fas fa-plus-circle"></i></div><div class="quick-action-text">הזמנה חדשה</div></div>
+                        <div class="quick-action-btn" onclick="navigateTo('chat')"><div class="quick-action-icon"><i class="fas fa-comments"></i></div><div class="quick-action-text">צ'אט חכם</div></div>
+                        <div class="quick-action-btn" onclick="navigateTo('help')"><div class="quick-action-icon"><i class="fas fa-question-circle"></i></div><div class="quick-action-text">מרכז מידע</div></div>
+                    </div>
+                    <div class="search-container">
+                        <input type="text" class="search-input" id="search-input" placeholder="חפש הזמנה, פרויקט...">
+                    </div>
+                    <div id="orders-container">
+                        ${(orders && orders.length > 0) ? orders.map(renderOrderCard).join('') : '<p style="text-align: center; color: var(--wa-text-secondary);">לא נמצאו הזמנות פעילות.</p>'}
+                    </div>
+                </div>
+                <button class="fab" onclick="navigateTo('chat')"><i class="fa-solid fa-comment-dots"></i></button>`;
+            
+            document.getElementById('search-input').addEventListener('input', filterOrders);
+            initializeDashboardMaps();
+        }
+
+        function renderOrderCard(order) {
+            // CRITICAL FIX: Ensure status is always treated as a string to prevent crashes.
+            const statusString = String(order.status || '').trim();
+            const hasAddress = order.address && order.address.trim() !== '';
+
+            return `
+                <div class="order-card" data-order-id="${order.id}">
+                    <div class="order-card-header">
+                        <h4 class="order-title">${order.project}</h4>
+                        <span class="status-badge status-${statusString.replace(/\s+/g, '-')}">${statusString || 'לא ידוע'}</span>
+                    </div>
+                    <div class="order-card-body">
+                        <p><strong>מספר הזמנה:</strong> ${order.id}</p>
+                        <p><strong>פריטים:</strong> ${order.items || 'לא צוין'}</p>
+                        ${hasAddress ? `<p><strong>כתובת:</strong> ${order.address}</p>` : ''}
+                        ${hasAddress ? `<div class="order-card-map" id="map-${order.id}"></div>` : ''}
+                    </div>
+                    <div class="order-card-footer">
+                        <button class="card-button" onclick="showOrderDetails('${order.id}')">פרטים ומפה</button>
+                        <button class="card-button" onclick="contactAboutOrder('${order.id}')">צור קשר</button>
+                    </div>
+                </div>`;
+        }
+        
+        function renderChat(){
+            screens.chat.innerHTML = `
+                <header class="app-header">
+                     <button class="card-button" style="max-width: 80px;" onclick="navigateTo('dashboard')">חזור</button>
+                     <div class="header-info"><div class="client-name">צ'אט חכם</div></div>
+                     <img src="${appState.clientData.avatar}" alt="Avatar" class="avatar">
+                </header>
+                <div id="chat-canvas" class="app-content"></div>
+                <footer class="chat-footer">
+                    <div class="chat-input-wrapper">
+                        <textarea id="message-input" class="chat-input" placeholder="הקלד הודעה..."></textarea>
+                    </div>
+                    <button id="send-btn" class="send-button"><i class="fa-solid fa-paper-plane"></i></button>
+                </footer>`;
+            document.getElementById('send-btn').onclick = handleSendMessage;
+            const hour = new Date().getHours();
+            const greeting = hour < 12 ? 'בוקר טוב' : hour < 18 ? 'צהריים טובים' : 'ערב טוב';
+            addChatMessage({ html: `${greeting} ${appState.clientData.name}! איך אפשר לעזור?`, type: 'incoming' });
+        }
+
+        function renderHelp() {
+           screens.help.innerHTML = `
+             <header class="app-header">
+                <button class="card-button" style="max-width: 80px;" onclick="navigateTo('dashboard')">חזור</button>
+                <div class="header-info"><div class="client-name">מרכז מידע</div></div>
+             </header>
+             <div class="app-content"> ... תוכן עזרה ... </div>
+           `;
+        }
+
+        // --- EVENT HANDLERS & ACTIONS ---
+        function filterOrders(event) {
+            const searchTerm = event.target.value.toLowerCase();
+            const allCards = document.querySelectorAll('#orders-container .order-card');
+            allCards.forEach(card => {
+                const cardText = card.textContent.toLowerCase();
+                card.style.display = cardText.includes(searchTerm) ? '' : 'none';
+            });
+        }
+        
+        async function handleSendMessage(){
+            const input = document.getElementById('message-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            addChatMessage({html: text, type: 'outgoing'});
+            input.value = '';
+
+            const response = await apiPost({ action: 'processChatMessage', text, clientId: appState.clientData.id });
+            if(response.success && response.data.html) {
+                addChatMessage({html: response.data.html, type: 'incoming'});
+            } else {
+                addChatMessage({html: 'שגיאה בעיבוד הבקשה.', type: 'system'});
+            }
+        }
+        
+        function addChatMessage({html, type}){
+            const canvas = document.getElementById('chat-canvas');
+            if(!canvas) return;
+            const bubble = document.createElement('div');
+            bubble.className = `message-bubble ${type}`;
+            bubble.innerHTML = html;
+            canvas.appendChild(bubble);
+            canvas.scrollTop = canvas.scrollHeight;
+        }
+
+        window.showOrderDetails = function(orderId) {
+            const order = appState.dashboardData.orders.find(o => o.id === orderId);
+            if (!order) return showToast('שגיאה: לא נמצאו פרטי הזמנה.', 'error');
+
+            const modalHtml = `
+                <div class="modal-overlay" id="order-details-modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 class="modal-title">פרטי הזמנה #${order.id}</h3>
+                            <button class="modal-close">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                           <p><strong>פרויקט:</strong> ${order.project}</p>
+                           <p><strong>סטטוס:</strong> ${order.status}</p>
+                           <p><strong>מוצרים:</strong> ${order.items}</p>
+                           <p><strong>כתובת:</strong> ${order.address || 'לא צוינה'}</p>
+                           ${order.lat && order.lon ? `<div id="modal-map" style="height:250px; border-radius: var(--radius); margin-top:15px;"></div>` : ''}
+                        </div>
+                    </div>
+                </div>`;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            const modal = document.getElementById('order-details-modal');
+            modal.querySelector('.modal-close').onclick = () => modal.remove();
+            if (order.lat && order.lon) {
+                setTimeout(() => initMap('modal-map', order.lat, order.lon, true), 100);
+            }
+        }
+        
+        window.contactAboutOrder = function(orderId) {
+            const order = appState.dashboardData.orders.find(o => o.id === orderId);
+            if (!order) return showToast('שגיאה: לא נמצאו פרטי הזמנה.', 'error');
+
+            const orderType = order.type === 'container' ? 'הזמנת מכולה' : 'הזמנת חומרי בנין';
+            const message = `שלום, אני מעוניין בפרטים נוספים על ${orderType} מספר ${order.id}.`;
+            
+            navigateTo('chat');
+            setTimeout(() => {
+                const messageInput = document.getElementById('message-input');
+                if (messageInput) messageInput.value = message;
+            }, 300);
+        }
+
+        // --- MAP FUNCTIONS ---
+        function initializeDashboardMaps() {
+            if (!appState.dashboardData || !appState.dashboardData.orders) return;
+            const orders = appState.dashboardData.orders;
+            orders.forEach(order => {
+                if (order.lat && order.lon) {
+                    initMap(`map-${order.id}`, order.lat, order.lon, false);
+                }
+            });
+        }
+
+        function initMap(elementId, lat, lon, isInteractive) {
+            const mapElement = document.getElementById(elementId);
+            if (!mapElement || appState.mapInstances[elementId]) return;
+            try {
+                const map = L.map(elementId, {
+                    zoomControl: isInteractive,
+                    dragging: isInteractive,
+                    scrollWheelZoom: isInteractive
+                }).setView([lat, lon], 15);
+                
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                    attribution: '&copy; OpenStreetMap &copy; CARTO'
+                }).addTo(map);
+
+                L.marker([lat, lon]).addTo(map);
+                appState.mapInstances[elementId] = map;
+                setTimeout(() => map.invalidateSize(), 200);
+            } catch (e) {
+                console.error("Map init error:", e);
+            }
+        }
+
+        // --- Global Actions & Init ---
+        window.navigateTo = navigateTo;
+        window.showFreeOrderForm = () => showToast('בבנייה...', 'info'); // Placeholder
+        renderLogin();
     });
     </script>
 </body>
 </html>
+
