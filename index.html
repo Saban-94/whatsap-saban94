@@ -407,9 +407,13 @@
                             this.navigateTo('dashboard');
                             this.showToast(`ברוך הבא, ${this.clientData.name}! 👋`, 'success');
                             
-                            window.OneSignalDeferred.push(function(OneSignal) {
-                                OneSignal.setExternalUserId(clientId);
-                            });
+                            try {
+                                window.OneSignalDeferred.push(function(OneSignal) {
+                                    OneSignal.setExternalUserId(clientId);
+                                });
+                            } catch (e) {
+                                console.error("OneSignal Error:", e);
+                            }
 
                         } else {
                             this.showToast(`כניסה נכשלה: ${response.error || 'אנא בדוק את מספר הלקוח.'}`, 'error');
@@ -447,6 +451,7 @@
                             ${filteredOrders.length > 0 ? filteredOrders.map(order => this.renderOrderCard(order)).join('') : '<p>אין הזמנות להצגה.</p>'}
                         </div>
                     </div>
+                     <button class="fab" onclick="app.navigateTo('chat')"><i class="fa-solid fa-comment-dots"></i></button>
                 `;
                 
                 document.getElementById('search-input').addEventListener('input', (e) => { this.searchQuery = e.target.value; this.renderDashboard(); });
@@ -603,11 +608,45 @@
 
             // --- ATTACHMENTS, MODALS, MAPS ---
             initializeDashboardMaps() {
-                // ... map initialization ...
+                const orders = (this.dashboardData && this.dashboardData.orders) || [];
+                orders.forEach(order => {
+                    if (order.lat && order.lon) {
+                        this.initMap(`map-${order.id}`, order.lat, order.lon, false);
+                    }
+                });
             }
 
             initMap(elementId, lat, lon, isInteractive = false) {
-                // ... map drawing ...
+                const mapElement = document.getElementById(elementId);
+                if (!mapElement || this.mapInstances[elementId]) return;
+                try {
+                    const mapOptions = {
+                        zoomControl: isInteractive,
+                        dragging: isInteractive,
+                        scrollWheelZoom: isInteractive,
+                        doubleClickZoom: isInteractive,
+                        boxZoom: isInteractive
+                    };
+                    const map = L.map(elementId, mapOptions).setView([lat, lon], 15);
+                    
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                    }).addTo(map);
+
+                    const customMarkerIcon = L.divIcon({
+                        html: `<i class="fas fa-map-marker-alt" style="font-size: 2.5rem; color: var(--wa-danger); text-shadow: 0 2px 4px rgba(0,0,0,0.3);"></i>`,
+                        className: 'custom-map-marker',
+                        iconSize: [30, 42],
+                        iconAnchor: [15, 42]
+                    });
+                    
+                    L.marker([lat, lon], { icon: customMarkerIcon }).addTo(map);
+
+                    this.mapInstances[elementId] = map;
+                    setTimeout(() => map.invalidateSize(), 200);
+                } catch (e) {
+                    console.error("Map init error:", e);
+                }
             }
 
             // ... Other helper functions (handleFileUpload, showOrderDetails)
