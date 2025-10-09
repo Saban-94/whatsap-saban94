@@ -970,40 +970,124 @@
                 });
             },
 
-            async initMapFromAddress(elementId, address, title = '') {
-                const mapElement = document.getElementById(elementId);
-                if (!mapElement || this.mapInstances[elementId]) return;
-                
+/**
+ * Initialize map from address with proper cleanup
+ */
+async initMapFromAddress(elementId, address, title = '') {
+    const mapElement = document.getElementById(elementId);
+    if (!mapElement) return;
+    
+    // Clean up existing map instance if it exists
+    if (this.mapInstances[elementId]) {
+        try {
+            this.mapInstances[elementId].remove();
+            delete this.mapInstances[elementId];
+        } catch (e) {
+            console.warn("Error removing existing map:", e);
+        }
+    }
+    
+    try {
+        // Clear the container
+        mapElement.innerHTML = '';
+        
+        // Add loading indicator
+        mapElement.innerHTML = '<div style="text-align:center;padding:20px;color:var(--wa-text-secondary);">טוען מפה...</div>';
+        
+        // Geocode address to coordinates
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address + ', ישראל')}&countrycodes=il&limit=1`);
+        const data = await response.json();
+        
+        if (data && data.length > 0) {
+            const lat = parseFloat(data[0].lat);
+            const lon = parseFloat(data[0].lon);
+            
+            const mapOptions = {
+                zoomControl: false,
+                scrollWheelZoom: false,
+                dragging: false,
+                doubleClickZoom: false,
+                boxZoom: false,
+                keyboard: false,
+                tap: false
+            };
+            
+            // Clear container again before creating new map
+            mapElement.innerHTML = '';
+            
+            const map = L.map(elementId, mapOptions).setView([lat, lon], 15);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 18,
+                minZoom: 10
+            }).addTo(map);
+            
+            const customMarkerIcon = L.divIcon({
+                className: 'custom-map-marker',
+                html: `<div style="background: var(--wa-teal-green); color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">📍</div>`,
+                iconSize: [30, 30],
+                iconAnchor: [15, 15]
+            });
+            
+            const marker = L.marker([lat, lon], { icon: customMarkerIcon }).addTo(map);
+            
+            if (title) {
+                marker.bindPopup(`
+                    <div class="map-popup-content">
+                        <div class="map-popup-title">${title}</div>
+                        <div class="map-popup-address">${address}</div>
+                    </div>
+                `);
+            }
+            
+            this.mapInstances[elementId] = map;
+            
+            // Use setTimeout to ensure DOM is ready
+            setTimeout(() => {
                 try {
-                    // Geocode address to coordinates
-                    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&countrycodes=il`);
-                    const data = await response.json();
-                    
-                    if (data && data.length > 0) {
-                        const lat = parseFloat(data[0].lat);
-                        const lon = parseFloat(data[0].lon);
-                        
-                        const mapOptions = {
-                            zoomControl: false,
-                            scrollWheelZoom: false,
-                            dragging: false,
-                            doubleClickZoom: false,
-                            boxZoom: false,
-                            keyboard: false
-                        };
-                        
-                        const map = L.map(elementId, mapOptions).setView([lat, lon], 15);
-                        
-                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                        }).addTo(map);
-                        
-                        const customMarkerIcon = L.divIcon({
-                            className: 'custom-map-marker',
-                            html: `<div style="background: var(--wa-teal-green); color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">📍</div>`,
-                            iconSize: [30, 30],
-                            iconAnchor: [15, 15]
-                        });
+                    map.invalidateSize();
+                } catch (e) {
+                    console.warn("Error invalidating map size:", e);
+                }
+            }, 100);
+            
+        } else {
+            mapElement.innerHTML = '<div style="text-align:center;padding:20px;color:var(--wa-text-secondary);">לא ניתן למצוא את הכתובת במפה</div>';
+        }
+    } catch (error) {
+        console.error("Map initialization error:", error);
+        mapElement.innerHTML = '<div style="text-align:center;padding:20px;color:var(--wa-text-secondary);">שגיאה בטעינת המפה</div>';
+    }
+},
+
+/**
+ * Improved dashboard map initialization with debouncing
+ */
+initializeDashboardMaps() {
+    const orders = (this.dashboardData && this.dashboardData.orders) || [];
+    
+    // Clear all existing maps first
+    Object.keys(this.mapInstances).forEach(key => {
+        if (key.startsWith('map-')) {
+            try {
+                this.mapInstances[key].remove();
+                delete this.mapInstances[key];
+            } catch (e) {
+                console.warn("Error removing map:", e);
+            }
+        }
+    });
+    
+    // Initialize maps with delay to prevent conflicts
+    orders.forEach((order, index) => {
+        if (order.address && order.address.trim() !== '') {
+            setTimeout(() => {
+                this.initMapFromAddress(`map-${order.id}`, order.address, order.project);
+            }, index * 200); // Stagger initialization
+        }
+    });
+},
                         
                         const marker = L.marker([lat, lon], { icon: customMarkerIcon }).addTo(map);
                         
@@ -1024,64 +1108,75 @@
                     mapElement.innerHTML = '<div style="text-align:center;padding:20px;color:var(--wa-text-secondary);">לא ניתן לטעון מפה</div>';
                 }
             },
-            
-            showOrderDetails(orderId) {
-                const order = this.dashboardData.orders.find(o => o.id === orderId);
-                if (!order) {
-                    this.showToast('לא נמצאו פרטי הזמנה', 'error');
-                    return;
-                }
-                
-                const modalHtml = `
-                    <div class="modal-overlay" id="order-details-modal">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h3 class="modal-title">פרטי הזמנה</h3>
-                                <button class="modal-close">&times;</button>
-                            </div>
-                            <div class="modal-body">
-                                <div style="margin-bottom: 15px;">
-                                    <h4 style="margin: 0 0 10px 0; color: var(--wa-text-primary);">${order.project}</h4>
-                                    <p style="margin: 0; color: var(--wa-text-secondary);">מספר הזמנה: ${order.id}</p>
-                                </div>
-                                
-                                <div style="background: #f8f9fa; padding: 15px; border-radius: var(--radius); margin-bottom: 15px;">
-                                    <p><strong>סוג:</strong> ${order.type === 'container' ? 'מכולה' : 'חומרי בניין'}</p>
-                                    <p><strong>סטטוס:</strong> <span class="status-badge status-${order.status.replace(/\s+/g, '-')}">${order.status}</span></p>
-                                    <p><strong>מוצרים:</strong> ${order.items || 'לא צוין'}</p>
-                                    <p><strong>כתובת:</strong> ${order.address || 'לא צוינה'}</p>
-                                    ${order.startDate ? `<p><strong>תאריך התחלה:</strong> ${new Date(order.startDate).toLocaleDateString('he-IL')}</p>` : ''}
-                                </div>
-                                
-                                ${order.address ? `
-                                <div>
-                                    <h4 style="margin: 0 0 10px 0; color: var(--wa-text-primary);">מיקום הפרויקט</h4>
-                                    <div class="dynamic-map-container" id="detail-map-${order.id}" style="height: 250px;"></div>
-                                </div>
-                                ` : ''}
-                                
-                                <div style="display: flex; gap: 10px; margin-top: 20px;">
-                                    <button class="card-button" onclick="app.contactAboutOrder('${order.id}')" style="flex: 1;">צור קשר</button>
-                                    <button class="card-button" onclick="document.getElementById('order-details-modal').remove()" style="flex: 1; background: var(--wa-teal-green); color: white;">סגור</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>`;
-                
-                document.body.insertAdjacentHTML('beforeend', modalHtml);
-                const modal = document.getElementById('order-details-modal');
-                modal.querySelector('.modal-close').onclick = () => modal.remove();
-                modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
-                
-                // Initialize map for the modal
-                if (order.address) {
-                    setTimeout(() => {
-                        this.initMapFromAddress(`detail-map-${order.id}`, order.address, order.project);
-                    }, 300);
-                }
-            }
-        };
-
+   showOrderDetails(orderId) {
+    const order = this.dashboardData.orders.find(o => o.id === orderId);
+    if (!order) {
+        this.showToast('לא נמצאו פרטי הזמנה', 'error');
+        return;
+    }
+    
+    const modalHtml = `
+        <div class="modal-overlay" id="order-details-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">פרטי הזמנה</h3>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div style="margin-bottom: 15px;">
+                        <h4 style="margin: 0 0 10px 0; color: var(--wa-text-primary);">${order.project}</h4>
+                        <p style="margin: 0; color: var(--wa-text-secondary);">מספר הזמנה: ${order.id}</p>
+                    </div>
+                    
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: var(--radius); margin-bottom: 15px;">
+                        <p><strong>סוג:</strong> ${order.type === 'container' ? 'מכולה' : 'חומרי בניין'}</p>
+                        <p><strong>סטטוס:</strong> <span class="status-badge status-${order.status.replace(/\s+/g, '-')}">${order.status}</span></p>
+                        <p><strong>מוצרים:</strong> ${order.items || 'לא צוין'}</p>
+                        <p><strong>כתובת:</strong> ${order.address || 'לא צוינה'}</p>
+                        ${order.startDate ? `<p><strong>תאריך התחלה:</strong> ${new Date(order.startDate).toLocaleDateString('he-IL')}</p>` : ''}
+                    </div>
+                    
+                    ${order.address ? `
+                    <div>
+                        <h4 style="margin: 0 0 10px 0; color: var(--wa-text-primary);">מיקום הפרויקט</h4>
+                        <div class="dynamic-map-container" id="detail-map-${order.id}" style="height: 250px;"></div>
+                    </div>
+                    ` : ''}
+                    
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button class="card-button" onclick="app.contactAboutOrder('${order.id}')" style="flex: 1;">צור קשר</button>
+                        <button class="card-button" onclick="document.getElementById('order-details-modal').remove()" style="flex: 1; background: var(--wa-teal-green); color: white;">סגור</button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modal = document.getElementById('order-details-modal');
+    
+    // Cleanup function for modal removal
+    const cleanupModal = () => {
+        // Remove map instance when modal closes
+        const mapId = `detail-map-${order.id}`;
+        if (this.mapInstances[mapId]) {
+            this.mapInstances[mapId].remove();
+            delete this.mapInstances[mapId];
+        }
+        modal.remove();
+    };
+    
+    modal.querySelector('.modal-close').onclick = cleanupModal;
+    modal.onclick = (e) => { 
+        if (e.target === modal) cleanupModal(); 
+    };
+    
+    // Initialize map for the modal with delay
+    if (order.address) {
+        setTimeout(() => {
+            this.initMapFromAddress(`detail-map-${order.id}`, order.address, order.project);
+        }, 500);
+    }
+}
         // --- Start the App ---
         app.init();
     });
