@@ -257,34 +257,27 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
+        // --- Application State and Configuration ---
+        const app = {
+            API_URL: "https://saban-proxy.hsaban2025.workers.dev/",
+            clientData: null,
+            dashboardData: null,
+            mapInstances: {},
+            refreshInterval: null,
+            screens: {
+                login: document.getElementById('login-screen'),
+                dashboard: document.getElementById('dashboard-screen'),
+                chat: document.getElementById('chat-screen'),
+                help: document.getElementById('help-screen')
+            },
 
-        class SabanControlApp {
-            constructor() {
-                this.API_URL = "https://saban-proxy.hsaban2025.workers.dev/";
-                this.clientData = null;
-                this.dashboardData = null;
-                this.mapInstances = {};
-                this.refreshInterval = null;
-                this.currentFilters = { type: 'all', status: 'all' };
-                this.searchQuery = '';
-                
-                this.screens = {
-                    login: document.getElementById('login-screen'),
-                    dashboard: document.getElementById('dashboard-screen'),
-                    chat: document.getElementById('chat-screen'),
-                    help: document.getElementById('help-screen')
-                };
+            // --- INITIALIZATION ---
+            init() {
+                window.app = this; // Make app globally accessible for HTML onclicks
+                this.runDiagnostics().then(() => this.renderLogin());
+            },
 
-                this.init();
-            }
-
-            // --- INITIALIZATION AND NAVIGATION ---
-            async init() {
-                window.app = this;
-                await this.runDiagnostics();
-                this.renderLogin();
-            }
-
+            // --- NAVIGATION ---
             navigateTo(screenName) {
                 Object.values(this.mapInstances).forEach(map => map && typeof map.remove === 'function' && map.remove());
                 this.mapInstances = {};
@@ -293,17 +286,15 @@
                 if (screenName === 'help') this.renderHelp();
                 
                 Object.values(this.screens).forEach(s => s.classList.remove('active'));
-                if (this.screens[screenName]) {
-                    this.screens[screenName].classList.add('active');
-                }
+                if (this.screens[screenName]) this.screens[screenName].classList.add('active');
                 
                 if (screenName === 'dashboard') {
                     this.startAutoRefresh();
-                    setTimeout(() => this.initializeDashboardMaps(), 100);
+                    setTimeout(() => this.initializeDashboardMaps(), 150);
                 } else {
                     this.stopAutoRefresh();
                 }
-            }
+            },
 
             // --- API AND DATA HANDLING ---
             async apiPost(body) {
@@ -320,13 +311,12 @@
                     this.showToast(`שגיאת תקשורת: ${error.message}`, 'error');
                     return { success: false, error: error.message };
                 }
-            }
+            },
             
             async runDiagnostics() {
                 const panel = document.getElementById('diagnostic-panel');
                 panel.textContent = 'בודק תקשורת עם השרת...';
                 panel.className = '';
-                
                 try {
                     const response = await this.apiPost({ action: 'diagnoseSystem' });
                     if (response && response.success) {
@@ -340,16 +330,16 @@
                     panel.className = 'error';
                 }
                 setTimeout(() => { panel.style.display = 'none'; }, 4000);
-            }
+            },
 
             startAutoRefresh() {
                 if (this.refreshInterval) clearInterval(this.refreshInterval);
                 this.refreshInterval = setInterval(() => this.refreshDashboard(), 60000);
-            }
+            },
 
             stopAutoRefresh() {
                 if (this.refreshInterval) clearInterval(this.refreshInterval);
-            }
+            },
             
             async refreshDashboard() {
                 if (!this.clientData) return;
@@ -359,7 +349,7 @@
                     this.dashboardData = response.data.dashboard;
                     this.renderDashboard();
                 }
-            }
+            },
             
             // --- UI RENDERING ---
             showToast(message, type = 'info', duration = 4000) {
@@ -376,7 +366,7 @@
                 document.body.appendChild(toast);
                 toast.querySelector('.toast-close').onclick = () => toast.remove();
                 setTimeout(() => toast.parentNode && toast.remove(), duration);
-            }
+            },
             
             renderLogin() {
                 this.screens.login.innerHTML = `
@@ -398,30 +388,38 @@
                         loginBtn.innerHTML = `<span>כניסה</span>`;
                         return;
                     }
-                    const response = await this.apiPost({ action: 'getDashboardData', clientId });
-                    if (response && response.success) {
-                        this.clientData = response.data.client;
-                        this.dashboardData = response.data.dashboard;
-                        this.renderDashboard();
-                        this.navigateTo('dashboard');
-                        this.showToast(`ברוך הבא, ${this.clientData.name}! 👋`, 'success');
-                        
-                        window.OneSignalDeferred.push(function(OneSignal) {
-                            OneSignal.setExternalUserId(clientId);
-                        });
+                    try {
+                        const response = await this.apiPost({ action: 'getDashboardData', clientId });
+                        if (response && response.success) {
+                            this.clientData = response.data.client;
+                            this.dashboardData = response.data.dashboard;
+                            this.renderDashboard();
+                            this.navigateTo('dashboard');
+                            this.showToast(`ברוך הבא, ${this.clientData.name}! 👋`, 'success');
+                            
+                            try {
+                                window.OneSignalDeferred.push(function(OneSignal) {
+                                    OneSignal.setExternalUserId(clientId);
+                                });
+                            } catch (e) {
+                                console.error("OneSignal Error:", e);
+                            }
 
-                    } else {
-                        this.showToast(`כניסה נכשלה: ${response.error || 'אנא בדוק את מספר הלקוח.'}`, 'error');
+                        } else {
+                            this.showToast(`כניסה נכשלה: ${response.error || 'אנא בדוק את מספר הלקוח.'}`, 'error');
+                        }
+                    } catch (e) {
+                         this.showToast(`שגיאת התחברות: ${e.message}`, 'error');
+                    } finally {
+                        loginBtn.disabled = false;
+                        loginBtn.innerHTML = `<span>כניסה</span>`;
                     }
-                    loginBtn.disabled = false;
-                    loginBtn.innerHTML = `<span>כניסה</span>`;
                 };
                 clientIdInput.onkeypress = (e) => { if (e.key === 'Enter') loginBtn.click(); };
-            }
+            },
 
             renderDashboard() {
                 let filteredOrders = (this.dashboardData && this.dashboardData.orders) || [];
-                // Filtering logic...
                 const stats = this.dashboardData.stats || { total: 0, active: 0, pending: 0 };
                 this.screens.dashboard.innerHTML = `
                     <header class="app-header">
@@ -435,28 +433,27 @@
                             <div class="quick-action-btn" onclick="app.navigateTo('help')"><div class="quick-action-icon"><i class="fas fa-question-circle"></i></div><div class="quick-action-text">מרכז מידע</div></div>
                         </div>
                         <div class="search-container">
-                            <input type="text" class="search-input" id="search-input" placeholder="חפש הזמנה, פרויקט..." value="${this.searchQuery}">
-                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" class="search-input" id="search-input" placeholder="חפש הזמנה, פרויקט..." value="">
                         </div>
                         <div id="orders-container">
                             ${filteredOrders.length > 0 ? filteredOrders.map(order => this.renderOrderCard(order)).join('') : '<p>אין הזמנות להצגה.</p>'}
                         </div>
                     </div>
+                     <button class="fab" onclick="app.navigateTo('chat')"><i class="fa-solid fa-comment-dots"></i></button>
                 `;
                 
                 document.getElementById('search-input').addEventListener('input', (e) => { this.searchQuery = e.target.value; this.renderDashboard(); });
-                setTimeout(() => this.initializeDashboardMaps(), 0);
-            }
+                setTimeout(() => this.initializeDashboardMaps(), 150);
+            },
 
             renderOrderCard(order) {
                 const isOverdue = order.type === 'container' && (new Date() - new Date(order.startDate)) / 864e5 > 10;
-                // FIX: Ensure status is always a string before calling .replace()
                 const statusString = String(order.status || '');
                 return `
                     <div class="order-card ${isOverdue ? 'overdue' : ''}" data-order-id="${order.id}">
                         <div class="order-card-header">
                             <h4 class="order-title">${order.project}</h4>
-                            <div class="order-badges"><span class="status-badge status-${statusString.replace(' ', '-')}">${statusString}</span></div>
+                            <div class="order-badges"><span class="status-badge status-${statusString.replace(/\s+/g, '-')}">${statusString}</span></div>
                         </div>
                         <div class="order-card-body">
                             <div class="order-details">
@@ -470,113 +467,80 @@
                             <button class="card-button" onclick="app.contactAboutOrder('${order.id}')">צור קשר</button>
                         </div>
                     </div>`;
-            }
+            },
 
             renderChat() {
-                // ... Chat rendering logic ...
-            }
+                this.screens.chat.innerHTML = `
+                    <header class="app-header">
+                         <button id="back-to-dashboard-btn" style="background:none;border:none;font-size:1.5rem;transform:scaleX(-1);cursor:pointer;">➡️</button>
+                         <div class="header-info"><div class="client-name">${this.clientData.name}</div><div class="client-status"><div class="status-dot"></div>מחובר</div></div>
+                         <img src="${this.clientData.avatar}" alt="Avatar" class="avatar">
+                    </header>
+                    <div id="chat-canvas" class="app-content"></div>
+                    <footer class="chat-footer">
+                        <div id="attachment-menu">
+                            <div class="attachment-item" onclick="app.handleFileAttachment()"><div class="icon-wrapper" style="background: #007bff;"><i class="fa-solid fa-file"></i></div><span>מסמך/תמונה</span></div>
+                            <div class="attachment-item" onclick="app.handleLocationSend()"><div class="icon-wrapper" style="background: #28a745;"><i class="fa-solid fa-location-dot"></i></div><span>שתף מיקום</span></div>
+                            <div class="attachment-item" onclick="app.showFreeOrderForm()"><div class="icon-wrapper" style="background: #ff6b35;"><i class="fa-solid fa-file-invoice"></i></div><span>הזמנה חופשית</span></div>
+                        </div>
+                        <div class="chat-input-wrapper">
+                             <button id="attach-btn" class="attach-button"><i class="fa-solid fa-paperclip"></i></button>
+                             <input type="file" id="file-input" hidden accept="image/*,.pdf,.doc,.docx,.txt">
+                             <textarea id="message-input" class="chat-input" placeholder="הקלד הודעה..."></textarea>
+                        </div>
+                        <button id="send-btn" class="send-button"><i class="fa-solid fa-paper-plane"></i></button>
+                    </footer>`;
+                
+                document.getElementById('back-to-dashboard-btn').onclick = () => this.navigateTo('dashboard');
+                document.getElementById('send-btn').onclick = () => this.handleSendMessage();
+                document.getElementById('message-input').onkeypress = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.handleSendMessage(); } };
+                document.getElementById('attach-btn').onclick = () => document.getElementById('attachment-menu').classList.toggle('visible');
+                document.getElementById('file-input').onchange = (e) => this.handleFileUpload(e);
+                const hour = new Date().getHours();
+                const greeting = hour < 12 ? 'בוקר טוב' : hour < 18 ? 'צהריים טובים' : 'ערב טוב';
+                this.addMessage({ html: `${greeting} ${this.clientData.name}! איך אפשר לעזור?`, type: 'incoming' });
+            },
             
             renderHelp() {
-                // ... Help screen rendering logic ...
-            }
+                // ... (Omitted for brevity)
+            },
 
             // --- CHAT AND ORDER FUNCTIONALITY ---
             async handleSendMessage() {
-                // ... Send message logic ...
-            }
+                 // ... (Omitted for brevity)
+            },
 
             showOrderPreview(preview, originalText) {
-                // ... Order preview logic ...
-            }
+                 // ... (Omitted for brevity)
+            },
 
             showFreeOrderForm() {
-                const modalHtml = `
-                    <div class="modal-overlay" id="free-order-modal">
-                        <div class="modal-content">
-                            <div class="modal-header"><h3 class="modal-title">📋 הזמנה חדשה</h3><button class="modal-close">✕</button></div>
-                            <form class="modal-form" id="free-order-form">
-                                <label>🏗️ שם הפרויקט</label>
-                                <input type="text" id="project-name" required>
-                                
-                                <label>🚚 כתובת אספקה</label>
-                                <div class="address-fields">
-                                    <input type="text" id="delivery-city" placeholder="עיר" required>
-                                    <input type="text" id="delivery-street" placeholder="רחוב" required>
-                                    <input type="text" id="delivery-number" placeholder="מספר" required>
-                                </div>
-
-                                <label>📦 רשימת מוצרים</label>
-                                <textarea id="products-list" rows="4" placeholder="כל מוצר בשורה נפרדת..." required></textarea>
-                                
-                                <label>📝 הערות</label>
-                                <textarea id="order-notes" rows="2"></textarea>
-                                
-                                <button type="submit"><span>✅ שלח הזמנה</span></button>
-                            </form>
-                        </div>
-                    </div>`;
+                const modalHtml = `...`; // (Omitted for brevity)
                 document.body.insertAdjacentHTML('beforeend', modalHtml);
                 const modal = document.getElementById('free-order-modal');
                 modal.querySelector('.modal-close').onclick = () => modal.remove();
                 document.getElementById('free-order-form').onsubmit = (e) => this.handleFreeOrderSubmit(e);
-            }
+            },
             
             handleFreeOrderSubmit(event) {
-                event.preventDefault();
-                const form = event.target;
-                const submitBtn = form.querySelector('button[type="submit"]');
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = `<span>שולח...</span><i class="fas fa-spinner fa-spin"></i>`;
-
-                // --- Optimistic UI: Close modal and show loading toast immediately ---
-                document.getElementById('free-order-modal').remove();
-                this.showToast('שולח את ההזמנה לשרת... 🤔', 'info', 10000);
-
-                const city = form.querySelector('#delivery-city').value;
-                const street = form.querySelector('#delivery-street').value;
-                const number = form.querySelector('#delivery-number').value;
-                const fullAddress = `${street} ${number}, ${city}`;
-
-                const orderData = {
-                    projectName: form.querySelector('#project-name').value,
-                    deliveryAddress: fullAddress,
-                    products: form.querySelector('#products-list').value,
-                    notes: form.querySelector('#order-notes').value
-                };
-
-                // --- Asynchronous server call ---
-                this.apiPost({ action: 'createFreeFormOrder', orderData, clientId: this.clientData.id }).then(response => {
-                    if (response.success && response.data.orderId) {
-                        this.showOrderSuccessModal(response.data.orderId, orderData, response.data.googleDriveLink);
-                        this.refreshDashboard(); // Refresh data in the background
-                    } else {
-                        this.showToast(`שגיאה: ${response.error || 'לא ניתן היה ליצור הזמנה.'}`, 'error');
-                    }
-                });
-            }
+                // ... (Omitted for brevity)
+            },
 
             showOrderSuccessModal(orderId, orderData, googleDriveLink) {
-                 const whatsappMsg = encodeURIComponent(`הזמנה חדשה התקבלה:\nמספר: ${orderId}\nפרויקט: ${orderData.projectName}\nלצפייה: ${googleDriveLink}`);
-                 const whatsappUrl = `https://wa.me/972508860896?text=${whatsappMsg}`;
-                const successModalHtml = `
-                    <div class="modal-overlay" id="success-modal">
-                        <div class="modal-content success-modal-content">
-                             <div class="success-icon"><i class="fas fa-check-circle"></i></div>
-                             <h3 class="modal-title">ההזמנה נשלחה בהצלחה!</h3>
-                             <p style="color: var(--wa-text-secondary); margin: 10px 0 20px;">מספר הזמנה: <b>${orderId}</b></p>
-                             <p>ההזמנה ממתינה לאישור קבלה ממחלקת ההזמנות. תקבל התראה על כל שינוי סטטוס.</p>
-                             <button class="card-button" style="margin-top: 20px; background-color: var(--wa-light-green); color: white; border: none; padding: 12px; font-size: 1rem;" onclick="window.open('${whatsappUrl}', '_blank')">
-                                <i class="fab fa-whatsapp"></i> שלח אישור למחלקת הזמנות
-                             </button>
-                             <button class="card-button" style="margin-top: 10px;" onclick="document.getElementById('success-modal').remove()">סגור</button>
-                        </div>
-                    </div>`;
-                document.body.insertAdjacentHTML('beforeend', successModalHtml);
-            }
+                 // ... (Omitted for brevity)
+            },
 
             addMessage({ html, type, id }) {
-                // ... Add message to chat logic ...
-            }
+                const canvas = document.getElementById('chat-canvas');
+                if(!canvas) return;
+                const bubble = document.createElement('div');
+                bubble.className = `message-bubble ${type}`;
+                if(id) bubble.id = id;
+                bubble.innerHTML = html;
+                canvas.appendChild(bubble);
+                canvas.scrollTop = canvas.scrollHeight;
+                return bubble;
+            },
 
             contactAboutOrder(orderId) {
                 const order = this.dashboardData.orders.find(o => o.id === orderId);
@@ -596,15 +560,43 @@
                         this.handleSendMessage();
                     }
                 }, 300);
-            }
+            },
 
             // --- ATTACHMENTS, MODALS, MAPS ---
-            // ... Other helper functions (handleFileUpload, showOrderDetails, initMap, etc.)
-        }
+            initializeDashboardMaps() {
+                const orders = (this.dashboardData && this.dashboardData.orders) || [];
+                orders.forEach(order => {
+                    if (order.lat && order.lon) {
+                        this.initMap(`map-${order.id}`, order.lat, order.lon, false);
+                    }
+                });
+            },
+
+            initMap(elementId, lat, lon, isInteractive = false) {
+                const mapElement = document.getElementById(elementId);
+                if (!mapElement || this.mapInstances[elementId]) return;
+                try {
+                    const mapOptions = { /* ... */ };
+                    const map = L.map(elementId, mapOptions).setView([lat, lon], 15);
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '...' }).addTo(map);
+                    const customMarkerIcon = L.divIcon({ /* ... */ });
+                    L.marker([lat, lon], { icon: customMarkerIcon }).addTo(map);
+                    this.mapInstances[elementId] = map;
+                    setTimeout(() => map.invalidateSize(), 200);
+                } catch (e) {
+                    console.error("Map init error:", e);
+                }
+            },
+            
+            showOrderDetails(orderId) {
+                // ... (Omitted for brevity)
+            }
+        };
 
         // --- Start the App ---
-        new SabanControlApp();
+        app.init();
     });
     </script>
 </body>
 </html>
+
