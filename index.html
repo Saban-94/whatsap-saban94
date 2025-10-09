@@ -398,23 +398,28 @@
                         loginBtn.innerHTML = `<span>כניסה</span>`;
                         return;
                     }
-                    const response = await this.apiPost({ action: 'getDashboardData', clientId });
-                    if (response && response.success) {
-                        this.clientData = response.data.client;
-                        this.dashboardData = response.data.dashboard;
-                        this.renderDashboard();
-                        this.navigateTo('dashboard');
-                        this.showToast(`ברוך הבא, ${this.clientData.name}! 👋`, 'success');
-                        
-                        window.OneSignalDeferred.push(function(OneSignal) {
-                            OneSignal.setExternalUserId(clientId);
-                        });
+                    try {
+                        const response = await this.apiPost({ action: 'getDashboardData', clientId });
+                        if (response && response.success) {
+                            this.clientData = response.data.client;
+                            this.dashboardData = response.data.dashboard;
+                            this.renderDashboard();
+                            this.navigateTo('dashboard');
+                            this.showToast(`ברוך הבא, ${this.clientData.name}! 👋`, 'success');
+                            
+                            window.OneSignalDeferred.push(function(OneSignal) {
+                                OneSignal.setExternalUserId(clientId);
+                            });
 
-                    } else {
-                        this.showToast(`כניסה נכשלה: ${response.error || 'אנא בדוק את מספר הלקוח.'}`, 'error');
+                        } else {
+                            this.showToast(`כניסה נכשלה: ${response.error || 'אנא בדוק את מספר הלקוח.'}`, 'error');
+                        }
+                    } catch (e) {
+                         this.showToast(`שגיאת התחברות: ${e.message}`, 'error');
+                    } finally {
+                        loginBtn.disabled = false;
+                        loginBtn.innerHTML = `<span>כניסה</span>`;
                     }
-                    loginBtn.disabled = false;
-                    loginBtn.innerHTML = `<span>כניסה</span>`;
                 };
                 clientIdInput.onkeypress = (e) => { if (e.key === 'Enter') loginBtn.click(); };
             }
@@ -456,7 +461,7 @@
                     <div class="order-card ${isOverdue ? 'overdue' : ''}" data-order-id="${order.id}">
                         <div class="order-card-header">
                             <h4 class="order-title">${order.project}</h4>
-                            <div class="order-badges"><span class="status-badge status-${statusString.replace(' ', '-')}">${statusString}</span></div>
+                            <div class="order-badges"><span class="status-badge status-${statusString.replace(/\s+/g, '-')}">${statusString}</span></div>
                         </div>
                         <div class="order-card-body">
                             <div class="order-details">
@@ -528,7 +533,6 @@
                 submitBtn.disabled = true;
                 submitBtn.innerHTML = `<span>שולח...</span><i class="fas fa-spinner fa-spin"></i>`;
 
-                // --- Optimistic UI: Close modal and show loading toast immediately ---
                 document.getElementById('free-order-modal').remove();
                 this.showToast('שולח את ההזמנה לשרת... 🤔', 'info', 10000);
 
@@ -544,11 +548,10 @@
                     notes: form.querySelector('#order-notes').value
                 };
 
-                // --- Asynchronous server call ---
                 this.apiPost({ action: 'createFreeFormOrder', orderData, clientId: this.clientData.id }).then(response => {
                     if (response.success && response.data.orderId) {
                         this.showOrderSuccessModal(response.data.orderId, orderData, response.data.googleDriveLink);
-                        this.refreshDashboard(); // Refresh data in the background
+                        this.refreshDashboard();
                     } else {
                         this.showToast(`שגיאה: ${response.error || 'לא ניתן היה ליצור הזמנה.'}`, 'error');
                     }
@@ -599,7 +602,15 @@
             }
 
             // --- ATTACHMENTS, MODALS, MAPS ---
-            // ... Other helper functions (handleFileUpload, showOrderDetails, initMap, etc.)
+            initializeDashboardMaps() {
+                // ... map initialization ...
+            }
+
+            initMap(elementId, lat, lon, isInteractive = false) {
+                // ... map drawing ...
+            }
+
+            // ... Other helper functions (handleFileUpload, showOrderDetails)
         }
 
         // --- Start the App ---
