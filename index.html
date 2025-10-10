@@ -5,16 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>מרכז הבקרה המשודרג - ח.סבן</title>
     
-    <!-- External Libraries: Icons, Fonts, and Maps -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
-    <!-- PWA Manifest -->
     <link rel="manifest" href="./manifest.json">
     
-    <!-- OneSignal Push Notifications SDK -->
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
       window.OneSignalDeferred = window.OneSignalDeferred || [];
@@ -22,9 +19,7 @@
         OneSignal.init({
           appId: "546472ac-f9ab-4c6c-beb2-e41c72af9849",
           safari_web_id: "web.onesignal.auto.6c06a0d2-34ff-4fcc-9e26-5a3b8a4b7b5f",
-          notifyButton: {
-            enable: true,
-          },
+          notifyButton: { enable: true },
           allowLocalhostAsSecureOrigin: true,
         });
       });
@@ -33,7 +28,7 @@
     <style>
         :root {
             --wa-bg: #EFEAE2; --wa-teal-green: #008069; --wa-green: #128C7E; --wa-light-green: #25D366;
-            --wa-header-bg: #F0F2F5; --wa-system-bubble: #E2F2FF;
+            --wa-header-bg: #F0F2F5;
             --wa-text-primary: #111b21; --wa-text-secondary: #667781;
             --font-family: 'Assistant', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             --radius: 12px;
@@ -91,10 +86,10 @@
         .chat-input { flex-grow: 1; border: none; background: transparent; font-size: 1rem; resize: none; padding: 12px 5px; max-height: 100px; outline: none; }
         .send-button { background-color: var(--wa-teal-green); color: #fff; border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border: none; flex-shrink: 0; font-size: 1.2rem; cursor: pointer; }
         .message-bubble { max-width: 85%; padding: 8px 12px; border-radius: 8px; line-height: 1.5; margin-bottom: 10px; }
-        .message-bubble.outgoing { background: var(--wa-outgoing-bubble); margin-left: auto; }
-        .message-bubble.incoming { background: var(--wa-incoming-bubble); margin-right: auto; }
-        .message-bubble.system { background: var(--wa-system-bubble); text-align: center; align-self: center; font-size: 0.85rem; }
-        .suggestion-item { display: inline-block; background: var(--wa-outgoing-bubble); padding: 6px 12px; margin: 3px; border-radius: 18px; font-size: 0.9rem; cursor: pointer; }
+        .message-bubble.outgoing { background: #D9FDD3; margin-left: auto; }
+        .message-bubble.incoming { background: #FFFFFF; margin-right: auto; }
+        .message-bubble.system { background: #E2F2FF; text-align: center; align-self: center; font-size: 0.85rem; }
+        .suggestion-item { display: inline-block; background: #D9FDD3; padding: 6px 12px; margin: 3px; border-radius: 18px; font-size: 0.9rem; cursor: pointer; }
 
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
         .modal-content { background: white; border-radius: 16px; padding: 20px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; }
@@ -111,8 +106,6 @@
         .success-icon { font-size: 4rem; color: var(--wa-light-green); margin-bottom: 15px; }
 
         .toast { position: fixed; top: 20px; left: 20px; right: 20px; max-width: 580px; margin: 0 auto; background: #fff; padding: 12px 15px; border-radius: var(--radius); box-shadow: var(--shadow); z-index: 2000; display: flex; align-items: center; gap: 10px; }
-        .toast.success { border-right: 4px solid var(--wa-light-green); }
-        .toast.error { border-right: 4px solid var(--wa-danger); }
         @keyframes spin { to { transform: rotate(360deg); } }
         .fa-spinner { animation: spin 1s linear infinite; }
     </style>
@@ -127,6 +120,7 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
+        // --- Application State and Configuration ---
         const appState = {
             API_URL: "https://saban-proxy.hsaban2025.workers.dev/",
             clientData: null,
@@ -134,6 +128,7 @@
             mapInstances: {},
         };
 
+        // --- DOM Elements ---
         const screens = {
             login: document.getElementById('login-screen'),
             dashboard: document.getElementById('dashboard-screen'),
@@ -141,11 +136,12 @@
             help: document.getElementById('help-screen')
         };
 
+        // --- UTILITY FUNCTIONS ---
         function showToast(message, type = 'info', duration = 4000) {
             const existing = document.querySelector('.toast');
             if(existing) existing.remove();
             const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
+            toast.className = `toast`;
             toast.innerHTML = `<div>${message}</div>`;
             document.body.appendChild(toast);
             setTimeout(() => toast.remove(), duration);
@@ -158,7 +154,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(body)
                 });
-                if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+                if (!response.ok) throw new Error(`שגיאת שרת (HTTP ${response.status})`);
                 return await response.json();
             } catch (error) {
                 console.error("API Call Error:", error);
@@ -182,6 +178,7 @@
             }
         }
 
+        // --- RENDER FUNCTIONS ---
         function renderLogin() {
             screens.login.innerHTML = `
                 <div class="login-box">
@@ -282,7 +279,6 @@
                     <button id="send-btn" class="send-button"><i class="fa-solid fa-paper-plane"></i></button>
                 </footer>`;
             document.getElementById('send-btn').onclick = handleSendMessage;
-            
             const hour = new Date().getHours();
             const greeting = hour < 12 ? 'בוקר טוב' : 'צהריים טובים';
             addChatMessage({ html: `${greeting} ${appState.clientData.name}! איך אפשר לעזור?`, type: 'incoming' });
@@ -315,9 +311,28 @@
         window.showOrderDetails = function(orderId) {
             const order = appState.dashboardData.orders.find(o => o.id === orderId);
             if (!order) return showToast('שגיאה: לא נמצאו פרטי הזמנה.', 'error');
-            const modalHtml = `...`;
+            const modalHtml = `
+                <div class="modal-overlay" id="order-details-modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 class="modal-title">פרטי הזמנה #${order.id}</h3>
+                            <button class="modal-close">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                           <p><strong>פרויקט:</strong> ${order.project}</p>
+                           <p><strong>סטטוס:</strong> ${order.status}</p>
+                           <p><strong>מוצרים:</strong> ${order.items}</p>
+                           <p><strong>כתובת:</strong> ${order.address || 'לא צוינה'}</p>
+                           ${order.lat && order.lon ? `<div id="modal-map" style="height:250px; border-radius: var(--radius); margin-top:15px;"></div>` : ''}
+                        </div>
+                    </div>
+                </div>`;
             document.body.insertAdjacentHTML('beforeend', modalHtml);
-            // Add event listeners for modal
+            const modal = document.getElementById('order-details-modal');
+            modal.querySelector('.modal-close').onclick = () => modal.remove();
+            if (order.lat && order.lon) {
+                setTimeout(() => initMap('modal-map', order.lat, order.lon, true), 100);
+            }
         }
         
         window.contactAboutOrder = function(orderId) {
@@ -340,7 +355,11 @@
                         <div class="modal-body">
                             <form id="free-order-form" class="modal-form">
                                 <label>שם הפרויקט</label><input type="text" name="projectName" required>
-                                <label>כתובת</label><input type="text" name="address" required>
+                                <div class="address-fields">
+                                    <input type="text" name="city" placeholder="עיר" required>
+                                    <input type="text" name="street" placeholder="רחוב" required>
+                                    <input type="text" name="number" placeholder="מספר" required>
+                                </div>
                                 <label>פירוט</label><textarea name="items" rows="3" required></textarea>
                                 <button type="submit" class="card-button">שלח הזמנה</button>
                             </form>
@@ -353,7 +372,11 @@
             document.getElementById('free-order-form').onsubmit = async (e) => {
                 e.preventDefault();
                 const formData = new FormData(e.target);
-                const orderData = Object.fromEntries(formData.entries());
+                const orderData = {
+                    projectName: formData.get('projectName'),
+                    deliveryAddress: `${formData.get('street')} ${formData.get('number')}, ${formData.get('city')}`,
+                    products: formData.get('items')
+                };
                 modal.remove();
                 showToast('יוצר הזמנה... 🤔', 'info', 10000);
                 const response = await apiPost({ action: 'createFreeFormOrder', orderData, clientId: appState.clientData.id });
@@ -402,7 +425,10 @@
                 const map = L.map(elementId, {
                     zoomControl: isInteractive, dragging: isInteractive, scrollWheelZoom: isInteractive
                 }).setView([lat, lon], 15);
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap &copy; CARTO' }).addTo(map);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                    attribution: '&copy; OpenStreetMap &copy; CARTO'
+                }).addTo(map);
+
                 L.marker([lat, lon]).addTo(map);
                 appState.mapInstances[elementId] = map;
                 setTimeout(() => map.invalidateSize(), 200);
