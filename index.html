@@ -89,8 +89,7 @@
         .message-bubble.outgoing { background: #D9FDD3; margin-left: auto; }
         .message-bubble.incoming { background: #FFFFFF; margin-right: auto; }
         .message-bubble.system { background: #E2F2FF; text-align: center; align-self: center; font-size: 0.85rem; }
-        .suggestion-item { display: inline-block; background: #D9FDD3; padding: 6px 12px; margin: 3px; border-radius: 18px; font-size: 0.9rem; cursor: pointer; }
-
+        
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
         .modal-content { background: white; border-radius: 16px; padding: 20px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #e0e0e0; }
@@ -120,7 +119,6 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // --- Application State and Configuration ---
         const appState = {
             API_URL: "https://saban-proxy.hsaban2025.workers.dev/",
             clientData: null,
@@ -128,7 +126,6 @@
             mapInstances: {},
         };
 
-        // --- DOM Elements ---
         const screens = {
             login: document.getElementById('login-screen'),
             dashboard: document.getElementById('dashboard-screen'),
@@ -136,7 +133,6 @@
             help: document.getElementById('help-screen')
         };
 
-        // --- UTILITY FUNCTIONS ---
         function showToast(message, type = 'info', duration = 4000) {
             const existing = document.querySelector('.toast');
             if(existing) existing.remove();
@@ -144,7 +140,7 @@
             toast.className = `toast`;
             toast.innerHTML = `<div>${message}</div>`;
             document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), duration);
+            setTimeout(() => { if (toast.parentNode) toast.remove() }, duration);
         }
 
         async function apiPost(body) {
@@ -174,11 +170,10 @@
             if (screens[screenName]) screens[screenName].classList.add('active');
 
             if (screenName === 'dashboard') {
-                initializeDashboardMaps();
+                setTimeout(initializeDashboardMaps, 150);
             }
         }
 
-        // --- RENDER FUNCTIONS ---
         function renderLogin() {
             screens.login.innerHTML = `
                 <div class="login-box">
