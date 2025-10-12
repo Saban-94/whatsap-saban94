@@ -50,6 +50,15 @@
     // =================================================================
     const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycby9pd4u_5FJWXX3yvSGgXNqglEvDHR7ctco3uF_oTQ9aNIDBG9U1KeoLLwQEy8jdiS1hQ/exec';
 
+    // Helper function to communicate with Google Apps Script
+    const logToSheet = (action, data) => {
+        fetch(WEB_APP_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: new URLSearchParams({ action, ...data })
+        }).catch(err => console.error('Sheet logging failed:', err));
+    };
+    
     // --- SVG Icons ---
     const Icons = {
         Building: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0v-4m6 4v-4m6 4v-4m-9 4H3m2 0h5M9 7h6m-6 4h6m-6 4h6" /></svg>,
@@ -58,10 +67,17 @@
         Chat: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>,
         Paperclip: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>,
         Send: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>,
-        Spinner: () => <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+        Spinner: () => <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>,
     };
 
     const Motion = window.framerMotion.motion;
+
+    const MOCK_CHAT_TEMPLATES = {
+        welcome: [ "שלום {name} 👋, מה תרצה להזמין היום?", "היי {name}, אפשר לקבל את רשימת החומרים שדרושים לך?", "שמח לראות אותך, {name}! הדבק כאן את ההזמנה שלך (גם אם היא לא מסודרת) ואעזור לסדר הכל ✅." ],
+        order_confirmation: [ "קיבלתי, בודק את הפריטים...", "מנתח את הרשימה שהדבקת, רגע...", "מעולה, תודה! מסדר לך את זה עכשיו." ],
+        summary: [ "ההזמנה כוללת את: {items} — זה נכון?", "רק לוודא, זו הרשימה: {items}. לאשר?" ]
+    };
+
 
     // =================================================================
     //  React Components
@@ -72,12 +88,7 @@
 
       const handleLogin = (user) => {
         setCurrentUser(user);
-        // Log activity via Google Script
-        fetch(WEB_APP_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            body: new URLSearchParams({ action: 'userLogin', customerId: user.id, customerName: user.name })
-        });
+        logToSheet('userLogin', { customerId: user.id, customerName: user.name });
       };
 
       if (!currentUser) {
@@ -97,11 +108,9 @@
         e.preventDefault();
         setIsLoading(true);
         setError('');
-
         try {
             const response = await fetch(`${WEB_APP_URL}?action=login&phone=${phone.replace(/-/g, '')}`);
             const result = await response.json();
-
             if (result.success && password === 'סבן') {
                 onLogin(result.user);
             } else if (result.success && password !== 'סבן') {
@@ -129,37 +138,17 @@
             <h1 className="text-3xl font-bold mb-2">ברוכים הבאים</h1>
             <p className="text-gray-300 mb-8">הזמנות 24/7 בכף ידך</p>
             <form onSubmit={handleLogin} className="space-y-4">
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="מספר נייד"
-                className="w-full bg-white/20 border-white/30 rounded-lg p-3 text-center text-white placeholder-gray-300 focus:ring-2 focus:ring-amber-400 focus:outline-none transition-all"
-                required
-              />
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder='סיסמה'
-                className="w-full bg-white/20 border-white/30 rounded-lg p-3 text-center text-white placeholder-gray-300 focus:ring-2 focus:ring-amber-400 focus:outline-none transition-all"
-                required
-              />
+              <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="מספר נייד" className="w-full bg-white/20 border-white/30 rounded-lg p-3 text-center text-white placeholder-gray-300 focus:ring-2 focus:ring-amber-400 focus:outline-none transition-all" required />
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder='סיסמה' className="w-full bg-white/20 border-white/30 rounded-lg p-3 text-center text-white placeholder-gray-300 focus:ring-2 focus:ring-amber-400 focus:outline-none transition-all" required />
               {error && <p className="text-red-400 text-sm font-semibold">{error}</p>}
-              <button 
-                type="submit" 
-                disabled={isLoading}
-                className="w-full flex justify-center items-center gap-2 bg-amber-500 hover:bg-amber-600 disabled:bg-amber-700 text-gray-900 font-bold py-3 rounded-lg transition-all transform hover:scale-105">
+              <button type="submit" disabled={isLoading} className="w-full flex justify-center items-center gap-2 bg-amber-500 hover:bg-amber-600 disabled:bg-amber-700 text-gray-900 font-bold py-3 rounded-lg transition-all transform hover:scale-105">
                 {isLoading ? <Icons.Spinner /> : 'כניסה'}
               </button>
             </form>
-          </div>
+          </Motion.div>
         </div>
       );
     }
-    
-    // The rest of the React components (DashboardScreen, ChatScreen, etc.) remain largely the same as the previous version.
-    // To keep the code focused on the requested changes, I'll include the parts that were modified or are essential for context.
     
     function DashboardScreen({ user, onLogout }) {
         const [view, setView] = React.useState('dashboard');
@@ -173,7 +162,7 @@
         const Page = () => {
           switch(view) {
             case 'chat':
-              return <ChatScreen user={user} />;
+              return <ChatScreen user={user} onBack={() => setView('dashboard')} />;
             case 'dashboard':
             default:
               return (
@@ -201,13 +190,7 @@
                 </header>
 
                 <main className="flex-1">
-                   <Motion.div
-                        key={view}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                   >
+                   <Motion.div key={view} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
                      <Page />
                    </Motion.div>
                 </main>
@@ -216,33 +199,161 @@
     }
     
     const DashboardButton = ({ icon, label, onClick }) => (
-      <Motion.button 
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={onClick} 
-        className="bg-white p-6 rounded-xl shadow-lg text-center text-gray-700 font-semibold hover:bg-indigo-500 hover:text-white transition-all duration-300 transform"
-      >
+      <Motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={onClick} className="bg-white p-6 rounded-xl shadow-lg text-center text-gray-700 font-semibold hover:bg-indigo-500 hover:text-white transition-all duration-300 transform">
         <div className="mx-auto mb-2 w-8 h-8">{icon}</div>
         <span className="text-sm">{label}</span>
       </Motion.button>
     );
 
-    // ChatScreen remains the same logic as before, so it is omitted for brevity.
-    // The existing ChatScreen component will work seamlessly with these changes.
-    function ChatScreen({ user }) {
-        // ... The full component from the previous version goes here ...
-        // No changes needed in the ChatScreen logic itself.
-        // It will still log messages to the Google Sheet correctly.
-        return (
-          <div className="p-4">
-              <div className="bg-white rounded-lg shadow-xl h-[calc(100vh-200px)]">
-                  <p className="p-4 text-center text-gray-600">מסך הצ'אט נטען כאן. הלוגיקה זהה לגרסה הקודמת.</p>
-                  <p className="p-4 text-center text-sm text-gray-400">משתמש: {user.name}</p>
-              </div>
-          </div>
-        )
-    }
+    function ChatScreen({ user, onBack }) {
+        const [messages, setMessages] = React.useState([]);
+        const [inputText, setInputText] = React.useState('');
+        const [isTyping, setIsTyping] = React.useState(false);
+        const messagesEndRef = React.useRef(null);
 
+        React.useEffect(() => {
+            setIsTyping(true);
+            setTimeout(() => {
+                const welcomeMsg = MOCK_CHAT_TEMPLATES.welcome[Math.floor(Math.random() * MOCK_CHAT_TEMPLATES.welcome.length)].replace('{name}', user.name.split(' ')[0]);
+                const welcomeMessageObject = { sender: 'bot', text: welcomeMsg, type: 'text' };
+                setMessages([welcomeMessageObject]);
+                setIsTyping(false);
+                logToSheet('chatMessage', { customerId: user.id, customerName: user.name, sender: 'bot', message: welcomeMsg });
+            }, 1500);
+        }, [user.name, user.id]);
+
+        React.useEffect(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        }, [messages, isTyping]);
+        
+        const handleSendMessage = async () => {
+            if (inputText.trim() === '') return;
+
+            const userMessage = { sender: 'user', text: inputText, type: 'text' };
+            setMessages(prev => [...prev, userMessage]);
+            setInputText('');
+            setIsTyping(true);
+            
+            logToSheet('chatMessage', { customerId: user.id, customerName: user.name, sender: 'user', message: inputText });
+
+            setTimeout(() => {
+                const lines = userMessage.text.split('\n').filter(l => l.trim().length > 1);
+                if(lines.length > 1) {
+                    const confirmationMsg = MOCK_CHAT_TEMPLATES.order_confirmation[0];
+                    const parsedItems = lines.map(line => {
+                        const match = line.match(/(\d+)/);
+                        const quantity = match ? parseInt(match[1], 10) : 1;
+                        const name = line.replace(/(\d+)/, '').trim();
+                        return { name, quantity };
+                    });
+                    const summaryText = parsedItems.map(p => `- ${p.quantity} x ${p.name}`).join('\n');
+                    const summaryMsg = MOCK_CHAT_TEMPLATES.summary[0].replace('{items}', `\n${summaryText}`);
+                    
+                    const botMsg1 = { sender: 'bot', text: confirmationMsg, type: 'text' };
+                    const botMsg2 = { sender: 'bot', text: summaryMsg, type: 'order_summary', items: parsedItems };
+
+                    setMessages(prev => [...prev, botMsg1, botMsg2]);
+                    logToSheet('chatMessage', { customerId: user.id, customerName: user.name, sender: 'bot', message: confirmationMsg });
+                    logToSheet('chatMessage', { customerId: user.id, customerName: user.name, sender: 'bot', message: `סיכום הזמנה:\n${summaryText}` });
+                } else {
+                    const botReply = { sender: 'bot', text: "קיבלתי. איך אני יכול להמשיך מכאן?", type: 'text' };
+                    setMessages(prev => [...prev, botReply]);
+                    logToSheet('chatMessage', { customerId: user.id, customerName: user.name, sender: 'bot', message: botReply.text });
+                }
+                setIsTyping(false);
+            }, 2000);
+        };
+        
+        const handleOrderApproval = async (items) => {
+            setIsTyping(true);
+            setMessages(prev => [...prev, { sender: 'bot', type: 'progress', text: "יוצר הזמנה ושולח למערכת..." }]);
+            
+            await new Promise(r => setTimeout(r, 2000));
+            
+            const orderId = `SBN-${Date.now()}`;
+            const finalMessage = `הזמנה ${orderId.slice(-6)} נוצרה בהצלחה! ✅\n\nפרטי ההזמנה נשמרו במערכת.\nתודה שבחרת בנו!`;
+
+            setMessages(prev => prev.filter(m => m.type !== 'progress'));
+            setMessages(prev => [...prev, { sender: 'bot', text: finalMessage, type: 'text' }]);
+            setIsTyping(false);
+            
+            logToSheet('newOrder', { 
+                customerId: user.id,
+                customerName: user.name,
+                orderId: orderId,
+                items: JSON.stringify(items)
+            });
+        };
+
+        return (
+            <div className="p-4">
+                <div className="flex flex-col h-[calc(100vh-170px)] bg-white rounded-lg shadow-xl">
+                    <header className="p-3 border-b flex items-center justify-between bg-gray-50 rounded-t-lg">
+                        <div className="flex items-center gap-3">
+                            <img src={user.avatar || 'https://placehold.co/100x100/7F9CF5/FFFFFF?text=' + user.name.charAt(0)} alt="User Avatar" className="w-10 h-10 rounded-full"/>
+                            <div>
+                                <p className="font-semibold">{user.name}</p>
+                                <p className="text-xs text-green-500">זמין</p>
+                            </div>
+                        </div>
+                        <button onClick={onBack} className="text-gray-500 hover:text-gray-800 text-sm font-semibold"> &gt; חזור</button>
+                    </header>
+                    
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4 whatsapp-bg">
+                        {messages.map((msg, index) => (
+                            <div key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                {msg.type === 'order_summary' ? (
+                                    <div className="bg-white rounded-lg p-3 max-w-lg shadow-md border border-gray-200">
+                                       <p className="mb-3 whitespace-pre-wrap font-sans">{msg.text}</p>
+                                       <button onClick={() => handleOrderApproval(msg.items)} className="w-full bg-green-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600">
+                                           אישור וסיום הזמנה
+                                        </button>
+                                    </div>
+                                ) : msg.type === 'progress' ? (
+                                    <div className="bg-white rounded-lg p-3 max-w-lg shadow-md w-full text-center">
+                                        <p>{msg.text}</p>
+                                        <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+                                          <div className="bg-blue-600 h-2.5 rounded-full animate-pulse" style={{width: '100%'}}></div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                     <div className={`p-3 rounded-lg max-w-lg ${msg.sender === 'user' ? 'bg-green-100' : 'bg-white shadow-sm'}`}>
+                                        <p className="whitespace-pre-wrap">{msg.text}</p>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                        {isTyping && (
+                            <div className="flex justify-start">
+                                <div className="bg-white shadow-sm p-3 rounded-lg">
+                                    <div className="flex items-center gap-1">
+                                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
+                                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></span>
+                                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        <div ref={messagesEndRef} />
+                    </div>
+
+                    <div className="p-3 bg-gray-100 border-t flex items-center gap-2">
+                        <button className="text-gray-500 p-2 hover:bg-gray-200 rounded-full"><Icons.Paperclip /></button>
+                        <textarea
+                            value={inputText}
+                            onChange={(e) => setInputText(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSendMessage())}
+                            placeholder="הקלד הזמנה או הדבק כאן רשימה..."
+                            rows="1"
+                            className="flex-1 bg-white p-3 rounded-full border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+                        />
+                        <button onClick={handleSendMessage} className="bg-green-500 text-white p-3 rounded-full hover:bg-green-600 transition-colors"><Icons.Send /></button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+    
 
     // =================================================================
     //  Render the App
