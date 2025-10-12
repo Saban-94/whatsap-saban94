@@ -1,438 +1,384 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>מרכז הבקרה המשודרג - ח.סבן</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>אפליקציית לקוחות | ח. סבן</title>
     
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
     
-    <link rel="manifest" href="./manifest.json">
+    <!-- React & Babel for running JSX in the browser -->
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
-    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <!-- OneSignal SDK for Push Notifications -->
+    <script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" async=""></script>
     <script>
-      window.OneSignalDeferred = window.OneSignalDeferred || [];
-      OneSignalDeferred.push(function(OneSignal) {
+      window.OneSignal = window.OneSignal || [];
+      OneSignal.push(function() {
         OneSignal.init({
-          appId: "546472ac-f9ab-4c6c-beb2-e41c72af9849",
-          safari_web_id: "web.onesignal.auto.6c06a0d2-34ff-4fcc-9e26-5a3b8a4b7b5f",
-          notifyButton: { enable: true },
-          allowLocalhostAsSecureOrigin: true,
+          appId: "3e5551c0-255d-424a-b150-a92c0199f1e1", // Your OneSignal App ID
         });
       });
     </script>
-
+    
     <style>
-        :root {
-            --wa-bg: #EFEAE2; --wa-teal-green: #008069; --wa-green: #128C7E; --wa-light-green: #25D366;
-            --wa-header-bg: #F0F2F5;
-            --wa-text-primary: #111b21; --wa-text-secondary: #667781;
-            --font-family: 'Assistant', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            --radius: 12px;
-            --shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-        
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; font-family: var(--font-family); background-color: var(--wa-teal-green); }
-        
-        #app-container { display: flex; flex-direction: column; height: 100%; max-width: 600px; margin: 0 auto; background-color: #fff; box-shadow: 0 5px 20px rgba(0,0,0,0.2); position: relative; overflow: hidden; }
-        
-        .screen { display: none; flex-direction: column; height: 100%; animation: fadeIn 0.4s ease-out; }
-        .screen.active { display: flex; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        #login-screen {
-            background: linear-gradient(135deg, var(--wa-teal-green) 0%, var(--wa-green) 100%);
-            justify-content: center; align-items: center; padding: 20px;
-        }
-        .login-box { text-align: center; width: 100%; max-width: 340px; background: white; padding: 30px; border-radius: 20px; box-shadow: var(--shadow); }
-        .login-box .logo { width: 100px; height: 100px; border-radius: 20px; margin-bottom: 20px; }
-        .login-input { width: 100%; padding: 16px; font-size: 1.1rem; border-radius: var(--radius); border: 1px solid #ddd; margin-bottom: 15px; text-align: center; }
-        .login-button { width: 100%; padding: 16px; border: none; border-radius: var(--radius); background: var(--wa-teal-green); color: #fff; font-size: 1.2rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
-        .login-button:disabled { background-color: var(--wa-green); cursor: not-allowed; }
-        
-        .app-header { display: flex; align-items: center; gap: 10px; padding: 10px 15px; background: var(--wa-header-bg); flex-shrink: 0; border-bottom: 1px solid #e0e0e0; }
-        .avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
-        .header-info { flex-grow: 1; text-align: right; }
-        .client-name { font-weight: 600; color: var(--wa-text-primary); font-size: 1.1rem; }
-        
-        .app-content { flex-grow: 1; overflow-y: auto; background-color: var(--wa-bg); padding: 15px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc-0f70-73b1-11e7-911d-60d70fcded21.png'); }
-        
-        .fab { position: fixed; bottom: 20px; left: 20px; width: 60px; height: 60px; background: var(--wa-light-green); color: #fff; border-radius: 50%; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.2); font-size: 1.5rem; z-index: 100; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-
-        .quick-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; }
-        .quick-action-btn { background: white; border: 1px solid #e0e0e0; border-radius: 12px; padding: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; text-align: center; }
-        .quick-action-icon { font-size: 1.5rem; color: var(--wa-teal-green); margin-bottom: 8px; }
-        .quick-action-text { font-size: 0.85rem; font-weight: 600; color: var(--wa-text-primary); }
-
-        .order-card { background: #fff; border-radius: 16px; margin-bottom: 15px; box-shadow: var(--shadow); overflow: hidden; }
-        .order-card-header { padding: 15px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: flex-start; }
-        .order-title { font-weight: 700; font-size: 1.1rem; margin: 0; }
-        .status-badge { display: inline-flex; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
-        .status-חדשה { background-color: #e2f2ff; color: #0066cc; }
-        .status-פעיל { background-color: #d4edda; color: #155724; }
-        .status-ממתין { background-color: #fff3cd; color: #856404; }
-        .order-card-body { padding: 15px; }
-        .order-details p { margin: 0 0 8px 0; font-size: 0.95rem; color: var(--wa-text-secondary); }
-        .order-card-map { height: 150px; border-radius: 10px; margin-top: 10px; z-index: 1; }
-        .order-card-footer { padding: 10px 15px; border-top: 1px solid #f0f0f0; display: flex; gap: 10px; background: #f8f9fa; }
-        .card-button { flex: 1; padding: 8px; border-radius: 8px; border: 1px solid var(--wa-teal-green); background: transparent; color: var(--wa-teal-green); cursor: pointer; font-weight: 600; }
-        
-        .chat-footer { padding: 8px; background: var(--wa-header-bg); display: flex; align-items: flex-end; gap: 8px; border-top: 1px solid #e0e0e0;}
-        .chat-input-wrapper { flex-grow: 1; background: #fff; border-radius: 24px; display: flex; align-items: center; padding: 0 10px; }
-        .chat-input { flex-grow: 1; border: none; background: transparent; font-size: 1rem; resize: none; padding: 12px 5px; max-height: 100px; outline: none; }
-        .send-button { background-color: var(--wa-teal-green); color: #fff; border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border: none; flex-shrink: 0; font-size: 1.2rem; cursor: pointer; }
-        .message-bubble { max-width: 85%; padding: 8px 12px; border-radius: 8px; line-height: 1.5; margin-bottom: 10px; }
-        .message-bubble.outgoing { background: #D9FDD3; margin-left: auto; }
-        .message-bubble.incoming { background: #FFFFFF; margin-right: auto; }
-        .message-bubble.system { background: #E2F2FF; text-align: center; align-self: center; font-size: 0.85rem; }
-        
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
-        .modal-content { background: white; border-radius: 16px; padding: 20px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #e0e0e0; }
-        .modal-title { color: var(--wa-teal-green); margin: 0; font-size: 1.3rem; }
-        .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--wa-text-secondary); }
-        .modal-body p { margin: 0 0 10px; color: var(--wa-text-secondary); }
-        .modal-body strong { color: var(--wa-text-primary); }
-        .modal-form label { font-weight: 600; margin-bottom: 5px; display: block; }
-        .modal-form input, .modal-form textarea { font-family: var(--font-family); border: 1px solid #ddd; border-radius: 8px; padding: 10px; margin-bottom: 10px; width: 100%; }
-        .modal-form button { width: 100%; margin-top: 10px; }
-        .address-fields { display: grid; grid-template-columns: 1fr 1fr 80px; gap: 10px; }
-        .success-modal-content { text-align: center; }
-        .success-icon { font-size: 4rem; color: var(--wa-light-green); margin-bottom: 15px; }
-
-        .toast { position: fixed; top: 20px; left: 20px; right: 20px; max-width: 580px; margin: 0 auto; background: #fff; padding: 12px 15px; border-radius: var(--radius); box-shadow: var(--shadow); z-index: 2000; display: flex; align-items: center; gap: 10px; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .fa-spinner { animation: spin 1s linear infinite; }
+        body { font-family: 'Arial', sans-serif; }
+        .whatsapp-bg { background-image: url('https://i.pinimg.com/736x/8c/98/99/8c98994518b575bfd8c949e91d20548b.jpg'); background-size: contain; }
+        .login-bg { background-image: url('https://source.unsplash.com/1600x900/?construction,architecture'); background-size: cover; }
     </style>
 </head>
-<body>
-    <div id="app-container">
-        <div id="login-screen" class="screen active"></div>
-        <div id="dashboard-screen" class="screen"></div>
-        <div id="chat-screen" class="screen"></div>
-        <div id="help-screen" class="screen"></div>
-    </div>
+<body class="bg-gray-100">
+    <div id="root"></div>
 
-    <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const appState = {
-            API_URL: "https://saban-proxy.hsaban2025.workers.dev/",
-            clientData: null,
-            dashboardData: null,
-            mapInstances: {},
-        };
+    <script type="text/babel">
+    
+    // =================================================================
+    //  Google Apps Script Backend Configuration
+    // =================================================================
+    // !!! חשוב מאוד: אחרי שתעלה את קובץ ה-Code.gs ותפרסם אותו כ-WebApp,
+    // !!! הדבק כאן את הכתובת שקיבלת.
+    const WEB_APP_URL = 'הדבק כאן את כתובת ה-URL של ה-WebApp שלך מ-Google Apps Script';
 
-        const screens = {
-            login: document.getElementById('login-screen'),
-            dashboard: document.getElementById('dashboard-screen'),
-            chat: document.getElementById('chat-screen'),
-            help: document.getElementById('help-screen')
-        };
+    // =================================================================
+    //  Data Simulation & Helper Functions
+    // =================================================================
+    
+    const MOCK_CUSTOMERS = [
+        { id: '60120', name: 'בר אורניל', phone: '050-1234567', avatar: 'https://placehold.co/100x100/7F9CF5/EBF4FF?text=ב.א' },
+        { id: '60100', name: 'תחסין', phone: '050-1234568', avatar: 'https://placehold.co/100x100/6366F1/EBF4FF?text=ת' },
+        { id: '608190', name: 'ח.ענבר אחזקות', phone: '052-5777307', avatar: 'https://placehold.co/100x100/F59E0B/FFFBEB?text=ח.ע' },
+        { id: 'cust_3', name: 'רותם כחילה', phone: '052-4811575', avatar: 'https://placehold.co/100x100/10B981/ECFDF5?text=ר.כ' },
+    ];
+    
+    const MOCK_CHAT_TEMPLATES = {
+        welcome: [ "שלום {name} 👋, מה תרצה להזמין היום?", "היי {name}, אפשר לקבל את רשימת החומרים שדרושים לך?", "שמח לראות אותך, {name}! הדבק כאן את ההזמנה שלך (גם אם היא לא מסודרת) ואעזור לסדר הכל ✅." ],
+        order_confirmation: [ "קיבלתי, בודק את הפריטים...", "מנתח את הרשימה שהדבקת, רגע...", "מעולה, תודה! מסדר לך את זה עכשיו." ],
+        address: [ "מה הכתובת המדויקת למשלוח?", "לאן תרצה שנספק את ההזמנה?" ],
+        summary: [ "ההזמנה כוללת את: {items} — זה נכון?", "רק לוודא, זו הרשימה: {items}. לאשר?" ]
+    };
 
-        function showToast(message, type = 'info', duration = 4000) {
-            const existing = document.querySelector('.toast');
-            if(existing) existing.remove();
-            const toast = document.createElement('div');
-            toast.className = `toast`;
-            toast.innerHTML = `<div>${message}</div>`;
-            document.body.appendChild(toast);
-            setTimeout(() => { if (toast.parentNode) toast.remove() }, duration);
+    const getGreetingMessage = () => {
+        const hour = new Date().getHours();
+        if (hour < 12) return { text: "בוקר טוב, {name}! איזה כיף להתחיל איתך את היום", emoji: "☀️" };
+        if (hour < 18) return { text: "צהריים טובים, {name}! מקווה שהכל הולך חלק", emoji: "😊" };
+        return { text: "ערב טוב, {name}! תפסת לך רגע של נחת לתכנן את יום המחר? אנחנו כאן 24/7 בשבילך.", emoji: "🌙" };
+    };
+    
+    // Function to communicate with Google Apps Script
+    const logActivityToSheet = async (action, data) => {
+      if (!WEB_APP_URL.startsWith('https://')) {
+        console.warn('WEB_APP_URL is not configured. Skipping sheet log.');
+        return;
+      }
+      try {
+        const response = await fetch(WEB_APP_URL, {
+          method: 'POST',
+          mode: 'no-cors', // Important for simple POST requests to Apps Script
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            action: action,
+            ...data
+          })
+        });
+        console.log('Activity logged successfully');
+      } catch (error) {
+        console.error('Error logging to Google Sheet:', error);
+      }
+    };
+    
+    // --- SVG Icons ---
+    const Icons = {
+        Building: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0v-4m6 4v-4m6 4v-4m-9 4H3m2 0h5M9 7h6m-6 4h6m-6 4h6" /></svg>,
+        Container: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-14L4 7v10l8 4m0-14V3" /></svg>,
+        History: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+        Chat: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>,
+        Paperclip: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>,
+        Send: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>,
+    };
+
+    // =================================================================
+    //  React Components
+    // =================================================================
+    
+    function App() {
+      const [currentUser, setCurrentUser] = React.useState(null);
+
+      if (!currentUser) {
+        return <LoginScreen onLogin={(user) => {
+            setCurrentUser(user);
+            logActivityToSheet('userLogin', { customerId: user.id, customerName: user.name });
+        }} />;
+      }
+
+      return <DashboardScreen user={currentUser} onLogout={() => setCurrentUser(null)} />;
+    }
+    
+    function LoginScreen({ onLogin }) {
+      const [phone, setPhone] = React.useState('');
+      const [password, setPassword] = React.useState('');
+      const [error, setError] = React.useState('');
+
+      const handleLogin = (e) => {
+        e.preventDefault();
+        const foundUser = MOCK_CUSTOMERS.find(c => c.phone.replace(/-/g, '') === phone.replace(/-/g, ''));
+        if (foundUser && password === 'סבן') {
+          setError('');
+          onLogin(foundUser);
+        } else {
+          setError('מספר נייד או סיסמה שגויים.');
         }
+      };
 
-        async function apiPost(body) {
-            try {
-                const response = await fetch(appState.API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body)
+      return (
+        <div className="flex items-center justify-center min-h-screen login-bg">
+          <div className="absolute inset-0 bg-black opacity-60"></div>
+          <div className="relative bg-white/10 backdrop-blur-lg p-8 rounded-2xl shadow-2xl text-center w-full max-w-md text-white border border-white/20">
+            <img src="https://placehold.co/150x50/FFFFFF/000000?text=לוגו+ח.סבן" alt="Saban Logo" className="mx-auto mb-6"/>
+            <h1 className="text-2xl font-bold mb-2">ברוכים הבאים</h1>
+            <p className="text-gray-300 mb-8">הזמנות 24/7 בכף ידך</p>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="מספר נייד"
+                className="w-full bg-white/20 border-white/30 rounded-lg p-3 text-center text-white placeholder-gray-300 focus:ring-2 focus:ring-amber-400 focus:outline-none"
+                required
+              />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder='סיסמה (ברירת מחדל: "סבן")'
+                className="w-full bg-white/20 border-white/30 rounded-lg p-3 text-center text-white placeholder-gray-300 focus:ring-2 focus:ring-amber-400 focus:outline-none"
+                required
+              />
+              {error && <p className="text-red-400 text-sm">{error}</p>}
+              <button type="submit" className="w-full bg-amber-500 hover:bg-amber-600 text-gray-900 font-bold py-3 rounded-lg transition-transform transform hover:scale-105">
+                כניסה
+              </button>
+            </form>
+          </div>
+        </div>
+      );
+    }
+
+    function DashboardScreen({ user, onLogout }) {
+        const [view, setView] = React.useState('dashboard');
+        const greeting = React.useMemo(() => getGreetingMessage(), []);
+
+        const navigateTo = (newView) => {
+            setView(newView);
+            if(newView === 'chat') {
+                logActivityToSheet('chatView', { customerId: user.id, customerName: user.name });
+            }
+        };
+
+        return (
+            <div className="bg-gray-100 min-h-screen">
+                <header className="bg-white shadow-sm p-4 flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                        <img src={user.avatar} alt="User Avatar" className="w-12 h-12 rounded-full border-2 border-indigo-500"/>
+                        <div>
+                            <h1 className="font-bold text-lg text-gray-800">{greeting.text.replace('{name}', user.name.split(' ')[0])} {greeting.emoji}</h1>
+                            <p className="text-sm text-gray-500">מחובר כ: {user.name}</p>
+                        </div>
+                    </div>
+                    <button onClick={onLogout} className="text-gray-500 hover:text-indigo-600">התנתקות</button>
+                </header>
+
+                <main className="p-6">
+                    {view === 'dashboard' && (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <DashboardButton icon={<Icons.Chat />} label="צ'אט והזמנה חדשה" onClick={() => navigateTo('chat')} />
+                            <DashboardButton icon={<Icons.Building />} label="חומרי בניין" onClick={() => navigateTo('chat')} />
+                            <DashboardButton icon={<Icons.Container />} label="מכולות" onClick={() => navigateTo('chat')} />
+                            <DashboardButton icon={<Icons.History />} label="היסטוריית הזמנות" onClick={() => alert('היסטוריית הזמנות תהיה זמינה בקרוב!')} />
+                        </div>
+                    )}
+                    {view === 'chat' && <ChatScreen user={user} onBack={() => setView('dashboard')} />}
+                </main>
+            </div>
+        );
+    }
+
+    const DashboardButton = ({ icon, label, onClick }) => (
+        <button onClick={onClick} className="bg-white p-6 rounded-xl shadow-md text-center text-gray-700 font-semibold hover:shadow-xl hover:bg-indigo-500 hover:text-white transition-all duration-300 transform hover:-translate-y-1">
+            <div className="mx-auto mb-2">{icon}</div>
+            {label}
+        </button>
+    );
+
+    function ChatScreen({ user, onBack }) {
+        const [messages, setMessages] = React.useState([]);
+        const [inputText, setInputText] = React.useState('');
+        const [isTyping, setIsTyping] = React.useState(false);
+        const messagesEndRef = React.useRef(null);
+
+        React.useEffect(() => {
+            setIsTyping(true);
+            setTimeout(() => {
+                const welcomeMsg = MOCK_CHAT_TEMPLATES.welcome[Math.floor(Math.random() * MOCK_CHAT_TEMPLATES.welcome.length)].replace('{name}', user.name.split(' ')[0]);
+                const welcomeMessageObject = { sender: 'bot', text: welcomeMsg, type: 'text' };
+                setMessages([welcomeMessageObject]);
+                setIsTyping(false);
+                logActivityToSheet('chatMessage', {
+                    customerId: user.id,
+                    customerName: user.name,
+                    sender: 'bot',
+                    message: welcomeMsg
                 });
-                if (!response.ok) throw new Error(`שגיאת שרת (HTTP ${response.status})`);
-                return await response.json();
-            } catch (error) {
-                console.error("API Call Error:", error);
-                showToast(`שגיאת תקשורת: ${error.message}`, 'error');
-                return { success: false, error: error.message };
-            }
-        }
+            }, 1500);
+        }, [user.name, user.id]);
 
-        function navigateTo(screenName) {
-            Object.values(appState.mapInstances).forEach(map => map && map.remove());
-            appState.mapInstances = {};
-            
-            if (screenName === 'chat' && appState.clientData) renderChat();
-            if (screenName === 'help') renderHelp();
-            
-            Object.values(screens).forEach(s => s.classList.remove('active'));
-            if (screens[screenName]) screens[screenName].classList.add('active');
-
-            if (screenName === 'dashboard') {
-                setTimeout(initializeDashboardMaps, 150);
-            }
-        }
-
-        function renderLogin() {
-            screens.login.innerHTML = `
-                <div class="login-box">
-                    <img src="https://i.postimg.cc/tCpLp7B6/image.png" alt="לוגו" class="logo">
-                    <h2>ח. סבן - מרכז הבקרה</h2>
-                    <input type="text" id="client-id-input" class="login-input" placeholder="הקלד מספר לקוח" value="60100">
-                    <button id="login-btn" class="login-button"><span>כניסה</span></button>
-                </div>`;
-            
-            const loginBtn = document.getElementById('login-btn');
-            loginBtn.onclick = async () => {
-                loginBtn.disabled = true;
-                loginBtn.innerHTML = `<span>מתחבר...</span><i class="fas fa-spinner fa-spin"></i>`;
-                const clientId = document.getElementById('client-id-input').value.trim();
-
-                if (!clientId) {
-                    showToast('אנא הזן מספר לקוח', 'error');
-                    loginBtn.disabled = false;
-                    loginBtn.innerHTML = `<span>כניסה</span>`;
-                    return;
-                }
-
-                try {
-                    const response = await apiPost({ action: 'getDashboardData', clientId });
-                    if (response && response.success) {
-                        appState.clientData = response.data.client;
-                        appState.dashboardData = response.data.dashboard;
-                        renderDashboard();
-                        navigateTo('dashboard');
-                        showToast(`ברוך הבא, ${appState.clientData.name}! 👋`, 'success');
-                    } else {
-                        showToast(`כניסה נכשלה: ${response.error || 'שגיאה לא ידועה'}`, 'error');
-                    }
-                } catch (e) {
-                     showToast(`שגיאת התחברות: ${e.message}`, 'error');
-                } finally {
-                    loginBtn.disabled = false;
-                    loginBtn.innerHTML = `<span>כניסה</span>`;
-                }
-            };
-        }
-
-        function renderDashboard() {
-            const { orders } = appState.dashboardData;
-            screens.dashboard.innerHTML = `
-                <header class="app-header">
-                    <img src="${appState.clientData.avatar}" alt="Avatar" class="avatar">
-                    <div class="header-info"><div class="client-name">${appState.clientData.name}</div></div>
-                </header>
-                <div class="app-content">
-                    <div class="quick-actions">
-                        <div class="quick-action-btn" onclick="showFreeOrderForm()"><div class="quick-action-icon"><i class="fas fa-plus-circle"></i></div><div class="quick-action-text">הזמנה חדשה</div></div>
-                        <div class="quick-action-btn" onclick="navigateTo('chat')"><div class="quick-action-icon"><i class="fas fa-comments"></i></div><div class="quick-action-text">צ'אט חכם</div></div>
-                        <div class="quick-action-btn" onclick="navigateTo('help')"><div class="quick-action-icon"><i class="fas fa-question-circle"></i></div><div class="quick-action-text">מרכז מידע</div></div>
-                    </div>
-                    <div id="orders-container">
-                        ${(orders && orders.length > 0) ? orders.map(renderOrderCard).join('') : '<p style="text-align:center;color:var(--wa-text-secondary);">אין הזמנות להצגה.</p>'}
-                    </div>
-                </div>
-                <button class="fab" onclick="navigateTo('chat')"><i class="fa-solid fa-comment-dots"></i></button>`;
-            
-            initializeDashboardMaps();
-        }
-
-        function renderOrderCard(order) {
-            const statusString = String(order.status || '').trim();
-            const hasCoords = order.lat && order.lon;
-            return `
-                <div class="order-card" data-order-id="${order.id}">
-                    <div class="order-card-header">
-                        <h4 class="order-title">${order.project}</h4>
-                        <span class="status-badge status-${statusString.replace(/\s+/g, '-')}">${statusString || 'לא ידוע'}</span>
-                    </div>
-                    <div class="order-card-body">
-                        <p><strong>מספר הזמנה:</strong> ${order.id}</p>
-                        <p><strong>פריטים:</strong> ${order.items || 'לא צוין'}</p>
-                        <p><strong>כתובת:</strong> ${order.address || 'לא צוינה'}</p>
-                        ${hasCoords ? `<div class="order-card-map" id="map-${order.id}"></div>` : ''}
-                    </div>
-                    <div class="order-card-footer">
-                        <button class="card-button" onclick="showOrderDetails('${order.id}')">פרטים ומפה</button>
-                        <button class="card-button" onclick="contactAboutOrder('${order.id}')">צור קשר</button>
-                    </div>
-                </div>`;
-        }
+        React.useEffect(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        }, [messages, isTyping]);
         
-        function renderChat(){
-            screens.chat.innerHTML = `
-                <header class="app-header">
-                     <button class="card-button" style="max-width: 80px;" onclick="navigateTo('dashboard')">חזור</button>
-                     <div class="header-info"><div class="client-name">צ'אט חכם</div></div>
-                </header>
-                <div id="chat-canvas" class="app-content"></div>
-                <footer class="chat-footer">
-                    <div class="chat-input-wrapper">
-                        <textarea id="message-input" class="chat-input" placeholder="הקלד הודעה..."></textarea>
-                    </div>
-                    <button id="send-btn" class="send-button"><i class="fa-solid fa-paper-plane"></i></button>
-                </footer>`;
-            document.getElementById('send-btn').onclick = handleSendMessage;
-            const hour = new Date().getHours();
-            const greeting = hour < 12 ? 'בוקר טוב' : 'צהריים טובים';
-            addChatMessage({ html: `${greeting} ${appState.clientData.name}! איך אפשר לעזור?`, type: 'incoming' });
-        }
+        const handleSendMessage = async () => {
+            if (inputText.trim() === '') return;
 
-        function renderHelp() { /* ... */ }
-
-        async function handleSendMessage(){
-            const input = document.getElementById('message-input');
-            const text = input.value.trim();
-            if (!text) return;
-            addChatMessage({html: text, type: 'outgoing'});
-            input.value = '';
-            const response = await apiPost({ action: 'processChatMessage', text, clientId: appState.clientData.id });
-            if(response.success && response.data.html) {
-                addChatMessage({html: response.data.html, type: 'incoming'});
-            }
-        }
-        
-        function addChatMessage({html, type}){
-            const canvas = document.getElementById('chat-canvas');
-            if(!canvas) return;
-            const bubble = document.createElement('div');
-            bubble.className = `message-bubble ${type}`;
-            bubble.innerHTML = html;
-            canvas.appendChild(bubble);
-            canvas.scrollTop = canvas.scrollHeight;
-        }
-
-        window.showOrderDetails = function(orderId) {
-            const order = appState.dashboardData.orders.find(o => o.id === orderId);
-            if (!order) return showToast('שגיאה: לא נמצאו פרטי הזמנה.', 'error');
-            const modalHtml = `
-                <div class="modal-overlay" id="order-details-modal">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h3 class="modal-title">פרטי הזמנה #${order.id}</h3>
-                            <button class="modal-close">&times;</button>
-                        </div>
-                        <div class="modal-body">
-                           <p><strong>פרויקט:</strong> ${order.project}</p>
-                           <p><strong>סטטוס:</strong> ${order.status}</p>
-                           <p><strong>מוצרים:</strong> ${order.items}</p>
-                           <p><strong>כתובת:</strong> ${order.address || 'לא צוינה'}</p>
-                           ${order.lat && order.lon ? `<div id="modal-map" style="height:250px; border-radius: var(--radius); margin-top:15px;"></div>` : ''}
-                        </div>
-                    </div>
-                </div>`;
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
-            const modal = document.getElementById('order-details-modal');
-            modal.querySelector('.modal-close').onclick = () => modal.remove();
-            if (order.lat && order.lon) {
-                setTimeout(() => initMap('modal-map', order.lat, order.lon, true), 100);
-            }
-        }
-        
-        window.contactAboutOrder = function(orderId) {
-            const order = appState.dashboardData.orders.find(o => o.id === orderId);
-            if (!order) return showToast('שגיאה: לא נמצאו פרטי הזמנה.', 'error');
-            const orderType = order.type === 'container' ? 'הזמנת מכולה' : 'הזמנת חומרי בנין';
-            const message = `שלום, אני מעוניין בפרטים נוספים על ${orderType} מספר ${order.id}.`;
-            navigateTo('chat');
-            setTimeout(() => { document.getElementById('message-input').value = message; }, 300);
-        }
-
-        window.showFreeOrderForm = function() {
-            const modalHtml = `
-                <div class="modal-overlay" id="free-order-modal">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h3 class="modal-title">הזמנה חדשה</h3>
-                            <button class="modal-close">&times;</button>
-                        </div>
-                        <div class="modal-body">
-                            <form id="free-order-form" class="modal-form">
-                                <label>שם הפרויקט</label><input type="text" name="projectName" required>
-                                <div class="address-fields">
-                                    <input type="text" name="city" placeholder="עיר" required>
-                                    <input type="text" name="street" placeholder="רחוב" required>
-                                    <input type="text" name="number" placeholder="מספר" required>
-                                </div>
-                                <label>פירוט</label><textarea name="items" rows="3" required></textarea>
-                                <button type="submit" class="card-button">שלח הזמנה</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>`;
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
-            const modal = document.getElementById('free-order-modal');
-            modal.querySelector('.modal-close').onclick = () => modal.remove();
-            document.getElementById('free-order-form').onsubmit = async (e) => {
-                e.preventDefault();
-                const formData = new FormData(e.target);
-                const orderData = {
-                    projectName: formData.get('projectName'),
-                    deliveryAddress: `${formData.get('street')} ${formData.get('number')}, ${formData.get('city')}`,
-                    products: formData.get('items')
-                };
-                modal.remove();
-                showToast('יוצר הזמנה... 🤔', 'info', 10000);
-                const response = await apiPost({ action: 'createFreeFormOrder', orderData, clientId: appState.clientData.id });
-                if(response.success && response.data.orderId){
-                    showOrderSuccessModal(response.data.orderId, orderData, response.data.googleDriveLink);
-                    apiPost({ action: 'getDashboardData', clientId: appState.clientData.id }).then(res => {
-                        if(res.success){
-                            appState.dashboardData = res.data.dashboard;
-                            renderDashboard();
-                        }
-                    });
-                }
-            };
-        }
-
-        function showOrderSuccessModal(orderId, orderData, link) {
-            const whatsappMsg = encodeURIComponent(`הזמנה חדשה התקבלה:\nמספר: ${orderId}\nפרויקט: ${orderData.projectName}\nלצפייה: ${link}`);
-            const whatsappUrl = `https://wa.me/972508860896?text=${whatsappMsg}`;
-            const modalHtml = `
-                <div class="modal-overlay" id="success-modal">
-                    <div class="modal-content success-modal-content">
-                        <div class="success-icon"><i class="fas fa-check-circle"></i></div>
-                        <h3 class="modal-title">ההזמנה נשלחה!</h3>
-                        <p>מספר הזמנה: <b>${orderId}</b></p>
-                        <button class="card-button" style="background-color:var(--wa-light-green);color:white;" onclick="window.open('${whatsappUrl}', '_blank')">שתף בוואטסאפ</button>
-                        <button class="card-button" style="margin-top:10px;" onclick="document.getElementById('success-modal').remove()">סגור</button>
-                    </div>
-                </div>`;
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
-        }
-
-        // --- MAP FUNCTIONS ---
-        function initializeDashboardMaps() {
-            const orders = (appState.dashboardData && appState.dashboardData.orders) || [];
-            orders.forEach(order => {
-                if (order.lat && order.lon) {
-                    initMap(`map-${order.id}`, order.lat, order.lon, false);
-                }
+            const userMessage = { sender: 'user', text: inputText, type: 'text' };
+            setMessages(prev => [...prev, userMessage]);
+            setInputText('');
+            setIsTyping(true);
+            
+            logActivityToSheet('chatMessage', {
+                customerId: user.id,
+                customerName: user.name,
+                sender: 'user',
+                message: inputText
             });
-        }
 
-        function initMap(elementId, lat, lon, isInteractive) {
-            const mapElement = document.getElementById(elementId);
-            if (!mapElement || appState.mapInstances[elementId]) return;
-            try {
-                const map = L.map(elementId, {
-                    zoomControl: isInteractive, dragging: isInteractive, scrollWheelZoom: isInteractive
-                }).setView([lat, lon], 15);
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-                    attribution: '&copy; OpenStreetMap &copy; CARTO'
-                }).addTo(map);
+            setTimeout(() => {
+                const lines = userMessage.text.split('\n').filter(l => l.trim().length > 1);
+                if(lines.length > 1) {
+                    const confirmationMsg = MOCK_CHAT_TEMPLATES.order_confirmation[0];
+                    const parsedItems = lines.map(line => {
+                        const match = line.match(/(\d+)/);
+                        const quantity = match ? parseInt(match[1], 10) : 1;
+                        const name = line.replace(/(\d+)/, '').trim();
+                        return { name, quantity };
+                    });
+                    const summaryText = parsedItems.map(p => `- ${p.quantity} x ${p.name}`).join('\n');
+                    const summaryMsg = MOCK_CHAT_TEMPLATES.summary[0].replace('{items}', `\n${summaryText}`);
+                    
+                    const botMsg1 = { sender: 'bot', text: confirmationMsg, type: 'text' };
+                    const botMsg2 = { sender: 'bot', text: summaryMsg, type: 'order_summary', items: parsedItems };
 
-                L.marker([lat, lon]).addTo(map);
-                appState.mapInstances[elementId] = map;
-                setTimeout(() => map.invalidateSize(), 200);
-            } catch (e) { console.error("Map init error:", e); }
-        }
+                    setMessages(prev => [...prev, botMsg1, botMsg2]);
 
-        renderLogin();
-    });
+                    logActivityToSheet('chatMessage', { customerId: user.id, customerName: user.name, sender: 'bot', message: confirmationMsg });
+                    logActivityToSheet('chatMessage', { customerId: user.id, customerName: user.name, sender: 'bot', message: `סיכום הזמנה:\n${summaryText}` });
+
+
+                } else {
+                    const botReply = { sender: 'bot', text: "קיבלתי. איך אני יכול להמשיך מכאן?", type: 'text' };
+                    setMessages(prev => [...prev, botReply]);
+                    logActivityToSheet('chatMessage', { customerId: user.id, customerName: user.name, sender: 'bot', message: botReply.text });
+                }
+                setIsTyping(false);
+            }, 2000);
+        };
+        
+        const handleOrderApproval = async (items) => {
+            setIsTyping(true);
+            setMessages(prev => [...prev, { sender: 'bot', type: 'progress', text: "יוצר הזמנה ושולח למערכת..." }]);
+            
+            await new Promise(r => setTimeout(r, 2000));
+            
+            const orderId = `SBN-${Date.now()}`;
+            const finalMessage = `הזמנה ${orderId.slice(-6)} נוצרה בהצלחה! ✅\n\nפרטי ההזמנה נשמרו במערכת.\nתודה שבחרת בנו!`;
+
+            setMessages(prev => prev.filter(m => m.type !== 'progress'));
+            setMessages(prev => [...prev, { sender: 'bot', text: finalMessage, type: 'text' }]);
+            setIsTyping(false);
+            
+            logActivityToSheet('newOrder', { 
+                customerId: user.id,
+                customerName: user.name,
+                orderId: orderId,
+                items: JSON.stringify(items)
+            });
+        };
+
+        return (
+            <div className="flex flex-col h-[calc(100vh-150px)] bg-white rounded-lg shadow-xl">
+                 <header className="p-3 border-b flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <img src={user.avatar} alt="User Avatar" className="w-10 h-10 rounded-full"/>
+                        <div>
+                            <p className="font-semibold">{user.name}</p>
+                            <p className="text-xs text-green-500">זמין</p>
+                        </div>
+                    </div>
+                    <button onClick={onBack} className="text-gray-500 hover:text-gray-800 text-2xl font-bold">&times;</button>
+                </header>
+                
+                <div className="flex-1 overflow-y-auto p-4 space-y-4 whatsapp-bg">
+                    {messages.map((msg, index) => (
+                        <div key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                            {msg.type === 'order_summary' ? (
+                                <div className="bg-white rounded-lg p-3 max-w-lg shadow-md border border-gray-200">
+                                   <p className="mb-3 whitespace-pre-wrap font-sans">{msg.text}</p>
+                                   <button onClick={() => handleOrderApproval(msg.items)} className="w-full bg-green-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600">
+                                       אישור וסיום הזמנה
+                                    </button>
+                                </div>
+                            ) : msg.type === 'progress' ? (
+                                <div className="bg-white rounded-lg p-3 max-w-lg shadow-md w-full text-center">
+                                    <p>{msg.text}</p>
+                                    <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+                                      <div className="bg-blue-600 h-2.5 rounded-full animate-pulse" style={{width: '100%'}}></div>
+                                    </div>
+                                </div>
+                            ) : (
+                                 <div className={`p-3 rounded-lg max-w-lg ${msg.sender === 'user' ? 'bg-green-100' : 'bg-white shadow-sm'}`}>
+                                    <p className="whitespace-pre-wrap">{msg.text}</p>
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                    {isTyping && (
+                        <div className="flex justify-start">
+                            <div className="bg-white shadow-sm p-3 rounded-lg">
+                                <div className="flex items-center gap-1">
+                                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
+                                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></span>
+                                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    <div ref={messagesEndRef} />
+                </div>
+
+                <div className="p-3 bg-gray-100 border-t flex items-center gap-2">
+                    <button className="text-gray-500 p-2 hover:bg-gray-200 rounded-full"><Icons.Paperclip /></button>
+                    <textarea
+                        value={inputText}
+                        onChange={(e) => setInputText(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSendMessage())}
+                        placeholder="הקלד הזמנה או הדבק כאן רשימה..."
+                        rows="1"
+                        className="flex-1 bg-white p-3 rounded-full border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+                    />
+                    <button onClick={handleSendMessage} className="bg-green-500 text-white p-3 rounded-full hover:bg-green-600 transition-colors"><Icons.Send /></button>
+                </div>
+            </div>
+        );
+    }
+
+    // =================================================================
+    //  Render the App
+    // =================================================================
+    ReactDOM.render(<App />, document.getElementById('root'));
+
     </script>
 </body>
 </html>
-
