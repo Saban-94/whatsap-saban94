@@ -2,59 +2,59 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>מערכת הזמנות | ח. סבן</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>הזמנות | ח. סבן</title>
     
-    <!-- FIX: Added a favicon to prevent 404 error -->
-    <link rel="icon" href="https://placehold.co/32x32/4f46e5/ffffff?text=SBN">
+    <link rel="icon" href="https://i.ibb.co/6P2T067/saban-logo-white.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-    <!-- Tailwind CSS for styling -->
+    <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- React & Babel for running JSX in the browser -->
     <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
-    <!-- OneSignal SDK for Push Notifications -->
+    <!-- OneSignal SDK -->
     <script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" async=""></script>
     <script>
       window.OneSignal = window.OneSignal || [];
       OneSignal.push(function() {
         OneSignal.init({
-          // ========================== !!! חשוב מאוד - יש לעדכן כאן !!! ==========================
-          // החלף את הטקסט "YOUR_ONESIGNAL_APP_ID" ב-App ID האמיתי מחשבון ה-OneSignal שלך
-          // כדי לתקן את השגיאה ולהפעיל את ההתראות.
-          // =====================================================================================
-          appId: "YOUR_ONESIGNAL_APP_ID", 
+          appId: "YOUR_ONESIGNAL_APP_ID", // <--- עדכן כאן את המזהה שלך
         });
       });
     </script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap');
-        body { font-family: 'Assistant', sans-serif; }
-        @keyframes fade-in-down {
-            0% { opacity: 0; transform: translateY(-20px); }
-            100% { opacity: 1; transform: translateY(0); }
+        :root {
+            --wa-bg: #EFEAE2; --wa-teal-green: #008069; --wa-green: #128C7E;
+            --wa-outgoing-bubble: #D9FDD3; --wa-incoming-bubble: #FFFFFF;
+            --wa-header-bg: #F0F2F5; --wa-system-bubble: #E2F2FF;
+            --wa-text-primary: #111b21; --wa-text-secondary: #667781;
         }
-        .animate-fade-in-down { animation: fade-in-down 0.5s ease-out forwards; }
+        body { font-family: 'Assistant', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .whatsapp-bg { background-image: url('https://i.pinimg.com/736x/8c/98/99/8c98994518b575bfd8c949e91d20548b.jpg'); background-size: contain; }
+        .login-bg { background: linear-gradient(135deg, var(--wa-teal-green) 0%, var(--wa-green) 100%); }
+        .page-transition { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        /* Fix for Leaflet map tiles */
+        .leaflet-pane { z-index: 10; }
+        .leaflet-top, .leaflet-bottom { z-index: 20; }
     </style>
 </head>
-<body class="bg-gray-100">
-    <div id="root"></div>
+<body class="bg-gray-200">
+    <div id="root" class="h-screen"></div>
 
     <script type="text/babel">
-        // --- All the React code from smart_order_app.jsx goes here ---
-        
-        const { useState, useEffect, useRef, useMemo } = React;
+        const { useState, useEffect, useRef, useMemo, useCallback } = React;
 
-        // --- Firebase Configuration (Provided by the environment) ---
-        // NOTE: Make sure your hosting environment provides these global variables.
-        // For local testing, you can replace them with your actual Firebase config.
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            // apiKey: "...", authDomain: "...", projectId: "...", ...
-        };
+        // --- Firebase Configuration ---
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { /* Add fallback config for local testing */ };
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
         // --- Initialize Firebase ---
@@ -63,104 +63,57 @@
             const app = firebase.initializeApp(firebaseConfig);
             db = firebase.firestore(app);
             auth = firebase.auth(app);
-        } catch (e) {
-            console.error("Firebase initialization error. Make sure firebaseConfig is set.", e);
-        }
-        
+        } catch (e) { console.error("Firebase initialization failed:", e); }
 
-        // --- Mock Data (for login demonstration) ---
+        // --- Mock Data ---
         const MOCK_CUSTOMERS = [
-          { id: 'cust_1', name: 'ח.ענבר אחזקות', projects: ['תל אביב (1)', 'פרויקט גבעתיים'], phone: '052-5777307' },
-          { id: 'cust_2', name: 'תחסין אורניל ניהול', projects: ['בית אילן מהלה'], phone: '052-5354552' },
-          { id: 'cust_3', name: 'רותם כחילה', projects: ['כפר סבא אבא קובנר 6'], phone: '052-4811575' },
-          { id: 'cust_4', name: 'לקוח חדש', projects: [], phone: '' }
+          { id: 'cust_1', name: 'ח.ענבר אחזקות', phone: '052-5777307', avatar: 'https://placehold.co/100/7F9CF5/FFFFFF?text=חע' },
+          { id: 'cust_2', name: 'תחסין אורניל ניהול', phone: '052-5354552', avatar: 'https://placehold.co/100/FBBF24/FFFFFF?text=תא' },
+          { id: 'cust_3', name: 'רותם כחילה', phone: '052-4811575', avatar: 'https://placehold.co/100/34D399/FFFFFF?text=רכ' },
         ];
 
         // --- Main App Component ---
         function App() {
           const [currentUser, setCurrentUser] = useState(null);
           const [firebaseUser, setFirebaseUser] = useState(null);
-          const [orders, setOrders] = useState([]);
-          const [showNotification, setShowNotification] = useState(null);
 
-          // Handle Firebase authentication
           useEffect(() => {
             if (!auth) return;
             const handleAuth = async () => {
               try {
-                if (initialAuthToken) {
-                  await auth.signInWithCustomToken(initialAuthToken);
-                } else {
-                  await auth.signInAnonymously();
-                }
-              } catch (error) {
-                console.error("Firebase Auth Error:", error);
-              }
+                if (initialAuthToken) await auth.signInWithCustomToken(initialAuthToken);
+                else await auth.signInAnonymously();
+              } catch (error) { console.error("Firebase Auth Error:", error); }
             };
             handleAuth();
-
-            const unsubscribeAuth = auth.onAuthStateChanged((user) => {
-              setFirebaseUser(user || null);
-            });
-            return () => unsubscribeAuth();
+            const unsub = auth.onAuthStateChanged(user => setFirebaseUser(user || null));
+            return () => unsub();
           }, []);
-          
-          // Listen for new orders from Firestore in real-time
-          useEffect(() => {
-            if (!firebaseUser || !db) return; // Don't fetch data until authenticated
-
-            const unsubscribe = db.collection("orders").orderBy("createdAt", "desc")
-              .onSnapshot((querySnapshot) => {
-                const ordersData = [];
-                const isInitialLoad = orders.length === 0;
-                querySnapshot.forEach((doc) => {
-                    ordersData.push({ id: doc.id, ...doc.data() });
-                });
-                
-                if (!isInitialLoad && ordersData.length > orders.length) {
-                    const newOrder = ordersData[0];
-                    setShowNotification(`הזמנה חדשה התקבלה מלקוח: ${newOrder.customerName}`);
-                    setTimeout(() => setShowNotification(null), 5000);
-                }
-                setOrders(ordersData);
-              }, (error) => {
-                  console.error("Firestore Snapshot Error:", error);
-              });
-
-            return () => unsubscribe();
-          }, [firebaseUser, orders.length]);
 
           if (!currentUser) {
             return <LoginScreen onLogin={setCurrentUser} />;
           }
 
-          return (
-            <div className="bg-gray-100 min-h-screen font-sans" dir="rtl">
-                {showNotification && (
-                    <div className="fixed top-5 right-5 bg-green-500 text-white p-4 rounded-lg shadow-lg z-50 animate-fade-in-down">
-                        {showNotification}
-                    </div>
-                )}
-              <OrderWorkspace currentUser={currentUser} onLogout={() => setCurrentUser(null)} initialOrders={orders} />
-            </div>
-          );
+          return <ChatScreen user={currentUser} onLogout={() => setCurrentUser(null)} />;
         }
 
-        // --- Login Screen Component ---
+        // --- Login Screen ---
         function LoginScreen({ onLogin }) {
           return (
-            <div className="flex items-center justify-center min-h-screen bg-gray-200">
-              <div className="bg-white p-8 rounded-xl shadow-2xl text-center w-full max-w-md">
-                <h1 className="text-3xl font-bold text-indigo-700 mb-2">מערכת ניהול הזמנות</h1>
-                <p className="text-gray-600 mb-8">נא לבחור פרופיל לקוח לכניסה</p>
+            <div className="flex flex-col items-center justify-center min-h-screen login-bg p-4">
+              <img src="https://i.ibb.co/6P2T067/saban-logo-white.png" alt="לוגו ח. סבן" className="h-16 mb-8"/>
+              <div className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-md">
+                <h1 className="text-2xl font-bold text-center text-gray-800 mb-2">בחירת לקוח</h1>
+                <p className="text-gray-600 text-center mb-6">זוהי גרסת דמו, יש לבחור לקוח להתחברות.</p>
                 <div className="space-y-3">
                   {MOCK_CUSTOMERS.map(customer => (
-                    <button
-                      key={customer.id}
-                      onClick={() => onLogin(customer)}
-                      className="w-full text-right p-4 bg-gray-100 hover:bg-indigo-100 rounded-lg transition-all duration-200 text-lg"
-                    >
-                      {customer.name}
+                    <button key={customer.id} onClick={() => onLogin(customer)}
+                      className="w-full flex items-center gap-4 text-right p-3 bg-gray-50 hover:bg-indigo-100 rounded-lg transition-all">
+                      <img src={customer.avatar} className="w-12 h-12 rounded-full" />
+                      <div>
+                        <p className="font-bold text-lg">{customer.name}</p>
+                        <p className="text-sm text-gray-500">{customer.phone}</p>
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -168,189 +121,231 @@
             </div>
           );
         }
+        
+        // --- Chat Screen ---
+        function ChatScreen({ user, onLogout }) {
+            const [messages, setMessages] = useState([]);
+            const [inputText, setInputText] = useState('');
+            const [isTyping, setIsTyping] = useState(false);
+            const [showOrderForm, setShowOrderForm] = useState(false);
+            const messagesEndRef = useRef(null);
 
-        // --- Main Workspace Component ---
-        function OrderWorkspace({ currentUser, onLogout, initialOrders }) {
-          const [view, setView] = useState('list'); // 'list' or 'new'
-          const [selectedOrder, setSelectedOrder] = useState(null);
+            useEffect(() => {
+                setIsTyping(true);
+                setTimeout(() => {
+                    const welcomeMsg = `בוקר טוב ${user.name.split(' ')[0]} 👋, כאן הנציג הדיגיטלי של ח. סבן. איך אפשר לעזור?`;
+                    setMessages([{ sender: 'bot', text: welcomeMsg, type: 'text' }]);
+                    setIsTyping(false);
+                }, 1000);
+            }, [user]);
 
-          const customerOrders = useMemo(() => 
-            initialOrders.filter(o => o.customerId === currentUser.id)
-          , [initialOrders, currentUser.id]);
+            useEffect(() => {
+                messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+            }, [messages, isTyping]);
 
-          const handleNewOrder = () => {
-            setSelectedOrder(null);
-            setView('new');
-          };
-
-          const handleViewOrder = (order) => {
-            setSelectedOrder(order);
-            setView('view');
-          };
-          
-          const handleOrderSubmitted = (order) => {
-              setView('view');
-              setSelectedOrder(order);
-          }
-
-          return (
-            <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
-              <header className="flex justify-between items-center mb-6">
-                <div>
-                    <h1 className="text-3xl font-bold text-gray-800">שלום, {currentUser.name}</h1>
-                    <p className="text-gray-500">ברוך הבא לאזור האישי שלך</p>
-                </div>
-                <button onClick={onLogout} className="text-gray-600 hover:text-indigo-600">התנתקות</button>
-              </header>
-
-              {view === 'list' && (
-                <>
-                  <button onClick={handleNewOrder} className="mb-6 w-full sm:w-auto bg-indigo-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:bg-indigo-700 transition-all">
-                    + יצירת הזמנה חדשה
-                  </button>
-                  <OrdersList orders={customerOrders} onViewOrder={handleViewOrder} />
-                </>
-              )}
-              
-              {view === 'new' && <NewOrderForm customer={currentUser} onBack={() => setView('list')} onOrderSubmitted={handleOrderSubmitted} />}
-
-              {view === 'view' && selectedOrder && <OrderTicket order={selectedOrder} onBack={() => setView('list')} />}
-            </div>
-          );
-        }
-
-        // --- Orders List Component ---
-        function OrdersList({ orders, onViewOrder }) {
-            if (orders.length === 0) {
-                return <div className="text-center p-10 bg-white rounded-lg shadow-md"><p className="text-gray-500">עדיין לא ביצעת הזמנות.</p></div>
-            }
-            return (
-                <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                    <ul className="divide-y divide-gray-200">
-                        {orders.map(order => (
-                            <li key={order.id} onClick={() => onViewOrder(order)} className="p-4 hover:bg-gray-50 cursor-pointer flex justify-between items-center">
-                                <div>
-                                    <p className="font-semibold text-indigo-700">הזמנה #{order.id.slice(-4)}</p>
-                                    <p className="text-sm text-gray-600">פרויקט: {order.projectName}</p>
-                                    <p className="text-xs text-gray-400">בתאריך: {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString('he-IL') : 'Unknown Date'}</p>
-                                </div>
-                                <div className="text-left">
-                                    <p className="font-bold text-gray-800">{order.totalAmount?.toLocaleString('he-IL', {style: 'currency', currency: 'ILS'})}</p>
-                                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${order.status === 'חדשה' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
-                                        {order.status || 'חדשה'}
-                                    </span>
-                                </div>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            );
-        }
-
-        // --- New Order Form Component ---
-        const NewOrderForm = ({ customer, onBack, onOrderSubmitted }) => {
-            const [orderType, setOrderType] = useState('materials');
-            const [projectName, setProjectName] = useState(customer.projects[0] || '');
-            const [pastedText, setPastedText] = useState('');
-            const [items, setItems] = useState([]);
-            const [deliveryAddress, setDeliveryAddress] = useState({ text: '', coords: null });
-            const [attachments, setAttachments] = useState([]);
-            const [notes, setNotes] = useState('');
-            const [isSubmitting, setIsSubmitting] = useState(false);
-
-            const handlePaste = (e) => {
-                const text = e.target.value;
-                setPastedText(text);
-                const lines = text.split('\n').filter(line => line.trim() !== '');
-                const parsedItems = lines.map((line, index) => {
-                    const match = line.match(/(\d+)/);
-                    const quantity = match ? parseInt(match[1], 10) : 1;
-                    const name = line.replace(/(\d+)/, '').trim();
-                    return { id: Date.now() + index, name: name || 'פריט לא מזוהה', quantity };
-                });
-                setItems(parsedItems);
+            const handleSendMessage = () => {
+                if (inputText.trim() === '') return;
+                const userMessage = { sender: 'user', text: inputText, type: 'text' };
+                setMessages(prev => [...prev, userMessage]);
+                setInputText('');
+                setIsTyping(true);
+                
+                // Bot logic simulation
+                setTimeout(() => {
+                    const botReply = { sender: 'bot', text: "קיבלתי. האם תרצה ליצור הזמנה חדשה?", type: 'action', actions: [{ label: 'כן, צור הזמנה', action: () => setShowOrderForm(true) }] };
+                    setMessages(prev => [...prev, botReply]);
+                    setIsTyping(false);
+                }, 1500);
             };
             
-            const handleFileChange = (e) => {
-                setAttachments(Array.from(e.target.files));
-            };
-
-            const totalAmount = useMemo(() => items.reduce((sum, item) => sum + ((item.price || 0) * item.quantity), 0), [items]);
-
-            const handleSubmit = async (e) => {
-                e.preventDefault();
-                if (!db) {
-                    alert("שגיאת התחברות למסד הנתונים.");
-                    return;
-                }
-                setIsSubmitting(true);
+            const handleOrderSubmit = async (orderData) => {
+                setShowOrderForm(false);
+                setIsTyping(true);
                 
-                const orderData = {
-                    customerId: customer.id,
-                    customerName: customer.name,
-                    orderType,
-                    projectName,
-                    items,
-                    deliveryAddress,
-                    attachments: attachments.map(f => f.name),
-                    notes,
-                    totalAmount,
-                    status: 'חדשה',
-                    createdAt: new Date(),
-                };
-
                 try {
                     const docRef = await db.collection("orders").add(orderData);
-                    const whatsAppMessage = `הזמנה חדשה התקבלה!\n*לקוח:* ${customer.name}\n*פרויקט:* ${projectName}\n*קישור:* https://my-app.com/order/${docRef.id}`;
+                    const successMsg = `הזמנה ${docRef.id.slice(-4)} נוצרה בהצלחה! ✅\nמיד תקבל הודעת וואטסאפ עם אישור וקישור למעקב.`;
+                    setMessages(prev => [...prev, {sender: 'bot', text: successMsg, type: 'text'}]);
+                    
+                    const whatsAppMessage = `הזמנה חדשה התקבלה!\n*לקוח:* ${orderData.customerName}\n*פרויקט:* ${orderData.projectName}\n*קישור:* https://example.com/order/${docRef.id}`;
                     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(whatsAppMessage)}`, '_blank');
-                    onOrderSubmitted({id: docRef.id, ...orderData });
-
                 } catch (error) {
-                    console.error("Error adding document: ", error);
-                    alert("שגיאה בשליחת ההזמנה. נסה שוב.");
+                    console.error("Error creating order:", error);
+                    setMessages(prev => [...prev, {sender: 'bot', text: "אוי, הייתה שגיאה ביצירת ההזמנה. אנא נסה שוב.", type: 'text'}]);
                 } finally {
-                    setIsSubmitting(false);
+                    setIsTyping(false);
                 }
             };
 
             return (
-                <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-lg space-y-8">
-                    {/* Form content from previous version... omitted for brevity but should be here */}
-                     <div className="flex justify-between items-center">
-                        <h2 className="text-2xl font-bold text-gray-800">הזמנה חדשה</h2>
-                        <button type="button" onClick={onBack} className="text-gray-500 hover:text-gray-800">&times; סגור</button>
+                <div className="flex flex-col h-full bg-[var(--wa-bg)]">
+                    <header className="bg-[var(--wa-header-bg)] p-3 flex items-center justify-between shadow-sm z-30">
+                        <div className="flex items-center gap-4">
+                            <img src={user.avatar} alt="Avatar" className="w-12 h-12 rounded-full"/>
+                            <div>
+                                <p className="font-bold text-lg text-[var(--wa-text-primary)]">{user.name}</p>
+                                <p className="text-sm text-[var(--wa-text-secondary)]">זמין</p>
+                            </div>
+                        </div>
+                        <button onClick={onLogout} className="text-gray-500 hover:text-red-500"><i className="fa-solid fa-right-from-bracket fa-lg"></i></button>
+                    </header>
+                    
+                    <div className="flex-1 overflow-y-auto p-4 whatsapp-bg">
+                        <div className="space-y-3">
+                            {messages.map((msg, index) => <ChatMessage key={index} msg={msg} />)}
+                            {isTyping && <TypingIndicator />}
+                            <div ref={messagesEndRef} />
+                        </div>
                     </div>
-                    <p>טופס ההזמנה המלא יופיע כאן...</p>
-                     <div className="flex justify-end">
-                        <button type="submit" disabled={isSubmitting} className="bg-indigo-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:bg-indigo-700 transition-all disabled:bg-gray-400 w-full sm:w-auto">
-                            {isSubmitting ? 'שולח...' : 'שלח הזמנה'}
+
+                    <div className="bg-[var(--wa-header-bg)] p-3 flex items-center gap-2">
+                        <button className="text-[var(--wa-text-secondary)] p-2 hover:bg-gray-200 rounded-full"><i className="fa-solid fa-paperclip fa-xl"></i></button>
+                        <div className="flex-1 relative">
+                            <input
+                                value={inputText}
+                                onChange={(e) => setInputText(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                                placeholder="הקלד הודעה..."
+                                className="w-full bg-white p-3 pr-5 pl-12 rounded-full border-none focus:ring-2 focus:ring-[var(--wa-green)]"
+                            />
+                            <i className="fa-regular fa-face-smile text-[var(--wa-text-secondary)] absolute left-4 top-1/2 -translate-y-1/2 text-xl"></i>
+                        </div>
+                        <button onClick={handleSendMessage} className="bg-[var(--wa-green)] text-white w-12 h-12 rounded-full hover:bg-[var(--wa-teal-green)] transition-colors text-xl">
+                            <i className="fa-solid fa-paper-plane"></i>
                         </button>
                     </div>
-                </form>
-            );
-        };
-
-        // --- Order Ticket Display ---
-        function OrderTicket({ order, onBack }) {
-            const createdAtDate = order.createdAt?.toDate ? order.createdAt.toDate() : new Date();
-            
-            return (
-                 <div className="bg-white p-6 rounded-lg shadow-lg relative">
-                    <button onClick={onBack} className="absolute top-4 left-4 text-gray-500 hover:text-gray-800 text-2xl font-bold">&times;</button>
-                    <h1 className="text-2xl font-bold text-gray-800">הזמנה #{order.id.slice(-4)}</h1>
-                    <p className="text-gray-500">בתאריך: {createdAtDate.toLocaleDateString('he-IL')}</p>
-                    {/* Full order details from previous version... */}
+                    {showOrderForm && <NewOrderForm customer={user} onSubmit={handleOrderSubmit} onCancel={() => setShowOrderForm(false)} />}
                 </div>
-            )
+            );
         }
 
+        // --- Chat Message Component ---
+        const ChatMessage = ({ msg }) => {
+            const isUser = msg.sender === 'user';
+            const bubbleClass = isUser ? 'bg-[var(--wa-outgoing-bubble)] self-end' : 'bg-[var(--wa-incoming-bubble)] self-start';
+            
+            return (
+                <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
+                    <div className={`p-3 rounded-lg max-w-lg shadow-sm ${bubbleClass}`}>
+                        <p className="whitespace-pre-wrap text-[var(--wa-text-primary)]">{msg.text}</p>
+                        {msg.type === 'action' && (
+                            <div className="mt-2 border-t pt-2">
+                                {msg.actions.map((action, i) => (
+                                    <button key={i} onClick={action.action} className="w-full text-center p-2 text-blue-600 font-semibold hover:bg-gray-100 rounded">
+                                        {action.label}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+        
+        // --- Typing Indicator ---
+        const TypingIndicator = () => (
+             <div className="flex justify-start">
+                <div className="bg-white shadow-sm p-3 rounded-lg">
+                    <div className="flex items-center gap-1">
+                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
+                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></span>
+                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></span>
+                    </div>
+                </div>
+            </div>
+        );
 
-        // --- Render the main App component into the #root div ---
+        // --- New Order Form Modal ---
+        function NewOrderForm({ customer, onSubmit, onCancel }) {
+            const [projectName, setProjectName] = useState('');
+            const [pastedText, setPastedText] = useState('');
+            const [deliveryAddress, setDeliveryAddress] = useState({ text: '' });
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                const orderData = {
+                    customerId: customer.id, customerName: customer.name,
+                    projectName, items: pastedText, deliveryAddress,
+                    status: 'חדשה', createdAt: new Date()
+                };
+                onSubmit(orderData);
+            };
+
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 page-transition">
+                    <form onSubmit={handleSubmit} className="bg-white w-full max-w-2xl rounded-lg shadow-xl max-h-[90vh] flex flex-col">
+                        <header className="p-4 border-b">
+                            <h2 className="text-xl font-bold">יצירת הזמנה חדשה</h2>
+                        </header>
+                        <main className="p-6 space-y-4 overflow-y-auto">
+                            <div>
+                                <label className="font-semibold">שם פרויקט</label>
+                                <input type="text" value={projectName} onChange={e => setProjectName(e.target.value)} className="w-full p-2 border rounded-md mt-1" required />
+                            </div>
+                            <div>
+                                <label className="font-semibold">הדבק רשימת פריטים</label>
+                                <textarea value={pastedText} onChange={e => setPastedText(e.target.value)} rows="6" className="w-full p-2 border rounded-md mt-1" placeholder="20 מלט&#10;95 בלוק 4&#10;1 בלה חול" required></textarea>
+                            </div>
+                            <div>
+                                <label className="font-semibold">כתובת למשלוח</label>
+                                <MapInput onAddressChange={setDeliveryAddress} />
+                            </div>
+                        </main>
+                        <footer className="p-4 flex justify-end gap-3 bg-gray-50 border-t">
+                            <button type="button" onClick={onCancel} className="bg-gray-200 px-6 py-2 rounded-md font-semibold">ביטול</button>
+                            <button type="submit" className="bg-[var(--wa-green)] text-white px-6 py-2 rounded-md font-semibold hover:bg-[var(--wa-teal-green)]">שלח הזמנה</button>
+                        </footer>
+                    </form>
+                </div>
+            );
+        }
+
+        // --- Map Input Component ---
+        function MapInput({ onAddressChange }) {
+            const mapContainerRef = useRef(null);
+            const mapInstanceRef = useRef(null);
+            const markerRef = useRef(null);
+            const [addressText, setAddressText] = useState('');
+
+            useEffect(() => {
+                if (mapContainerRef.current && !mapInstanceRef.current) {
+                    const map = L.map(mapContainerRef.current).setView([32.166, 34.843], 13); // Hod HaSharon center
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    }).addTo(map);
+                    mapInstanceRef.current = map;
+                    
+                    map.on('click', (e) => {
+                        const { lat, lng } = e.latlng;
+                        if (markerRef.current) {
+                            markerRef.current.setLatLng(e.latlng);
+                        } else {
+                            markerRef.current = L.marker(e.latlng).addTo(map);
+                        }
+                        const newAddress = `מיקום מפה: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+                        setAddressText(newAddress);
+                        onAddressChange({ text: newAddress, coords: { lat, lng } });
+                    });
+                }
+            }, []);
+            
+            const handleTextChange = (e) => {
+                setAddressText(e.target.value);
+                onAddressChange({ text: e.target.value, coords: null });
+            }
+
+            return (
+                <div className="mt-1 space-y-2">
+                    <input type="text" value={addressText} onChange={handleTextChange} placeholder="הקלד כתובת או לחץ על המפה" className="w-full p-2 border rounded-md" />
+                    <div ref={mapContainerRef} className="w-full h-64 rounded-lg z-10"></div>
+                </div>
+            );
+        }
+
         ReactDOM.render(<App />, document.getElementById('root'));
-
     </script>
     
-    <!-- Firebase SDKs (Legacy version for compatibility with inline script) -->
+    <!-- Firebase SDKs (Legacy version for compatibility) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
