@@ -61,16 +61,17 @@
         const { useState, useEffect, useRef, useCallback } = React;
 
         // --- Google Apps Script Configuration ---
-        // ========================== !!! חשוב מאוד - יש לעדכן כאן !!! ==========================
-        // הדבק כאן את כתובת ה-URL החדשה שקיבלת לאחר הפריסה של קובץ Code.gs המעודכן.
-        // =====================================================================================
+        // ========================== !!! קובץ זה עודכן !!! ==========================
+        // הכתובת עודכנה לכתובת החדשה מהשגיאות ששלחת.
+        // יש לוודא שהפריסה של הכתובת הזו מוגדרת עם גישה ל-"Anyone".
+        // ============================================================================
         const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbziWmk4fLVeGs0AUIV-ClHV3noReWGmmpxazIEsdyfJhzHi3VGPFcDqj_4YAhEslvkvuw/exec';
 
         // --- API Helper ---
         const api = {
           get: async (action, params = {}) => {
-            if (WEB_APP_URL === 'YOUR_NEW_WEB_APP_URL_HERE') {
-                throw new Error("אנא עדכן את כתובת ה-WEB_APP_URL בקובץ index.html");
+            if (!WEB_APP_URL) {
+                throw new Error("WEB_APP_URL is not defined!");
             }
             const url = new URL(WEB_APP_URL);
             url.searchParams.append('action', action);
@@ -88,15 +89,14 @@
             }
           },
           post: async (action, body) => {
-             if (WEB_APP_URL === 'YOUR_NEW_WEB_APP_URL_HERE') {
-                throw new Error("אנא עדכן את כתובת ה-WEB_APP_URL בקובץ index.html");
+             if (!WEB_APP_URL) {
+                throw new Error("WEB_APP_URL is not defined!");
             }
-            const formData = new URLSearchParams(); // Using URLSearchParams for better compatibility with GAS
+            const formData = new URLSearchParams(); 
             formData.append('action', action);
             for (const key in body) {
                 formData.append(key, JSON.stringify(body[key]));
             }
-            // A simple POST with URLSearchParams doesn't trigger CORS preflight, making it more reliable.
             const response = await fetch(WEB_APP_URL, { 
                 method: 'POST', 
                 body: formData,
@@ -105,7 +105,7 @@
                 },
             });
             if (!response.ok) throw new Error(`Network response was not ok for POST action: ${action}`);
-            return response.json(); // We can now read the response from our fixed doPost
+            return response.json(); 
           }
         };
 
@@ -137,7 +137,7 @@
                 }
               } catch (err) {
                 console.error(err);
-                setError(err.message || 'שגיאת תקשורת. לא ניתן לטעון את רשימת הלקוחות.');
+                setError('שגיאת תקשורת. לא ניתן לטעון את רשימת הלקוחות. אנא ודא שהסקריפט פורסם כראוי לפי המדריך.');
               } finally {
                 setIsLoading(false);
               }
@@ -147,7 +147,6 @@
 
           return (
             <div className="flex flex-col items-center justify-center min-h-screen login-bg p-4">
-              {/* FIX: Replaced broken img tag with a styled div for the logo */}
               <div className="mb-8 text-center">
                   <h1 className="text-white text-4xl font-bold tracking-wider">ח. סבן</h1>
                   <p className="text-white/80 text-lg">חומרי בנין (1994) בע"מ</p>
@@ -174,7 +173,7 @@
           );
         }
         
-        // --- Chat Screen and other components (No changes needed here for the fix) ---
+        // --- Chat Screen and other components ---
         function ChatScreen({ user, onLogout }) {
             const [messages, setMessages] = useState([]);
             const [inputText, setInputText] = useState('');
