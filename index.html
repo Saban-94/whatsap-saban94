@@ -43,53 +43,49 @@
         .page-transition { animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         /* Fix for Leaflet map tiles */
-        .leaflet-pane { z-index: 10; }
-        .leaflet-top, .leaflet-bottom { z-index: 20; }
+        .leaflet-pane { z-index: 10 !important; }
+        .leaflet-top, .leaflet-bottom { z-index: 20 !important; }
+        .spinner { border: 4px solid rgba(255, 255, 255, 0.3); border-left-color: #fff; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="bg-gray-200">
     <div id="root" class="h-screen"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef, useMemo, useCallback } = React;
+        const { useState, useEffect, useRef, useCallback } = React;
 
-        // --- Firebase Configuration ---
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { /* Add fallback config for local testing */ };
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        // --- Google Apps Script Configuration ---
+        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycby9pd4u_5FJWXX3yvSGgXNqglEvDHR7ctco3uF_oTQ9aNIDBG9U1KeoLLwQEy8jdiS1hQ/exec';
 
-        // --- Initialize Firebase ---
-        let db, auth;
-        try {
-            const app = firebase.initializeApp(firebaseConfig);
-            db = firebase.firestore(app);
-            auth = firebase.auth(app);
-        } catch (e) { console.error("Firebase initialization failed:", e); }
-
-        // --- Mock Data ---
-        const MOCK_CUSTOMERS = [
-          { id: 'cust_1', name: 'ח.ענבר אחזקות', phone: '052-5777307', avatar: 'https://placehold.co/100/7F9CF5/FFFFFF?text=חע' },
-          { id: 'cust_2', name: 'תחסין אורניל ניהול', phone: '052-5354552', avatar: 'https://placehold.co/100/FBBF24/FFFFFF?text=תא' },
-          { id: 'cust_3', name: 'רותם כחילה', phone: '052-4811575', avatar: 'https://placehold.co/100/34D399/FFFFFF?text=רכ' },
-        ];
+        // --- API Helper ---
+        const api = {
+          get: async (action, params = {}) => {
+            const url = new URL(WEB_APP_URL);
+            url.searchParams.append('action', action);
+            for (const key in params) {
+              url.searchParams.append(key, params[key]);
+            }
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.json();
+          },
+          post: async (action, body) => {
+            const formData = new FormData();
+            formData.append('action', action);
+            for (const key in body) {
+                formData.append(key, JSON.stringify(body[key]));
+            }
+            const response = await fetch(WEB_APP_URL, { method: 'POST', body: formData });
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.json();
+          }
+        };
 
         // --- Main App Component ---
         function App() {
           const [currentUser, setCurrentUser] = useState(null);
-          const [firebaseUser, setFirebaseUser] = useState(null);
-
-          useEffect(() => {
-            if (!auth) return;
-            const handleAuth = async () => {
-              try {
-                if (initialAuthToken) await auth.signInWithCustomToken(initialAuthToken);
-                else await auth.signInAnonymously();
-              } catch (error) { console.error("Firebase Auth Error:", error); }
-            };
-            handleAuth();
-            const unsub = auth.onAuthStateChanged(user => setFirebaseUser(user || null));
-            return () => unsub();
-          }, []);
-
+          
           if (!currentUser) {
             return <LoginScreen onLogin={setCurrentUser} />;
           }
@@ -99,17 +95,38 @@
 
         // --- Login Screen ---
         function LoginScreen({ onLogin }) {
+          const [customers, setCustomers] = useState([]);
+          const [isLoading, setIsLoading] = useState(true);
+          const [error, setError] = useState(null);
+
+          useEffect(() => {
+            const fetchCustomers = async () => {
+              try {
+                const data = await api.get('getCustomers');
+                setCustomers(data);
+              } catch (err) {
+                setError('לא ניתן לטעון את רשימת הלקוחות.');
+                console.error(err);
+              } finally {
+                setIsLoading(false);
+              }
+            };
+            fetchCustomers();
+          }, []);
+
           return (
             <div className="flex flex-col items-center justify-center min-h-screen login-bg p-4">
               <img src="https://i.ibb.co/6P2T067/saban-logo-white.png" alt="לוגו ח. סבן" className="h-16 mb-8"/>
               <div className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-md">
-                <h1 className="text-2xl font-bold text-center text-gray-800 mb-2">בחירת לקוח</h1>
-                <p className="text-gray-600 text-center mb-6">זוהי גרסת דמו, יש לבחור לקוח להתחברות.</p>
-                <div className="space-y-3">
-                  {MOCK_CUSTOMERS.map(customer => (
+                <h1 className="text-2xl font-bold text-center text-gray-800 mb-2">מערכת הזמנות</h1>
+                <p className="text-gray-600 text-center mb-6">נא לבחור לקוח להתחברות</p>
+                <div className="space-y-3 max-h-80 overflow-y-auto">
+                  {isLoading && <div className="flex justify-center p-4"><div className="spinner" style={{borderColor: 'rgba(0,0,0,0.2)', borderLeftColor: 'var(--wa-green)'}}></div></div>}
+                  {error && <p className="text-center text-red-500">{error}</p>}
+                  {customers.map(customer => (
                     <button key={customer.id} onClick={() => onLogin(customer)}
                       className="w-full flex items-center gap-4 text-right p-3 bg-gray-50 hover:bg-indigo-100 rounded-lg transition-all">
-                      <img src={customer.avatar} className="w-12 h-12 rounded-full" />
+                      <img src={customer.avatar || 'https://placehold.co/100/CCCCCC/FFFFFF?text=?'} className="w-12 h-12 rounded-full object-cover" />
                       <div>
                         <p className="font-bold text-lg">{customer.name}</p>
                         <p className="text-sm text-gray-500">{customer.phone}</p>
@@ -129,31 +146,49 @@
             const [isTyping, setIsTyping] = useState(false);
             const [showOrderForm, setShowOrderForm] = useState(false);
             const messagesEndRef = useRef(null);
+            const [qa, setQa] = useState([]);
 
             useEffect(() => {
-                setIsTyping(true);
-                setTimeout(() => {
-                    const welcomeMsg = `בוקר טוב ${user.name.split(' ')[0]} 👋, כאן הנציג הדיגיטלי של ח. סבן. איך אפשר לעזור?`;
-                    setMessages([{ sender: 'bot', text: welcomeMsg, type: 'text' }]);
-                    setIsTyping(false);
-                }, 1000);
+                const loadChatData = async () => {
+                    setIsTyping(true);
+                    try {
+                        const qaData = await api.get('getQa');
+                        setQa(qaData);
+                        const welcomeMsg = `בוקר טוב ${user.name.split(' ')[0]} 👋, כאן הנציג הדיגיטלי של ח. סבן. איך אפשר לעזור?`;
+                        setMessages([{ sender: 'bot', text: welcomeMsg, type: 'text' }]);
+                    } catch (error) {
+                        setMessages([{ sender: 'bot', text: 'שגיאה בטעינת הנתונים, אנא רענן.', type: 'text' }]);
+                    } finally {
+                        setIsTyping(false);
+                    }
+                };
+                loadChatData();
             }, [user]);
 
             useEffect(() => {
                 messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
             }, [messages, isTyping]);
 
-            const handleSendMessage = () => {
+            const handleSendMessage = async () => {
                 if (inputText.trim() === '') return;
                 const userMessage = { sender: 'user', text: inputText, type: 'text' };
                 setMessages(prev => [...prev, userMessage]);
                 setInputText('');
                 setIsTyping(true);
                 
-                // Bot logic simulation
-                setTimeout(() => {
-                    const botReply = { sender: 'bot', text: "קיבלתי. האם תרצה ליצור הזמנה חדשה?", type: 'action', actions: [{ label: 'כן, צור הזמנה', action: () => setShowOrderForm(true) }] };
+                await api.post('logMessage', { customer: user, sender: 'user', message: inputText });
+
+                // Bot logic
+                const matchedQa = qa.find(item => inputText.includes(item.keyword));
+                let botReplyText = "לא הצלחתי להבין. האם תרצה ליצור הזמנה חדשה?";
+                if (matchedQa) {
+                    botReplyText = matchedQa.response.replace('{client_name}', user.name.split(' ')[0]);
+                }
+                
+                setTimeout(async () => {
+                    const botReply = { sender: 'bot', text: botReplyText, type: 'action', actions: [{ label: 'כן, צור הזמנה', action: () => setShowOrderForm(true) }] };
                     setMessages(prev => [...prev, botReply]);
+                    await api.post('logMessage', { customer: user, sender: 'bot', message: botReplyText });
                     setIsTyping(false);
                 }, 1500);
             };
@@ -163,11 +198,11 @@
                 setIsTyping(true);
                 
                 try {
-                    const docRef = await db.collection("orders").add(orderData);
-                    const successMsg = `הזמנה ${docRef.id.slice(-4)} נוצרה בהצלחה! ✅\nמיד תקבל הודעת וואטסאפ עם אישור וקישור למעקב.`;
+                    const result = await api.post('createOrder', orderData);
+                    const successMsg = `הזמנה ${result.orderId} נוצרה בהצלחה! ✅\nמיד תקבל הודעת וואטסאפ עם אישור וקישור למעקב.`;
                     setMessages(prev => [...prev, {sender: 'bot', text: successMsg, type: 'text'}]);
                     
-                    const whatsAppMessage = `הזמנה חדשה התקבלה!\n*לקוח:* ${orderData.customerName}\n*פרויקט:* ${orderData.projectName}\n*קישור:* https://example.com/order/${docRef.id}`;
+                    const whatsAppMessage = `הזמנה חדשה התקבלה!\n*לקוח:* ${orderData.customerName}\n*פרויקט:* ${orderData.projectName}\n*קישור:* ${result.driveLink || ''}`;
                     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(whatsAppMessage)}`, '_blank');
                 } catch (error) {
                     console.error("Error creating order:", error);
@@ -181,10 +216,10 @@
                 <div className="flex flex-col h-full bg-[var(--wa-bg)]">
                     <header className="bg-[var(--wa-header-bg)] p-3 flex items-center justify-between shadow-sm z-30">
                         <div className="flex items-center gap-4">
-                            <img src={user.avatar} alt="Avatar" className="w-12 h-12 rounded-full"/>
+                            <img src={user.avatar} alt="Avatar" className="w-12 h-12 rounded-full object-cover"/>
                             <div>
                                 <p className="font-bold text-lg text-[var(--wa-text-primary)]">{user.name}</p>
-                                <p className="text-sm text-[var(--wa-text-secondary)]">זמין</p>
+                                <p className="text-sm text-green-600 font-semibold">זמין</p>
                             </div>
                         </div>
                         <button onClick={onLogout} className="text-gray-500 hover:text-red-500"><i className="fa-solid fa-right-from-bracket fa-lg"></i></button>
@@ -199,8 +234,7 @@
                     </div>
 
                     <div className="bg-[var(--wa-header-bg)] p-3 flex items-center gap-2">
-                        <button className="text-[var(--wa-text-secondary)] p-2 hover:bg-gray-200 rounded-full"><i className="fa-solid fa-paperclip fa-xl"></i></button>
-                        <div className="flex-1 relative">
+                         <div className="flex-1 relative">
                             <input
                                 value={inputText}
                                 onChange={(e) => setInputText(e.target.value)}
@@ -210,7 +244,7 @@
                             />
                             <i className="fa-regular fa-face-smile text-[var(--wa-text-secondary)] absolute left-4 top-1/2 -translate-y-1/2 text-xl"></i>
                         </div>
-                        <button onClick={handleSendMessage} className="bg-[var(--wa-green)] text-white w-12 h-12 rounded-full hover:bg-[var(--wa-teal-green)] transition-colors text-xl">
+                        <button onClick={handleSendMessage} className="bg-[var(--wa-green)] text-white w-12 h-12 rounded-full hover:bg-[var(--wa-teal-green)] transition-colors text-xl flex items-center justify-center">
                             <i className="fa-solid fa-paper-plane"></i>
                         </button>
                     </div>
@@ -260,13 +294,14 @@
             const [projectName, setProjectName] = useState('');
             const [pastedText, setPastedText] = useState('');
             const [deliveryAddress, setDeliveryAddress] = useState({ text: '' });
+            const [isSubmitting, setIsSubmitting] = useState(false);
 
             const handleSubmit = (e) => {
                 e.preventDefault();
+                setIsSubmitting(true);
                 const orderData = {
-                    customerId: customer.id, customerName: customer.name,
-                    projectName, items: pastedText, deliveryAddress,
-                    status: 'חדשה', createdAt: new Date()
+                    customer: customer,
+                    projectName, items: pastedText, deliveryAddress
                 };
                 onSubmit(orderData);
             };
@@ -274,8 +309,9 @@
             return (
                 <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 page-transition">
                     <form onSubmit={handleSubmit} className="bg-white w-full max-w-2xl rounded-lg shadow-xl max-h-[90vh] flex flex-col">
-                        <header className="p-4 border-b">
+                        <header className="p-4 border-b flex justify-between items-center">
                             <h2 className="text-xl font-bold">יצירת הזמנה חדשה</h2>
+                            <button type="button" onClick={onCancel} className="text-2xl">&times;</button>
                         </header>
                         <main className="p-6 space-y-4 overflow-y-auto">
                             <div>
@@ -293,7 +329,9 @@
                         </main>
                         <footer className="p-4 flex justify-end gap-3 bg-gray-50 border-t">
                             <button type="button" onClick={onCancel} className="bg-gray-200 px-6 py-2 rounded-md font-semibold">ביטול</button>
-                            <button type="submit" className="bg-[var(--wa-green)] text-white px-6 py-2 rounded-md font-semibold hover:bg-[var(--wa-teal-green)]">שלח הזמנה</button>
+                            <button type="submit" disabled={isSubmitting} className="bg-[var(--wa-green)] text-white px-6 py-2 rounded-md font-semibold hover:bg-[var(--wa-teal-green)] flex items-center justify-center min-w-[120px]">
+                                {isSubmitting ? <div className="spinner"></div> : 'שלח הזמנה'}
+                            </button>
                         </footer>
                     </form>
                 </div>
@@ -303,30 +341,25 @@
         // --- Map Input Component ---
         function MapInput({ onAddressChange }) {
             const mapContainerRef = useRef(null);
-            const mapInstanceRef = useRef(null);
-            const markerRef = useRef(null);
             const [addressText, setAddressText] = useState('');
 
             useEffect(() => {
-                if (mapContainerRef.current && !mapInstanceRef.current) {
-                    const map = L.map(mapContainerRef.current).setView([32.166, 34.843], 13); // Hod HaSharon center
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                    }).addTo(map);
-                    mapInstanceRef.current = map;
-                    
+                let map;
+                if (mapContainerRef.current) {
+                    map = L.map(mapContainerRef.current).setView([32.166, 34.843], 13);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+                    let marker;
                     map.on('click', (e) => {
                         const { lat, lng } = e.latlng;
-                        if (markerRef.current) {
-                            markerRef.current.setLatLng(e.latlng);
-                        } else {
-                            markerRef.current = L.marker(e.latlng).addTo(map);
-                        }
+                        if (marker) marker.setLatLng(e.latlng);
+                        else marker = L.marker(e.latlng).addTo(map);
+                        
                         const newAddress = `מיקום מפה: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
                         setAddressText(newAddress);
                         onAddressChange({ text: newAddress, coords: { lat, lng } });
                     });
                 }
+                return () => { if(map) map.remove(); };
             }, []);
             
             const handleTextChange = (e) => {
@@ -345,7 +378,7 @@
         ReactDOM.render(<App />, document.getElementById('root'));
     </script>
     
-    <!-- Firebase SDKs (Legacy version for compatibility) -->
+    <!-- Firebase SDKs (Legacy - required for inline script) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
