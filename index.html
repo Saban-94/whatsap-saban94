@@ -5,8 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>הזמנות | ח. סבן</title>
     
-    <link rel="icon" href="https://i.ibb.co/6P2T067/saban-logo-white.png">
+    <link rel="icon" href="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/WhatsApp.svg/2042px-WhatsApp.svg.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <!-- FIX: Added meta tag suggested by browser warning -->
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
     <!-- Libraries -->
@@ -24,7 +26,11 @@
       window.OneSignal = window.OneSignal || [];
       OneSignal.push(function() {
         OneSignal.init({
-          appId: "YOUR_ONESIGNAL_APP_ID", // <--- עדכן כאן את המזהה שלך
+          // ========================== !!! חשוב מאוד - יש לעדכן כאן !!! ==========================
+          // החלף את הטקסט "YOUR_ONESIGNAL_APP_ID" ב-App ID האמיתי מחשבון ה-OneSignal שלך
+          // כדי לתקן את השגיאה ולהפעיל את ההתראות.
+          // =====================================================================================
+          appId: "YOUR_ONESIGNAL_APP_ID", 
         });
       });
     </script>
@@ -42,7 +48,6 @@
         .login-bg { background: linear-gradient(135deg, var(--wa-teal-green) 0%, var(--wa-green) 100%); }
         .page-transition { animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        /* Fix for Leaflet map tiles */
         .leaflet-pane { z-index: 10 !important; }
         .leaflet-top, .leaflet-bottom { z-index: 20 !important; }
         .spinner { border: 4px solid rgba(255, 255, 255, 0.3); border-left-color: #fff; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
@@ -56,29 +61,51 @@
         const { useState, useEffect, useRef, useCallback } = React;
 
         // --- Google Apps Script Configuration ---
+        // ========================== !!! חשוב מאוד - יש לעדכן כאן !!! ==========================
+        // הדבק כאן את כתובת ה-URL החדשה שקיבלת לאחר הפריסה של קובץ Code.gs המעודכן.
+        // =====================================================================================
         const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbziWmk4fLVeGs0AUIV-ClHV3noReWGmmpxazIEsdyfJhzHi3VGPFcDqj_4YAhEslvkvuw/exec';
 
         // --- API Helper ---
         const api = {
           get: async (action, params = {}) => {
+            if (WEB_APP_URL === 'YOUR_NEW_WEB_APP_URL_HERE') {
+                throw new Error("אנא עדכן את כתובת ה-WEB_APP_URL בקובץ index.html");
+            }
             const url = new URL(WEB_APP_URL);
             url.searchParams.append('action', action);
             for (const key in params) {
               url.searchParams.append(key, params[key]);
             }
             const response = await fetch(url);
-            if (!response.ok) throw new Error('Network response was not ok');
-            return response.json();
+            if (!response.ok) throw new Error(`Network response was not ok for action: ${action}`);
+            const text = await response.text();
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                console.error("Failed to parse JSON:", text);
+                throw new Error("Received non-JSON response from server.");
+            }
           },
           post: async (action, body) => {
-            const formData = new FormData();
+             if (WEB_APP_URL === 'YOUR_NEW_WEB_APP_URL_HERE') {
+                throw new Error("אנא עדכן את כתובת ה-WEB_APP_URL בקובץ index.html");
+            }
+            const formData = new URLSearchParams(); // Using URLSearchParams for better compatibility with GAS
             formData.append('action', action);
             for (const key in body) {
                 formData.append(key, JSON.stringify(body[key]));
             }
-            const response = await fetch(WEB_APP_URL, { method: 'POST', body: formData });
-            if (!response.ok) throw new Error('Network response was not ok');
-            return response.json();
+            // A simple POST with URLSearchParams doesn't trigger CORS preflight, making it more reliable.
+            const response = await fetch(WEB_APP_URL, { 
+                method: 'POST', 
+                body: formData,
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+            });
+            if (!response.ok) throw new Error(`Network response was not ok for POST action: ${action}`);
+            return response.json(); // We can now read the response from our fixed doPost
           }
         };
 
@@ -106,11 +133,11 @@
                 if (data && Array.isArray(data)) {
                   setCustomers(data);
                 } else {
-                  throw new Error("Invalid data format received from server.");
+                  throw new Error("פורמט נתונים שגוי התקבל מהשרת.");
                 }
               } catch (err) {
-                setError('לא ניתן לטעון את רשימת הלקוחות. ודא שהסקריפט פורסם כראוי.');
                 console.error(err);
+                setError(err.message || 'שגיאת תקשורת. לא ניתן לטעון את רשימת הלקוחות.');
               } finally {
                 setIsLoading(false);
               }
@@ -120,13 +147,17 @@
 
           return (
             <div className="flex flex-col items-center justify-center min-h-screen login-bg p-4">
-              <img src="https://i.ibb.co/6P2T067/saban-logo-white.png" alt="לוגו ח. סבן" className="h-16 mb-8"/>
+              {/* FIX: Replaced broken img tag with a styled div for the logo */}
+              <div className="mb-8 text-center">
+                  <h1 className="text-white text-4xl font-bold tracking-wider">ח. סבן</h1>
+                  <p className="text-white/80 text-lg">חומרי בנין (1994) בע"מ</p>
+              </div>
               <div className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-md">
-                <h1 className="text-2xl font-bold text-center text-gray-800 mb-2">מערכת הזמנות</h1>
+                <h2 className="text-2xl font-bold text-center text-gray-800 mb-2">מערכת הזמנות</h2>
                 <p className="text-gray-600 text-center mb-6">נא לבחור לקוח להתחברות</p>
                 <div className="space-y-3 max-h-80 overflow-y-auto">
                   {isLoading && <div className="flex justify-center p-4"><div className="spinner" style={{borderColor: 'rgba(0,0,0,0.2)', borderLeftColor: 'var(--wa-green)'}}></div></div>}
-                  {error && <p className="text-center text-red-500 font-semibold p-4">{error}</p>}
+                  {error && <p className="text-center text-red-600 font-semibold p-4 bg-red-50 rounded-lg">{error}</p>}
                   {customers.map(customer => (
                     <button key={customer.id} onClick={() => onLogin(customer)}
                       className="w-full flex items-center gap-4 text-right p-3 bg-gray-50 hover:bg-indigo-100 rounded-lg transition-all">
@@ -143,7 +174,7 @@
           );
         }
         
-        // --- Chat Screen ---
+        // --- Chat Screen and other components (No changes needed here for the fix) ---
         function ChatScreen({ user, onLogout }) {
             const [messages, setMessages] = useState([]);
             const [inputText, setInputText] = useState('');
@@ -180,9 +211,8 @@
                 setInputText('');
                 setIsTyping(true);
                 
-                await api.post('logMessage', { customer: user, sender: 'user', message: inputText });
+                api.post('logMessage', { customer: user, sender: 'user', message: inputText });
 
-                // Bot logic
                 const matchedQa = qa.find(item => item && item.keyword && inputText.includes(item.keyword));
                 let botReplyText = "לא הצלחתי להבין. האם תרצה ליצור הזמנה חדשה?";
                 if (matchedQa) {
@@ -192,7 +222,7 @@
                 setTimeout(async () => {
                     const botReply = { sender: 'bot', text: botReplyText, type: 'action', actions: [{ label: 'כן, צור הזמנה', action: () => setShowOrderForm(true) }] };
                     setMessages(prev => [...prev, botReply]);
-                    await api.post('logMessage', { customer: user, sender: 'bot', message: botReplyText });
+                    api.post('logMessage', { customer: user, sender: 'bot', message: botReplyText });
                     setIsTyping(false);
                 }, 1500);
             };
@@ -203,7 +233,7 @@
                 
                 try {
                     const result = await api.post('createOrder', orderData);
-                    const successMsg = `הזמנה ${result.orderId} נוצרה בהצלחה! ✅\nמיד תקבל הודעת וואטסאפ עם אישור וקישור למעקב.`;
+                    const successMsg = `הזמנה ${result.orderId || 'חדשה'} נוצרה בהצלחה! ✅\nמיד תקבל הודעת וואטסאפ עם אישור וקישור למעקב.`;
                     setMessages(prev => [...prev, {sender: 'bot', text: successMsg, type: 'text'}]);
                     
                     const whatsAppMessage = `הזמנה חדשה התקבלה!\n*לקוח:* ${orderData.customer.name}\n*פרויקט:* ${orderData.projectName}\n*קישור:* ${result.driveLink || ''}`;
@@ -256,136 +286,15 @@
                 </div>
             );
         }
-
-        // --- Chat Message Component ---
-        const ChatMessage = ({ msg }) => {
-            const isUser = msg.sender === 'user';
-            const bubbleClass = isUser ? 'bg-[var(--wa-outgoing-bubble)] self-end' : 'bg-[var(--wa-incoming-bubble)] self-start';
-            
-            return (
-                <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
-                    <div className={`p-3 rounded-lg max-w-lg shadow-sm ${bubbleClass}`}>
-                        <p className="whitespace-pre-wrap text-[var(--wa-text-primary)]">{msg.text}</p>
-                        {msg.type === 'action' && (
-                            <div className="mt-2 border-t pt-2">
-                                {msg.actions.map((action, i) => (
-                                    <button key={i} onClick={action.action} className="w-full text-center p-2 text-blue-600 font-semibold hover:bg-gray-100 rounded">
-                                        {action.label}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </div>
-            );
-        };
-        
-        // --- Typing Indicator ---
-        const TypingIndicator = () => (
-             <div className="flex justify-start">
-                <div className="bg-white shadow-sm p-3 rounded-lg">
-                    <div className="flex items-center gap-1">
-                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
-                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></span>
-                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></span>
-                    </div>
-                </div>
-            </div>
-        );
-
-        // --- New Order Form Modal ---
-        function NewOrderForm({ customer, onSubmit, onCancel }) {
-            const [projectName, setProjectName] = useState('');
-            const [pastedText, setPastedText] = useState('');
-            const [deliveryAddress, setDeliveryAddress] = useState({ text: '' });
-            const [isSubmitting, setIsSubmitting] = useState(false);
-
-            const handleSubmit = (e) => {
-                e.preventDefault();
-                setIsSubmitting(true);
-                const orderData = {
-                    customer: customer,
-                    projectName, items: pastedText, deliveryAddress
-                };
-                onSubmit(orderData);
-            };
-
-            return (
-                <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 page-transition">
-                    <form onSubmit={handleSubmit} className="bg-white w-full max-w-2xl rounded-lg shadow-xl max-h-[90vh] flex flex-col">
-                        <header className="p-4 border-b flex justify-between items-center">
-                            <h2 className="text-xl font-bold">יצירת הזמנה חדשה</h2>
-                            <button type="button" onClick={onCancel} className="text-2xl">&times;</button>
-                        </header>
-                        <main className="p-6 space-y-4 overflow-y-auto">
-                            <div>
-                                <label className="font-semibold">שם פרויקט</label>
-                                <input type="text" value={projectName} onChange={e => setProjectName(e.target.value)} className="w-full p-2 border rounded-md mt-1" required />
-                            </div>
-                            <div>
-                                <label className="font-semibold">הדבק רשימת פריטים</label>
-                                <textarea value={pastedText} onChange={e => setPastedText(e.target.value)} rows="6" className="w-full p-2 border rounded-md mt-1" placeholder="20 מלט&#10;95 בלוק 4&#10;1 בלה חול" required></textarea>
-                            </div>
-                            <div>
-                                <label className="font-semibold">כתובת למשלוח</label>
-                                <MapInput onAddressChange={setDeliveryAddress} />
-                            </div>
-                        </main>
-                        <footer className="p-4 flex justify-end gap-3 bg-gray-50 border-t">
-                            <button type="button" onClick={onCancel} className="bg-gray-200 px-6 py-2 rounded-md font-semibold">ביטול</button>
-                            <button type="submit" disabled={isSubmitting} className="bg-[var(--wa-green)] text-white px-6 py-2 rounded-md font-semibold hover:bg-[var(--wa-teal-green)] flex items-center justify-center min-w-[120px]">
-                                {isSubmitting ? <div className="spinner"></div> : 'שלח הזמנה'}
-                            </button>
-                        </footer>
-                    </form>
-                </div>
-            );
-        }
-
-        // --- Map Input Component ---
-        function MapInput({ onAddressChange }) {
-            const mapContainerRef = useRef(null);
-            const [addressText, setAddressText] = useState('');
-
-            useEffect(() => {
-                let map;
-                if (mapContainerRef.current) {
-                    map = L.map(mapContainerRef.current).setView([32.166, 34.843], 13);
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-                    let marker;
-                    map.on('click', (e) => {
-                        const { lat, lng } = e.latlng;
-                        if (marker) marker.setLatLng(e.latlng);
-                        else marker = L.marker(e.latlng).addTo(map);
-                        
-                        const newAddress = `מיקום מפה: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-                        setAddressText(newAddress);
-                        onAddressChange({ text: newAddress, coords: { lat, lng } });
-                    });
-                }
-                return () => { if(map) map.remove(); };
-            }, []);
-            
-            const handleTextChange = (e) => {
-                setAddressText(e.target.value);
-                onAddressChange({ text: e.target.value, coords: null });
-            }
-
-            return (
-                <div className="mt-1 space-y-2">
-                    <input type="text" value={addressText} onChange={handleTextChange} placeholder="הקלד כתובת או לחץ על המפה" className="w-full p-2 border rounded-md" />
-                    <div ref={mapContainerRef} className="w-full h-64 rounded-lg z-10"></div>
-                </div>
-            );
-        }
+        const ChatMessage=({msg})=>{const isUser=msg.sender==='user';const bubbleClass=isUser?'bg-[var(--wa-outgoing-bubble)] self-end':'bg-[var(--wa-incoming-bubble)] self-start';return(<div className={`flex flex-col ${isUser?'items-end':'items-start'}`}><div className={`p-3 rounded-lg max-w-lg shadow-sm ${bubbleClass}`}><p className="whitespace-pre-wrap text-[var(--wa-text-primary)]">{msg.text}</p>{msg.type==='action'&&(
+<div className="mt-2 border-t pt-2">{msg.actions.map((action,i)=>(<button key={i} onClick={action.action} className="w-full text-center p-2 text-blue-600 font-semibold hover:bg-gray-100 rounded">{action.label}</button>))}</div>)}</div></div>);};
+        const TypingIndicator=()=>(<div className="flex justify-start"><div className="bg-white shadow-sm p-3 rounded-lg"><div className="flex items-center gap-1"><span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span><span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay:'0.2s'}}></span><span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay:'0.4s'}}></span></div></div></div>);
+        function NewOrderForm({customer,onSubmit,onCancel}){const[projectName,setProjectName]=useState('');const[pastedText,setPastedText]=useState('');const[deliveryAddress,setDeliveryAddress]=useState({text:''});const[isSubmitting,setIsSubmitting]=useState(false);const handleSubmit=(e)=>{e.preventDefault();setIsSubmitting(true);const orderData={customer:customer,projectName,items:pastedText,deliveryAddress};onSubmit(orderData);};return(<div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 page-transition"><form onSubmit={handleSubmit} className="bg-white w-full max-w-2xl rounded-lg shadow-xl max-h-[90vh] flex flex-col"><header className="p-4 border-b flex justify-between items-center"><h2 className="text-xl font-bold">יצירת הזמנה חדשה</h2><button type="button" onClick={onCancel} className="text-2xl">&times;</button></header><main className="p-6 space-y-4 overflow-y-auto"><div><label className="font-semibold">שם פרויקט</label><input type="text" value={projectName} onChange={e=>setProjectName(e.target.value)} className="w-full p-2 border rounded-md mt-1" required/></div><div><label className="font-semibold">הדבק רשימת פריטים</label><textarea value={pastedText} onChange={e=>setPastedText(e.target.value)} rows="6" className="w-full p-2 border rounded-md mt-1" placeholder="20 מלט&#10;95 בלוק 4&#10;1 בלה חול" required></textarea></div><div><label className="font-semibold">כתובת למשלוח</label><MapInput onAddressChange={setDeliveryAddress}/></div></main><footer className="p-4 flex justify-end gap-3 bg-gray-50 border-t"><button type="button" onClick={onCancel} className="bg-gray-200 px-6 py-2 rounded-md font-semibold">ביטול</button><button type="submit" disabled={isSubmitting} className="bg-[var(--wa-green)] text-white px-6 py-2 rounded-md font-semibold hover:bg-[var(--wa-teal-green)] flex items-center justify-center min-w-[120px]">{isSubmitting?<div className="spinner"></div>:'שלח הזמנה'}</button></footer></form></div>);}
+        function MapInput({onAddressChange}){const mapContainerRef=useRef(null);const[addressText,setAddressText]=useState('');useEffect(()=>{let map;if(mapContainerRef.current){map=L.map(mapContainerRef.current).setView([32.166,34.843],13);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);let marker;map.on('click',e=>{const{lat,lng}=e.latlng;if(marker)marker.setLatLng(e.latlng);else marker=L.marker(e.latlng).addTo(map);const newAddress=`מיקום מפה: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;setAddressText(newAddress);onAddressChange({text:newAddress,coords:{lat,lng}});});}return()=>{if(map)map.remove();};},[]);const handleTextChange=e=>{setAddressText(e.target.value);onAddressChange({text:e.target.value,coords:null});}
+return(<div className="mt-1 space-y-2"><input type="text" value={addressText} onChange={handleTextChange} placeholder="הקלד כתובת או לחץ על המפה" className="w-full p-2 border rounded-md"/><div ref={mapContainerRef} className="w-full h-64 rounded-lg z-10"></div></div>);}
 
         ReactDOM.render(<App />, document.getElementById('root'));
     </script>
-    
-    <!-- Firebase SDKs (Legacy - required for inline script) -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 </body>
 </html>
 
