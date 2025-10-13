@@ -103,9 +103,13 @@
             const fetchCustomers = async () => {
               try {
                 const data = await api.get('getCustomers');
-                setCustomers(data);
+                if (data && Array.isArray(data)) {
+                  setCustomers(data);
+                } else {
+                  throw new Error("Invalid data format received from server.");
+                }
               } catch (err) {
-                setError('לא ניתן לטעון את רשימת הלקוחות.');
+                setError('לא ניתן לטעון את רשימת הלקוחות. ודא שהסקריפט פורסם כראוי.');
                 console.error(err);
               } finally {
                 setIsLoading(false);
@@ -122,7 +126,7 @@
                 <p className="text-gray-600 text-center mb-6">נא לבחור לקוח להתחברות</p>
                 <div className="space-y-3 max-h-80 overflow-y-auto">
                   {isLoading && <div className="flex justify-center p-4"><div className="spinner" style={{borderColor: 'rgba(0,0,0,0.2)', borderLeftColor: 'var(--wa-green)'}}></div></div>}
-                  {error && <p className="text-center text-red-500">{error}</p>}
+                  {error && <p className="text-center text-red-500 font-semibold p-4">{error}</p>}
                   {customers.map(customer => (
                     <button key={customer.id} onClick={() => onLogin(customer)}
                       className="w-full flex items-center gap-4 text-right p-3 bg-gray-50 hover:bg-indigo-100 rounded-lg transition-all">
@@ -179,7 +183,7 @@
                 await api.post('logMessage', { customer: user, sender: 'user', message: inputText });
 
                 // Bot logic
-                const matchedQa = qa.find(item => inputText.includes(item.keyword));
+                const matchedQa = qa.find(item => item && item.keyword && inputText.includes(item.keyword));
                 let botReplyText = "לא הצלחתי להבין. האם תרצה ליצור הזמנה חדשה?";
                 if (matchedQa) {
                     botReplyText = matchedQa.response.replace('{client_name}', user.name.split(' ')[0]);
@@ -202,7 +206,7 @@
                     const successMsg = `הזמנה ${result.orderId} נוצרה בהצלחה! ✅\nמיד תקבל הודעת וואטסאפ עם אישור וקישור למעקב.`;
                     setMessages(prev => [...prev, {sender: 'bot', text: successMsg, type: 'text'}]);
                     
-                    const whatsAppMessage = `הזמנה חדשה התקבלה!\n*לקוח:* ${orderData.customerName}\n*פרויקט:* ${orderData.projectName}\n*קישור:* ${result.driveLink || ''}`;
+                    const whatsAppMessage = `הזמנה חדשה התקבלה!\n*לקוח:* ${orderData.customer.name}\n*פרויקט:* ${orderData.projectName}\n*קישור:* ${result.driveLink || ''}`;
                     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(whatsAppMessage)}`, '_blank');
                 } catch (error) {
                     console.error("Error creating order:", error);
