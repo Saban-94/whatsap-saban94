@@ -324,8 +324,41 @@
 
 <script>
 // כתובת ה-URL שלך
-const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbx3UGBpSZUhs1IKdJU9P-GMBHopA9R8_Q378orCgV4VUt4bUMUJLTQPirzyAR3pcACa/exec';
+// Add CORS proxy to your frontend JavaScript
+const BACKEND_BASE = 'https://script.google.com/macros/s/AKfycbwdnuF-_JNoGgvfMcHe3SMcMABNSoYQngZ35-aq9G5YHFFhgWEM5BP2zKkeR7wXRgwV/exec';
+const BACKEND_URL = `https://api.allorigins.win/get?url=${encodeURIComponent(BACKEND_BASE)}`;
 
+// Then modify your fetch calls to handle the proxy response:
+async function loadOrders(date) {
+  try {
+    showMessage('טוען הזמנות...', 'info');
+    
+    const url = `${BACKEND_URL}&action=getActiveOrders&date=${date}`;
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`שגיאה: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    const data = JSON.parse(result.contents); // Parse the actual response
+    
+    if (data.status === 'success') {
+      allOrders = data.data || [];
+      renderOrders();
+      updateKPIs();
+      showMessage(`נטענו ${allOrders.length} הזמנות`, 'success');
+    } else {
+      throw new Error(data.data || 'שגיאה בטעינת הנתונים');
+    }
+    
+  } catch (error) {
+    console.error('Error loading orders:', error);
+    showMessage('שגיאה בטעינת ההזמנות: ' + error.message, 'error');
+    allOrders = [];
+    renderOrders();
+  }
+}
 let allOrders = [];
 let customersData = [];
 let citiesData = [];
@@ -373,35 +406,6 @@ function generateTimeSlots() {
 }
 
 // טעינת הזמנות
-async function loadOrders(date) {
-    try {
-        showMessage('טוען הזמנות...', 'info');
-        
-        const url = `${BACKEND_URL}?action=getActiveOrders&date=${date}`;
-        const response = await fetch(url);
-        
-        if (!response.ok) {
-            throw new Error(`שגיאה: ${response.status}`);
-        }
-        
-        const result = await response.json();
-        
-        if (result.status === 'success') {
-            allOrders = result.data || [];
-            renderOrders();
-            updateKPIs();
-            showMessage(`נטענו ${allOrders.length} הזמנות`, 'success');
-        } else {
-            throw new Error(result.data || 'שגיאה בטעינת הנתונים');
-        }
-        
-    } catch (error) {
-        console.error('Error loading orders:', error);
-        showMessage('שגיאה בטעינת ההזמנות: ' + error.message, 'error');
-        allOrders = [];
-        renderOrders();
-    }
-}
 
 // הצגת הזמנות
 function renderOrders() {
