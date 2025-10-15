@@ -134,307 +134,32 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // <<-- שלב 4: הכתובת עודכנה! המערכת מחוברת.
+            const GAS_URL = 'https://script.google.com/macros/s/AKfycby1tah97jxRfl5dGhMoXMdBYDKh-Q8mdVzUfzqtAgQ3BhU8xgSDjWEo3NZ1TmRIcXk/exec';
+
             // State Management
             let state = {
-                loggedIn: false,
-                currentScreen: 'login', // 'login', 'dashboard', 'order'
-                orders: [], // This will hold our orders data
-                nextOrderId: 1001,
-                currentOrder: null // Order being edited or created
-            };
-
-            // DOM Elements
-            const screens = {
-                login: document.getElementById('login-screen'),
-                dashboard: document.getElementById('dashboard-screen'),
-                order: document.getElementById('order-screen')
-            };
-            const loginInput = document.getElementById('login-input');
-            const loginBtn = document.getElementById('login-btn');
-            const logoutBtn = document.getElementById('logout-btn');
-            const newOrderBtn = document.getElementById('new-order-btn');
-            const backToDashboardBtn = document.getElementById('back-to-dashboard-btn');
-            const ordersList = document.getElementById('orders-list');
-            const orderTitle = document.getElementById('order-title');
-            const orderForm = document.getElementById('order-form');
-            const saveOrderBtn = document.getElementById('save-order-btn');
-            const shareWhatsappBtn = document.getElementById('share-whatsapp-btn');
-            
-            // Smart Paste elements
-            const smartPasteArea = document.getElementById('smart-paste-area');
-            const parseBtn = document.getElementById('parse-btn');
-
-            // --- Core Functions ---
-
-            function navigateTo(screenName) {
-                state.currentScreen = screenName;
-                Object.values(screens).forEach(screen => screen.classList.add('hidden'));
-                if (screens[screenName]) {
-                    screens[screenName].classList.remove('hidden');
-                }
-            }
-
-            function init() {
-                // Load mock data and set initial state
-                loadMockData();
-                renderDashboard();
-                navigateTo('login');
+// ... existing code ... -->
             }
             
-            function loadMockData() {
-                state.orders = [
-                    { id: 1001, clientName: "זבולון עדירן", deliveryAddress: "השקד 2, רשפון", deliveryDate: "2025-10-15", status: "New", contactPhone: "0538224169", items: [{name: 'מלט שחור', qty: 5}, {name: 'קלקר 5/100/50', qty: 3}] },
-                    { id: 1002, clientName: "רותם כחילה", deliveryAddress: "אבא קובנר 6, כפר סבא", deliveryDate: "2025-10-16", status: "Pending", contactPhone: "0524811575", items: [{name: 'בטון ב 30', qty: 8}] },
-                ];
-                state.nextOrderId = 1003;
-            }
-
-            // --- Rendering Functions ---
-
-            function renderDashboard() {
-                ordersList.innerHTML = '';
-                if (state.orders.length === 0) {
-                    ordersList.innerHTML = `<p class="text-center text-gray-500">אין הזמנות להצגה.</p>`;
-                } else {
-                    state.orders.slice().reverse().forEach(order => {
-                        const card = document.createElement('div');
-                        card.className = 'bg-white p-4 rounded-lg border border-gray-200 shadow-sm cursor-pointer hover:border-blue-500';
-                        card.dataset.orderId = order.id;
-                        
-                        const statusColors = {
-                            New: 'bg-blue-500',
-                            Pending: 'bg-yellow-500',
-                            Confirmed: 'bg-green-500',
-                        };
-                        
-                        card.innerHTML = `
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <p class="font-bold text-lg">${order.clientName}</p>
-                                    <p class="text-sm text-gray-600">${order.deliveryAddress}</p>
-                                    <p class="text-sm text-gray-500">#${order.id} - ${new Date(order.deliveryDate).toLocaleDateString('he-IL')}</p>
-                                </div>
-                                <span class="text-white text-xs font-semibold px-2 py-1 rounded-full ${statusColors[order.status] || 'bg-gray-500'}">${order.status}</span>
-                            </div>
-                        `;
-                        card.addEventListener('click', () => handleEditOrder(order.id));
-                        ordersList.appendChild(card);
-                    });
-                }
-                // Update counts
-                document.getElementById('new-orders-count').textContent = state.orders.filter(o => o.status === 'New').length;
-                document.getElementById('pending-orders-count').textContent = state.orders.filter(o => o.status === 'Pending').length;
-            }
-
-            function renderOrderForm(order) {
-                state.currentOrder = order;
-                orderForm.reset();
-                smartPasteArea.value = '';
-                
-                document.getElementById('order-id').value = order ? order.id : '';
-                document.getElementById('client-name').value = order ? order.clientName : '';
-                document.getElementById('contact-phone').value = order ? order.contactPhone : '';
-                document.getElementById('delivery-address').value = order ? order.deliveryAddress : '';
-                document.getElementById('delivery-date').value = order ? order.deliveryDate : new Date().toISOString().split('T')[0];
-                document.getElementById('notes').value = order ? order.notes : '';
-
-                renderItems(order ? order.items : []);
-
-                orderTitle.textContent = order ? `עריכת הזמנה #${order.id}` : 'הזמנה חדשה';
-                shareWhatsappBtn.disabled = !order; // Enable share only for saved orders
-                navigateTo('order');
-            }
-
-            function renderItems(items) {
-                const container = document.getElementById('items-container');
-                container.innerHTML = '';
-                if (items && items.length > 0) {
-                    items.forEach((item, index) => {
-                         createItemRow(item.name, item.qty);
-                    });
-                } else {
-                     createItemRow(); // Start with one empty row
-                }
-            }
-            
-            function createItemRow(name = '', qty = '') {
-                 const container = document.getElementById('items-container');
-                 const itemRow = document.createElement('div');
-                 itemRow.className = 'grid grid-cols-12 gap-2 items-center';
-                 itemRow.innerHTML = `
-                    <input type="text" placeholder="שם מוצר" value="${name}" class="col-span-7 p-2 border border-gray-300 rounded-lg item-name">
-                    <input type="number" placeholder="כמות" value="${qty}" class="col-span-3 p-2 border border-gray-300 rounded-lg item-qty">
-                    <button type="button" class="col-span-2 text-red-500 font-bold text-2xl remove-item-btn">×</button>
-                 `;
-                 container.appendChild(itemRow);
-            }
-
-            // --- Event Handlers ---
-
-            loginBtn.addEventListener('click', () => {
-                if (loginInput.value.trim() !== '') {
-                    state.loggedIn = true;
+            async function loadOrdersFromServer() {
+                if (GAS_URL.includes('YOUR_GOOGLE_APPS_SCRIPT_URL_HERE')) {
+                    alert('אנא הגדר את כתובת ה-URL של Google Apps Script בקוד.');
+                    loadMockData(); // Fallback to mock data if URL is not set
                     renderDashboard();
-                    navigateTo('dashboard');
-                }
-            });
-            
-            logoutBtn.addEventListener('click', () => {
-                state.loggedIn = false;
-                loginInput.value = '';
-                navigateTo('login');
-            });
+// ... existing code ... -->
+// ... existing code ... -->
+            async function handleSaveOrder() {
+// ... existing code ... -->
+                saveOrderBtn.disabled = true;
+                saveOrderBtn.textContent = 'שומר...';
 
-            newOrderBtn.addEventListener('click', () => renderOrderForm(null));
-            backToDashboardBtn.addEventListener('click', () => navigateTo('dashboard'));
-
-            document.getElementById('items-container').addEventListener('click', (e) => {
-                if(e.target.classList.contains('remove-item-btn')) {
-                    e.target.closest('.grid').remove();
-                }
-            });
-            
-            document.getElementById('add-item-btn').addEventListener('click', () => createItemRow());
-            
-            saveOrderBtn.addEventListener('click', handleSaveOrder);
-            
-            shareWhatsappBtn.addEventListener('click', handleShareToWhatsapp);
-
-            parseBtn.addEventListener('click', handleParseText);
-            
-            function handleEditOrder(orderId) {
-                const order = state.orders.find(o => o.id === orderId);
-                if(order) {
-                    renderOrderForm(order);
-                }
-            }
-
-            function handleSaveOrder() {
-                const id = document.getElementById('order-id').value;
-                const items = [];
-                document.querySelectorAll('#items-container .grid').forEach(row => {
-                    const name = row.querySelector('.item-name').value.trim();
-                    const qty = row.querySelector('.item-qty').value.trim();
-                    if(name && qty) {
-                        items.push({ name, qty });
+                try {
+                    if (GAS_URL.includes('YOUR_GOOGLE_APPS_SCRIPT_URL_HERE')) {
+                        throw new Error('לא ניתן לשמור. כתובת ה-Backend אינה מוגדרת.');
                     }
-                });
 
-                const orderData = {
-                    clientName: document.getElementById('client-name').value.trim(),
-                    contactPhone: document.getElementById('contact-phone').value.trim(),
-                    deliveryAddress: document.getElementById('delivery-address').value.trim(),
-                    deliveryDate: document.getElementById('delivery-date').value,
-                    notes: document.getElementById('notes').value.trim(),
-                    items: items,
-                    status: 'New' // default status
-                };
-                
-                // Basic validation
-                if (!orderData.clientName || !orderData.contactPhone || !orderData.deliveryAddress || !orderData.deliveryDate) {
-                    alert('נא למלא את כל שדות החובה (*)');
-                    return;
-                }
+                    const response = await fetch(GAS_URL, {
+                        method: 'POST',
+// ... existing code ... -->
 
-                if (id) { // Update existing order
-                    const index = state.orders.findIndex(o => o.id == id);
-                    if (index > -1) {
-                        state.orders[index] = { ...state.orders[index], ...orderData };
-                    }
-                } else { // Create new order
-                    orderData.id = state.nextOrderId++;
-                    state.orders.push(orderData);
-                }
-                
-                // Mock saving to Google Sheets
-                console.log("Saving order:", orderData);
-                
-                renderDashboard();
-                navigateTo('dashboard');
-            }
-
-            function handleShareToWhatsapp() {
-                if (!state.currentOrder) return;
-                
-                const order = state.currentOrder;
-                let message = `*הזמנה חדשה #${order.id}*\n\n`;
-                message += `*לקוח:* ${order.clientName}\n`;
-                message += `*כתובת:* ${order.deliveryAddress}\n`;
-                message += `*איש קשר:* ${order.contactPhone}\n`;
-                message += `*תאריך אספקה:* ${new Date(order.deliveryDate).toLocaleDateString('he-IL')}\n\n`;
-                message += `*פירוט:*\n`;
-                order.items.forEach(item => {
-                    message += `- ${item.name} (כמות: ${item.qty})\n`;
-                });
-                if(order.notes) {
-                    message += `\n*הערות:* ${order.notes}`;
-                }
-                
-                const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
-                window.open(whatsappUrl, '_blank');
-            }
-
-            // --- Text Parsing Logic (MVP) ---
-            function handleParseText() {
-                const text = smartPasteArea.value;
-                if (!text.trim()) return;
-
-                const parsedData = {
-                    clientName: '',
-                    contactPhone: '',
-                    deliveryAddress: '',
-                    items: []
-                };
-
-                const lines = text.split('\n').filter(line => line.trim() !== '');
-                
-                // Rule 1: First line often contains project, address, contact
-                if (lines.length > 0) {
-                    const firstLine = lines[0];
-                    
-                    // Extract phone number
-                    const phoneRegex = /05\d-?\d{7}/;
-                    const phoneMatch = firstLine.match(phoneRegex);
-                    if (phoneMatch) {
-                        parsedData.contactPhone = phoneMatch[0];
-                    }
-                    
-                    // Simple address/name parsing (can be improved)
-                    let remainingText = firstLine.replace(phoneRegex, '').trim();
-                    // Assume name is before number
-                    const contactNameRegex = new RegExp(`([א-ת\\s]+)(?=\\s*${parsedData.contactPhone})`);
-                    const nameMatch = remainingText.match(contactNameRegex);
-                    if (nameMatch) {
-                         // This is often not just the name but the address part too
-                         remainingText = remainingText.replace(nameMatch[0], '').trim();
-                    }
-                    parsedData.deliveryAddress = remainingText.replace(/,/g, ' ').trim();
-                }
-
-                // Rule 2: Lines starting with a number are items
-                const itemRegex = /^(?:\d+\.?\s*)(.*?)(?:(?:x|×)\s*(\d+)|כמות:?\s*(\d+)).*$/i;
-                lines.forEach(line => {
-                    const match = line.match(itemRegex);
-                    if (match) {
-                        const name = match[1].trim();
-                        const qty = match[2] || match[3] || '1'; // Default to 1 if not found
-                        parsedData.items.push({ name, qty });
-                    }
-                });
-
-                // Apply parsed data to form
-                document.getElementById('contact-phone').value = parsedData.contactPhone;
-                document.getElementById('delivery-address').value = parsedData.deliveryAddress;
-                // A more complex logic is needed for client name, for now, we leave it to the user.
-                
-                renderItems(parsedData.items);
-                
-                alert('הטקסט נותח. אנא בדוק והשלם את הפרטים החסרים.');
-            }
-
-            // --- Initialise the App ---
-            init();
-        });
-    </script>
-</body>
-</html>
