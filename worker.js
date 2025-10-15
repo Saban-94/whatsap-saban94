@@ -13,7 +13,7 @@ async function handleRequest(request) {
       const action = body.action;
       
       // קריאה ל-Google Apps Script
-      const scriptUrl = 'https://script.google.com/macros/s/AKfycbysX2bybNmZadW1APZGJuKQVh1abMsb7mj_P7MPueJEDPi6KrnZ1mMQFKTY-vjPI_xHrQ/exec';
+      const scriptUrl = 'https://script.google.com/macros/s/AKfycbyX2XqFeCQiiX1ehtPy-q-fZzGBDWZ9ZJvJ1FKe6C6PSKInAqVwlQRY6XABZtmqMbY8/exec';
       
       let payload = {
         ...body,
