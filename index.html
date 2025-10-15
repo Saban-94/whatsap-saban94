@@ -1,299 +1,207 @@
-<!DOCTYPE html>
-<html lang="he" dir="rtl">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>הזמנות | ח. סבן</title>
-    
-    <link rel="icon" href="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/WhatsApp.svg/2042px-WhatsApp.svg.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <!-- FIX: Added meta tag suggested by browser warning -->
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+/**
+ * @OnlyCurrentDoc
+ * Logistics Engine V3.3 (Fixed): הוספת תמיכה ב-CORS + עדכון אבטחה.
+ */
+const SHEETS = {
+  ORDERS: 'כתיבת הזמנה לסידור - Orders',
+  CUSTOMERS: 'כתיבת הזמנה לסידור - Customers',
+  SETTINGS: 'כתיבת הזמנה לסידור - Settings',
+  MAPS: 'כתיבת הזמנה לסידור - maps',
+  CITIES: 'כתיבת הזמנה לסידור - cities',
+  HISTORY: 'כתיבת הזמנה לסידור - History'
+};
 
-    <!-- Libraries -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
-    <!-- OneSignal SDK -->
-    <script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" async=""></script>
-    <script>
-      window.OneSignal = window.OneSignal || [];
-      OneSignal.push(function() {
-        OneSignal.init({
-          // ========================== !!! חשוב מאוד - יש לעדכן כאן !!! ==========================
-          // החלף את הטקסט "YOUR_ONESIGNAL_APP_ID" ב-App ID האמיתי מחשבון ה-OneSignal שלך
-          // כדי לתקן את השגיאה ולהפעיל את ההתראות.
-          // =====================================================================================
-          appId: "YOUR_ONESIGNAL_APP_ID", 
-        });
-      });
-    </script>
-    
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap');
-        :root {
-            --wa-bg: #EFEAE2; --wa-teal-green: #008069; --wa-green: #128C7E;
-            --wa-outgoing-bubble: #D9FDD3; --wa-incoming-bubble: #FFFFFF;
-            --wa-header-bg: #F0F2F5; --wa-system-bubble: #E2F2FF;
-            --wa-text-primary: #111b21; --wa-text-secondary: #667781;
-        }
-        body { font-family: 'Assistant', sans-serif; -webkit-tap-highlight-color: transparent; }
-        .whatsapp-bg { background-image: url('https://i.pinimg.com/736x/8c/98/99/8c98994518b575bfd8c949e91d20548b.jpg'); background-size: contain; }
-        .login-bg { background: linear-gradient(135deg, var(--wa-teal-green) 0%, var(--wa-green) 100%); }
-        .page-transition { animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .leaflet-pane { z-index: 10 !important; }
-        .leaflet-top, .leaflet-bottom { z-index: 20 !important; }
-        .spinner { border: 4px solid rgba(255, 255, 255, 0.3); border-left-color: #fff; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-    </style>
-</head>
-<body class="bg-gray-200">
-    <div id="root" class="h-screen"></div>
+// ✅ טיפול מלא ב-CORS למניעת חסימות בין דומיינים
+function doGet(e) {
+  if (e.parameter.action) {
+    try {
+      let data;
+      switch (e.parameter.action) {
+        case 'getInitialData':
+          data = getInitialData();
+          break;
+        case 'getDashboardAnalytics':
+          data = getDashboardAnalytics();
+          break;
+        case 'getOrdersByDate':
+          data = getOrdersByDate(e.parameter.date);
+          break;
+        case 'getHistoricalData':
+          data = getHistoricalData(e.parameter.address);
+          break;
+        default:
+          throw new Error(`Invalid GET action: ${e.parameter.action}`);
+      }
+      return createCorsResponse({ status: 'success', data: data });
+    } catch (err) {
+      Logger.log(`doGet Error: ${err.stack}`);
+      return createCorsResponse({ status: 'error', message: err.message });
+    }
+  }
+  return HtmlService.createHtmlOutputFromFile('dashboard').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
 
-    <script type="text/babel">
-        const { useState, useEffect, useRef, useCallback } = React;
+function doPost(e) {
+  try {
+    // בדיקת preflight (OPTIONS)
+    if (e && e.parameter && e.parameter._cors) {
+      return createCorsResponse({ status: 'ok', message: 'Preflight success' });
+    }
 
-        // --- Google Apps Script Configuration ---
-        // ========================== !!! קובץ זה עודכן !!! ==========================
-        // הכתובת עודכנה לכתובת החדשה מהשגיאות ששלחת.
-        // יש לוודא שהפריסה של הכתובת הזו מוגדרת עם גישה ל-"Anyone".
-        // ============================================================================
-        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbziWmk4fLVeGs0AUIV-ClHV3noReWGmmpxazIEsdyfJhzHi3VGPFcDqj_4YAhEslvkvuw/exec';
+    const requestData = JSON.parse(e.postData.contents);
+    if (!requestData || !requestData.action) {
+      throw new Error('Invalid POST request: "action" is missing.');
+    }
 
-        // --- API Helper ---
-        const api = {
-          get: async (action, params = {}) => {
-            if (!WEB_APP_URL) {
-                throw new Error("WEB_APP_URL is not defined!");
-            }
-            const url = new URL(WEB_APP_URL);
-            url.searchParams.append('action', action);
-            for (const key in params) {
-              url.searchParams.append(key, params[key]);
-            }
-            const response = await fetch(url);
-            if (!response.ok) throw new Error(`Network response was not ok for action: ${action}`);
-            const text = await response.text();
-            try {
-                return JSON.parse(text);
-            } catch (e) {
-                console.error("Failed to parse JSON:", text);
-                throw new Error("Received non-JSON response from server.");
-            }
-          },
-          post: async (action, body) => {
-             if (!WEB_APP_URL) {
-                throw new Error("WEB_APP_URL is not defined!");
-            }
-            const formData = new URLSearchParams(); 
-            formData.append('action', action);
-            for (const key in body) {
-                formData.append(key, JSON.stringify(body[key]));
-            }
-            const response = await fetch(WEB_APP_URL, { 
-                method: 'POST', 
-                body: formData,
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                },
-            });
-            if (!response.ok) throw new Error(`Network response was not ok for POST action: ${action}`);
-            return response.json(); 
-          }
-        };
+    switch (requestData.action) {
+      case 'addOrder':
+        handleNewCustomer(requestData.payload.customer);
+        return createCorsResponse({ status: 'success', data: addOrderToSheet(requestData.payload) });
+      case 'updateOrder':
+        return createCorsResponse({ status: 'success', data: updateOrderInSheet(requestData.payload) });
+      case 'archiveOrder':
+        archiveOrder(requestData.payload);
+        return createCorsResponse({ status: 'success', message: 'Order archived' });
+      case 'ping':
+        return createCorsResponse({ status: 'ok', message: 'Ping success' });
+      default:
+        throw new Error(`Invalid POST action: ${requestData.action}`);
+    }
+  } catch (error) {
+    Logger.log(`doPost Error: ${error.stack}`);
+    return createCorsResponse({ status: 'error', message: error.toString() });
+  }
+}
 
-        // --- Main App Component ---
-        function App() {
-          const [currentUser, setCurrentUser] = useState(null);
-          
-          if (!currentUser) {
-            return <LoginScreen onLogin={setCurrentUser} />;
-          }
+// 🧩 פונקציה מרכזית שיוצרת תגובה תקינה עם כותרות CORS
+function createCorsResponse(data) {
+  return ContentService.createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON)
+    .setHeader('Access-Control-Allow-Origin', '*')
+    .setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    .setHeader('Access-Control-Allow-Headers', 'Content-Type');
+}
 
-          return <ChatScreen user={currentUser} onLogout={() => setCurrentUser(null)} />;
-        }
+// 🧱 שאר הפונקציות (ללא שינוי לוגי)
+function archiveOrder(payload) {
+  const { orderId, departureTime, returnTime } = payload;
+  const ordersSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.ORDERS);
+  const historySheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.HISTORY);
+  if (!ordersSheet || !historySheet) throw new Error('Sheet not found.');
+  const data = ordersSheet.getDataRange().getValues();
+  const headers = data[0];
+  const idColIndex = headers.findIndex(h => h.toLowerCase() === 'id');
+  if (idColIndex === -1) throw new Error("'id' column not found.");
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][idColIndex] == orderId) {
+      const rowToArchive = data[i];
+      historySheet.appendRow([...rowToArchive, departureTime, returnTime, new Date()]);
+      ordersSheet.deleteRow(i + 1);
+      return;
+    }
+  }
+  throw new Error('Order ID not found for archiving.');
+}
 
-        // --- Login Screen ---
-        function LoginScreen({ onLogin }) {
-          const [customers, setCustomers] = useState([]);
-          const [isLoading, setIsLoading] = useState(true);
-          const [error, setError] = useState(null);
+function updateOrderInSheet(order) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.ORDERS);
+  const data = sheet.getDataRange().getValues();
+  const headers = data.shift().map(h => String(h || ''));
+  const idColIndex = headers.findIndex(h => h.toLowerCase() === 'id');
+  for (let i = 0; i < data.length; i++) {
+    if (data[i][idColIndex] == order.id) {
+      const updatedRow = headers.map(header => order[header] || '');
+      sheet.getRange(i + 2, 1, 1, updatedRow.length).setValues([updatedRow]);
+      return order;
+    }
+  }
+  throw new Error('Order ID not found for update.');
+}
 
-          useEffect(() => {
-            const fetchCustomers = async () => {
-              try {
-                const data = await api.get('getCustomers');
-                if (data && Array.isArray(data)) {
-                  setCustomers(data);
-                } else {
-                  throw new Error("פורמט נתונים שגוי התקבל מהשרת.");
-                }
-              } catch (err) {
-                console.error(err);
-                setError('שגיאת תקשורת. לא ניתן לטעון את רשימת הלקוחות. אנא ודא שהסקריפט פורסם כראוי לפי המדריך.');
-              } finally {
-                setIsLoading(false);
-              }
-            };
-            fetchCustomers();
-          }, []);
+function getHistoricalData(address) {
+  if (!address) return [];
+  const data = getSheetDataAsJson(SHEETS.HISTORY, true);
+  return data.filter(entry => {
+    const entryAddress = `${entry.street || ''} ${entry.street_number || ''}, ${entry.city || ''}`.trim();
+    return entryAddress === address;
+  });
+}
 
-          return (
-            <div className="flex flex-col items-center justify-center min-h-screen login-bg p-4">
-              <div className="mb-8 text-center">
-                  <h1 className="text-white text-4xl font-bold tracking-wider">ח. סבן</h1>
-                  <p className="text-white/80 text-lg">חומרי בנין (1994) בע"מ</p>
-              </div>
-              <div className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-md">
-                <h2 className="text-2xl font-bold text-center text-gray-800 mb-2">מערכת הזמנות</h2>
-                <p className="text-gray-600 text-center mb-6">נא לבחור לקוח להתחברות</p>
-                <div className="space-y-3 max-h-80 overflow-y-auto">
-                  {isLoading && <div className="flex justify-center p-4"><div className="spinner" style={{borderColor: 'rgba(0,0,0,0.2)', borderLeftColor: 'var(--wa-green)'}}></div></div>}
-                  {error && <p className="text-center text-red-600 font-semibold p-4 bg-red-50 rounded-lg">{error}</p>}
-                  {customers.map(customer => (
-                    <button key={customer.id} onClick={() => onLogin(customer)}
-                      className="w-full flex items-center gap-4 text-right p-3 bg-gray-50 hover:bg-indigo-100 rounded-lg transition-all">
-                      <img src={customer.avatar || 'https://placehold.co/100/CCCCCC/FFFFFF?text=?'} className="w-12 h-12 rounded-full object-cover" />
-                      <div>
-                        <p className="font-bold text-lg">{customer.name}</p>
-                        <p className="text-sm text-gray-500">{customer.phone}</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          );
-        }
-        
-        // --- Chat Screen and other components ---
-        function ChatScreen({ user, onLogout }) {
-            const [messages, setMessages] = useState([]);
-            const [inputText, setInputText] = useState('');
-            const [isTyping, setIsTyping] = useState(false);
-            const [showOrderForm, setShowOrderForm] = useState(false);
-            const messagesEndRef = useRef(null);
-            const [qa, setQa] = useState([]);
+function getInitialData() {
+  return {
+    activeOrders: getSheetDataAsJson(SHEETS.ORDERS, true),
+    warehouses: getSheetDataAsJson(SHEETS.SETTINGS).filter(w => w.key?.startsWith('warehouse_')).map(w => w.value),
+    deliveryTypes: getSheetDataAsJson(SHEETS.MAPS).map(item => item.delivery_type).filter(Boolean),
+    customers: getSheetDataAsJson(SHEETS.CUSTOMERS, true),
+    cities: getSheetDataAsJson(SHEETS.CITIES).map(item => item.city).filter(Boolean).sort()
+  };
+}
 
-            useEffect(() => {
-                const loadChatData = async () => {
-                    setIsTyping(true);
-                    try {
-                        const qaData = await api.get('getQa');
-                        setQa(qaData);
-                        const welcomeMsg = `בוקר טוב ${user.name.split(' ')[0]} 👋, כאן הנציג הדיגיטלי של ח. סבן. איך אפשר לעזור?`;
-                        setMessages([{ sender: 'bot', text: welcomeMsg, type: 'text' }]);
-                    } catch (error) {
-                        setMessages([{ sender: 'bot', text: 'שגיאה בטעינת הנתונים, אנא רענן.', type: 'text' }]);
-                    } finally {
-                        setIsTyping(false);
-                    }
-                };
-                loadChatData();
-            }, [user]);
+function addOrderToSheet(order) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.ORDERS);
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  order.id = `ORD-${Date.now()}`;
+  order.timestamp = new Date().toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' });
+  order.status = 'חדשה';
+  const newRow = headers.map(header => order[header] || '');
+  sheet.appendRow(newRow);
+  return order;
+}
 
-            useEffect(() => {
-                messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-            }, [messages, isTyping]);
+function getSheetDataAsJson(sheetName, useRawHeaders = false) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(sheetName);
+  if (!sheet) throw new Error(`Sheet named "${sheetName}" was not found.`);
+  const dataRange = sheet.getDataRange();
+  if (dataRange.getNumRows() <= 1) return [];
+  const values = dataRange.getValues();
+  const headersRaw = values.shift();
+  const headers = headersRaw.map(h => useRawHeaders ? (h || '').toString().trim() : (h || '').toString().trim().toLowerCase().replace(/[^a-z0-9_]/g, '_'));
+  return values.map(row => {
+    let obj = {};
+    headers.forEach((header, index) => {
+      if (header) {
+        const value = row[index];
+        obj[header] = (value instanceof Date) ? Utilities.formatDate(value, ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd') : value;
+      }
+    });
+    return obj;
+  });
+}
 
-            const handleSendMessage = async () => {
-                if (inputText.trim() === '') return;
-                const userMessage = { sender: 'user', text: inputText, type: 'text' };
-                setMessages(prev => [...prev, userMessage]);
-                setInputText('');
-                setIsTyping(true);
-                
-                api.post('logMessage', { customer: user, sender: 'user', message: inputText });
+function getDashboardAnalytics() {
+  const orders = getSheetDataAsJson(SHEETS.ORDERS, true);
+  const ordersByCity = {}, ordersByType = {}, ordersByCustomer = {};
+  orders.forEach(order => {
+    if (order.city) ordersByCity[order.city] = (ordersByCity[order.city] || 0) + 1;
+    if (order.delivery_type) ordersByType[order.delivery_type] = (ordersByType[order.delivery_type] || 0) + 1;
+    if (order.customer) ordersByCustomer[order.customer] = (ordersByCustomer[order.customer] || 0) + 1;
+  });
+  const topCities = Object.entries(ordersByCity).sort(([, a], [, b]) => b - a).slice(0, 5);
+  const topCustomers = Object.entries(ordersByCustomer).sort(([, a], [, b]) => b - a).slice(0, 5);
+  return {
+    totalOrders: orders.length,
+    topCities: { labels: topCities.map(i => i[0]), data: topCities.map(i => i[1]) },
+    deliveryTypes: { labels: Object.keys(ordersByType), data: Object.values(ordersByType) },
+    topCustomers: { labels: topCustomers.map(i => i[0]), data: topCustomers.map(i => i[1]) }
+  };
+}
 
-                const matchedQa = qa.find(item => item && item.keyword && inputText.includes(item.keyword));
-                let botReplyText = "לא הצלחתי להבין. האם תרצה ליצור הזמנה חדשה?";
-                if (matchedQa) {
-                    botReplyText = matchedQa.response.replace('{client_name}', user.name.split(' ')[0]);
-                }
-                
-                setTimeout(async () => {
-                    const botReply = { sender: 'bot', text: botReplyText, type: 'action', actions: [{ label: 'כן, צור הזמנה', action: () => setShowOrderForm(true) }] };
-                    setMessages(prev => [...prev, botReply]);
-                    api.post('logMessage', { customer: user, sender: 'bot', message: botReplyText });
-                    setIsTyping(false);
-                }, 1500);
-            };
-            
-            const handleOrderSubmit = async (orderData) => {
-                setShowOrderForm(false);
-                setIsTyping(true);
-                
-                try {
-                    const result = await api.post('createOrder', orderData);
-                    const successMsg = `הזמנה ${result.orderId || 'חדשה'} נוצרה בהצלחה! ✅\nמיד תקבל הודעת וואטסאפ עם אישור וקישור למעקב.`;
-                    setMessages(prev => [...prev, {sender: 'bot', text: successMsg, type: 'text'}]);
-                    
-                    const whatsAppMessage = `הזמנה חדשה התקבלה!\n*לקוח:* ${orderData.customer.name}\n*פרויקט:* ${orderData.projectName}\n*קישור:* ${result.driveLink || ''}`;
-                    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(whatsAppMessage)}`, '_blank');
-                } catch (error) {
-                    console.error("Error creating order:", error);
-                    setMessages(prev => [...prev, {sender: 'bot', text: "אוי, הייתה שגיאה ביצירת ההזמנה. אנא נסה שוב.", type: 'text'}]);
-                } finally {
-                    setIsTyping(false);
-                }
-            };
+function getOrdersByDate(dateString) {
+  return getSheetDataAsJson(SHEETS.ORDERS, true).filter(order => order.date === dateString);
+}
 
-            return (
-                <div className="flex flex-col h-full bg-[var(--wa-bg)]">
-                    <header className="bg-[var(--wa-header-bg)] p-3 flex items-center justify-between shadow-sm z-30">
-                        <div className="flex items-center gap-4">
-                            <img src={user.avatar} alt="Avatar" className="w-12 h-12 rounded-full object-cover"/>
-                            <div>
-                                <p className="font-bold text-lg text-[var(--wa-text-primary)]">{user.name}</p>
-                                <p className="text-sm text-green-600 font-semibold">זמין</p>
-                            </div>
-                        </div>
-                        <button onClick={onLogout} className="text-gray-500 hover:text-red-500"><i className="fa-solid fa-right-from-bracket fa-lg"></i></button>
-                    </header>
-                    
-                    <div className="flex-1 overflow-y-auto p-4 whatsapp-bg">
-                        <div className="space-y-3">
-                            {messages.map((msg, index) => <ChatMessage key={index} msg={msg} />)}
-                            {isTyping && <TypingIndicator />}
-                            <div ref={messagesEndRef} />
-                        </div>
-                    </div>
+function handleNewCustomer(name) {
+  if (!name) return;
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.CUSTOMERS);
+  if (!sheet) return;
+  const existing = sheet.getDataRange().getValues().map(row => (row[0] || '').toString().trim().toLowerCase());
+  if (!existing.includes(name.trim().toLowerCase())) sheet.appendRow([name.trim()]);
+}
 
-                    <div className="bg-[var(--wa-header-bg)] p-3 flex items-center gap-2">
-                         <div className="flex-1 relative">
-                            <input
-                                value={inputText}
-                                onChange={(e) => setInputText(e.target.value)}
-                                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                                placeholder="הקלד הודעה..."
-                                className="w-full bg-white p-3 pr-5 pl-12 rounded-full border-none focus:ring-2 focus:ring-[var(--wa-green)]"
-                            />
-                            <i className="fa-regular fa-face-smile text-[var(--wa-text-secondary)] absolute left-4 top-1/2 -translate-y-1/2 text-xl"></i>
-                        </div>
-                        <button onClick={handleSendMessage} className="bg-[var(--wa-green)] text-white w-12 h-12 rounded-full hover:bg-[var(--wa-teal-green)] transition-colors text-xl flex items-center justify-center">
-                            <i className="fa-solid fa-paper-plane"></i>
-                        </button>
-                    </div>
-                    {showOrderForm && <NewOrderForm customer={user} onSubmit={handleOrderSubmit} onCancel={() => setShowOrderForm(false)} />}
-                </div>
-            );
-        }
-        const ChatMessage=({msg})=>{const isUser=msg.sender==='user';const bubbleClass=isUser?'bg-[var(--wa-outgoing-bubble)] self-end':'bg-[var(--wa-incoming-bubble)] self-start';return(<div className={`flex flex-col ${isUser?'items-end':'items-start'}`}><div className={`p-3 rounded-lg max-w-lg shadow-sm ${bubbleClass}`}><p className="whitespace-pre-wrap text-[var(--wa-text-primary)]">{msg.text}</p>{msg.type==='action'&&(
-<div className="mt-2 border-t pt-2">{msg.actions.map((action,i)=>(<button key={i} onClick={action.action} className="w-full text-center p-2 text-blue-600 font-semibold hover:bg-gray-100 rounded">{action.label}</button>))}</div>)}</div></div>);};
-        const TypingIndicator=()=>(<div className="flex justify-start"><div className="bg-white shadow-sm p-3 rounded-lg"><div className="flex items-center gap-1"><span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span><span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay:'0.2s'}}></span><span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay:'0.4s'}}></span></div></div></div>);
-        function NewOrderForm({customer,onSubmit,onCancel}){const[projectName,setProjectName]=useState('');const[pastedText,setPastedText]=useState('');const[deliveryAddress,setDeliveryAddress]=useState({text:''});const[isSubmitting,setIsSubmitting]=useState(false);const handleSubmit=(e)=>{e.preventDefault();setIsSubmitting(true);const orderData={customer:customer,projectName,items:pastedText,deliveryAddress};onSubmit(orderData);};return(<div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 page-transition"><form onSubmit={handleSubmit} className="bg-white w-full max-w-2xl rounded-lg shadow-xl max-h-[90vh] flex flex-col"><header className="p-4 border-b flex justify-between items-center"><h2 className="text-xl font-bold">יצירת הזמנה חדשה</h2><button type="button" onClick={onCancel} className="text-2xl">&times;</button></header><main className="p-6 space-y-4 overflow-y-auto"><div><label className="font-semibold">שם פרויקט</label><input type="text" value={projectName} onChange={e=>setProjectName(e.target.value)} className="w-full p-2 border rounded-md mt-1" required/></div><div><label className="font-semibold">הדבק רשימת פריטים</label><textarea value={pastedText} onChange={e=>setPastedText(e.target.value)} rows="6" className="w-full p-2 border rounded-md mt-1" placeholder="20 מלט&#10;95 בלוק 4&#10;1 בלה חול" required></textarea></div><div><label className="font-semibold">כתובת למשלוח</label><MapInput onAddressChange={setDeliveryAddress}/></div></main><footer className="p-4 flex justify-end gap-3 bg-gray-50 border-t"><button type="button" onClick={onCancel} className="bg-gray-200 px-6 py-2 rounded-md font-semibold">ביטול</button><button type="submit" disabled={isSubmitting} className="bg-[var(--wa-green)] text-white px-6 py-2 rounded-md font-semibold hover:bg-[var(--wa-teal-green)] flex items-center justify-center min-w-[120px]">{isSubmitting?<div className="spinner"></div>:'שלח הזמנה'}</button></footer></form></div>);}
-        function MapInput({onAddressChange}){const mapContainerRef=useRef(null);const[addressText,setAddressText]=useState('');useEffect(()=>{let map;if(mapContainerRef.current){map=L.map(mapContainerRef.current).setView([32.166,34.843],13);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);let marker;map.on('click',e=>{const{lat,lng}=e.latlng;if(marker)marker.setLatLng(e.latlng);else marker=L.marker(e.latlng).addTo(map);const newAddress=`מיקום מפה: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;setAddressText(newAddress);onAddressChange({text:newAddress,coords:{lat,lng}});});}return()=>{if(map)map.remove();};},[]);const handleTextChange=e=>{setAddressText(e.target.value);onAddressChange({text:e.target.value,coords:null});}
-return(<div className="mt-1 space-y-2"><input type="text" value={addressText} onChange={handleTextChange} placeholder="הקלד כתובת או לחץ על המפה" className="w-full p-2 border rounded-md"/><div ref={mapContainerRef} className="w-full h-64 rounded-lg z-10"></div></div>);}
-
-        ReactDOM.render(<App />, document.getElementById('root'));
-    </script>
-</body>
-</html>
-
+// 🪄 הדרכה להמשך:
+// 1️⃣ הדבק את הקוד הזה בקובץ Code.gs שלך והחלף את הישן.
+// 2️⃣ לחץ Deploy → New Deployment → Web App.
+// 3️⃣ בחר Anyone → Allow access.
+// 4️⃣ עדכן את ה-SCRIPT_URL באתר שלך בכתובת החדשה.
+// 5️⃣ טען מחדש את האתר וודא שאין הודעות CORS בקונסול.
