@@ -220,8 +220,7 @@
                 } else {
                     state.orders.slice().reverse().forEach(order => {
                         const card = document.createElement('div');
-                        card.className = 'bg-white p-4 rounded-lg border border-gray-200 shadow-sm cursor-pointer hover:border-blue-500';
-                        card.dataset.orderId = order.id;
+                        card.className = 'bg-white p-4 rounded-lg border border-gray-200 shadow-sm';
                         
                         const statusColors = {
                             New: 'bg-blue-500',
@@ -231,15 +230,21 @@
                         
                         card.innerHTML = `
                             <div class="flex justify-between items-start">
-                                <div>
+                                <div class="cursor-pointer" data-order-id="${order.id}">
                                     <p class="font-bold text-lg">${order.clientName}</p>
                                     <p class="text-sm text-gray-600">${order.deliveryAddress}</p>
                                     <p class="text-sm text-gray-500">#${order.id} - ${new Date(order.deliveryDate).toLocaleDateString('he-IL')}</p>
                                 </div>
                                 <span class="text-white text-xs font-semibold px-2 py-1 rounded-full ${statusColors[order.status] || 'bg-gray-500'}">${order.status}</span>
                             </div>
+                            ${order.driveFolderUrl && !order.driveFolderUrl.startsWith('ERROR') ? `
+                            <div class="mt-3 border-t pt-2 flex justify-start">
+                                <a href="${order.driveFolderUrl}" target="_blank" class="text-sm text-blue-600 hover:underline">
+                                    פתח תיקיית הזמנה 
+                                </a>
+                            </div>` : ''}
                         `;
-                        card.addEventListener('click', () => handleEditOrder(order.id));
+                        card.querySelector('[data-order-id]').addEventListener('click', () => handleEditOrder(order.id));
                         ordersList.appendChild(card);
                     });
                 }
@@ -432,19 +437,26 @@
                 if (!state.currentOrder) return;
                 
                 const order = state.currentOrder;
-                let message = `*הזמנה #${order.id}*\n\n`;
+                let message = `*סיכום הזמנה מס' ${order.id}*\n\n`;
                 message += `*לקוח:* ${order.clientName}\n`;
                 message += `*כתובת:* ${order.deliveryAddress}\n`;
                 message += `*איש קשר:* ${order.contactPhone}\n`;
                 message += `*תאריך אספקה:* ${new Date(order.deliveryDate).toLocaleDateString('he-IL')}\n\n`;
                 message += `*פירוט:*\n`;
                 order.items.forEach(item => {
-                    message += `- ${item.name} (כמות: ${item.qty})\n`;
+                    message += `• ${item.name} (כמות: ${item.qty})\n`;
                 });
                 if(order.notes) {
-                    message += `\n*הערות:* ${order.notes}`;
+                    message += `\n*הערות:* ${order.notes}\n`;
                 }
                 
+                // Add the PDF link if it exists and is not an error message
+                if (order.pdfUrl && !order.pdfUrl.startsWith('ERROR')) {
+                    message += `\n*קישור למסמך הזמנה רשמי (PDF):*\n${order.pdfUrl}`;
+                } else {
+                     message += `\n(מסמך PDF עדיין לא נוצר עבור הזמנה זו)`;
+                }
+
                 const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
                 window.open(whatsappUrl, '_blank');
             }
