@@ -8,21 +8,32 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
-    <!-- PWA Manifest and Service Worker would be added here for full PWA functionality -->
     <style>
-        body {
-            font-family: 'Rubik', sans-serif;
+        body { font-family: 'Rubik', sans-serif; }
+        .hidden { display: none !important; }
+        .product-search-results {
+            position: absolute;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 0.5rem;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            width: calc(100% - 2rem); /* Match form padding */
         }
-        /* Helper class to hide elements */
-        .hidden {
-            display: none !important;
+        .search-item {
+            padding: 0.75rem;
+            cursor: pointer;
+        }
+        .search-item:hover {
+            background-color: #f0f0f0;
         }
     </style>
 </head>
 <body class="bg-gray-100">
 
     <div id="app-container" class="max-w-lg mx-auto bg-white min-h-screen shadow-lg">
-
+        
         <!-- ===== Login Screen ===== -->
         <div id="login-screen" class="p-8 flex flex-col items-center justify-center h-screen">
             <h1 class="text-4xl font-bold text-gray-800 mb-4">שער הזמנות</h1>
@@ -47,23 +58,11 @@
                     <input type="search" id="search-orders" placeholder="חיפוש מהיר..." class="w-full p-3 border border-gray-300 rounded-lg">
                 </div>
                 <div class="grid grid-cols-3 gap-2 text-center mb-4">
-                     <div class="bg-blue-100 text-blue-800 p-3 rounded-lg">
-                        <div class="font-bold text-2xl" id="new-orders-count">0</div>
-                        <div>חדשות</div>
-                    </div>
-                    <div class="bg-yellow-100 text-yellow-800 p-3 rounded-lg">
-                        <div class="font-bold text-2xl" id="pending-orders-count">0</div>
-                        <div>בטיפול</div>
-                    </div>
-                    <div class="bg-green-100 text-green-800 p-3 rounded-lg">
-                        <div class="font-bold text-2xl" id="today-orders-count">0</div>
-                        <div>היום</div>
-                    </div>
+                     <div class="bg-blue-100 text-blue-800 p-3 rounded-lg"><div class="font-bold text-2xl" id="new-orders-count">0</div><div>חדשות</div></div>
+                    <div class="bg-yellow-100 text-yellow-800 p-3 rounded-lg"><div class="font-bold text-2xl" id="pending-orders-count">0</div><div>בטיפול</div></div>
+                    <div class="bg-green-100 text-green-800 p-3 rounded-lg"><div class="font-bold text-2xl" id="today-orders-count">0</div><div>היום</div></div>
                 </div>
-                
-                <div id="orders-list" class="space-y-3">
-                    <!-- Order cards will be injected here -->
-                </div>
+                <div id="orders-list" class="space-y-3"></div>
             </main>
             <div class="fixed bottom-4 right-4 z-10" style="left: 50%; transform: translateX(-50%); max-width: calc(100% - 2rem); width: calc(500px - 2rem);">
                  <button id="new-order-btn" class="w-full bg-blue-600 text-white font-bold py-4 px-6 rounded-lg shadow-xl hover:bg-blue-700 transition-transform transform hover:scale-105 flex items-center justify-center">
@@ -81,47 +80,26 @@
                 <div class="w-8"></div>
             </header>
             <main class="p-4 pb-20">
-                <!-- Smart Paste Section -->
                 <div class="mb-6 bg-gray-50 p-4 rounded-lg border border-dashed border-gray-400">
                     <label for="smart-paste-area" class="block text-lg font-semibold text-gray-700 mb-2">הדבקה חכמה מ-WhatsApp</label>
                     <textarea id="smart-paste-area" rows="6" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="הדבק כאן את תוכן ההודעה..."></textarea>
                     <button id="parse-btn" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg mt-2 hover:bg-indigo-700 transition">נתח טקסט ומלא טופס</button>
                 </div>
 
-                <!-- Order Form -->
                 <form id="order-form" class="space-y-4">
                     <input type="hidden" id="order-id">
-                    
-                    <div>
-                        <label for="client-name" class="block font-medium text-gray-700">שם לקוח / פרויקט*</label>
-                        <input type="text" id="client-name" class="w-full mt-1 p-2 border border-gray-300 rounded-lg" required>
-                    </div>
-                     <div>
-                        <label for="contact-phone" class="block font-medium text-gray-700">טלפון איש קשר בשטח*</label>
-                        <input type="tel" id="contact-phone" class="w-full mt-1 p-2 border border-gray-300 rounded-lg" required>
-                    </div>
-                    <div>
-                        <label for="delivery-address" class="block font-medium text-gray-700">כתובת אספקה*</label>
-                        <input type="text" id="delivery-address" class="w-full mt-1 p-2 border border-gray-300 rounded-lg" required>
-                    </div>
-                    <div>
-                        <label for="delivery-date" class="block font-medium text-gray-700">תאריך אספקה*</label>
-                        <input type="date" id="delivery-date" class="w-full mt-1 p-2 border border-gray-300 rounded-lg" required>
-                    </div>
+                    <div><label for="client-name" class="block font-medium text-gray-700">שם לקוח / פרויקט*</label><input type="text" id="client-name" class="w-full mt-1 p-2 border border-gray-300 rounded-lg" required></div>
+                    <div><label for="contact-phone" class="block font-medium text-gray-700">טלפון איש קשר בשטח*</label><input type="tel" id="contact-phone" class="w-full mt-1 p-2 border border-gray-300 rounded-lg" required></div>
+                    <div><label for="delivery-address" class="block font-medium text-gray-700">כתובת אספקה*</label><input type="text" id="delivery-address" class="w-full mt-1 p-2 border border-gray-300 rounded-lg" required></div>
+                    <div><label for="delivery-date" class="block font-medium text-gray-700">תאריך אספקה*</label><input type="date" id="delivery-date" class="w-full mt-1 p-2 border border-gray-300 rounded-lg" required></div>
 
-                    <!-- Items Section -->
                     <div class="border-t pt-4">
                          <h3 class="text-lg font-semibold text-gray-800">פריטים</h3>
-                         <div id="items-container" class="space-y-2 mt-2">
-                             <!-- Item rows will be injected here -->
-                         </div>
+                         <div id="items-container" class="space-y-2 mt-2"></div>
                          <button type="button" id="add-item-btn" class="mt-2 text-blue-600 font-semibold">+ הוסף פריט</button>
                     </div>
                     
-                    <div>
-                        <label for="notes" class="block font-medium text-gray-700">הערות</label>
-                        <textarea id="notes" rows="3" class="w-full mt-1 p-2 border border-gray-300 rounded-lg"></textarea>
-                    </div>
+                    <div><label for="notes" class="block font-medium text-gray-700">הערות</label><textarea id="notes" rows="3" class="w-full mt-1 p-2 border border-gray-300 rounded-lg"></textarea></div>
                 </form>
             </main>
              <footer class="fixed bottom-0 bg-white border-t p-3 grid grid-cols-2 gap-3" style="max-width: 512px; width: 100%;">
@@ -133,122 +111,77 @@
             </footer>
         </div>
 
+        <!-- Product Details Modal -->
+        <div id="product-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-lg max-w-sm w-full p-4 relative">
+                <button id="close-modal-btn" class="absolute top-2 right-2 text-2xl font-bold">&times;</button>
+                <img id="modal-image" src="" alt="תמונת מוצר" class="w-full h-48 object-contain mb-4 rounded">
+                <h3 id="modal-title" class="text-xl font-bold mb-2"></h3>
+                <p id="modal-description" class="text-gray-600"></p>
+            </div>
+        </div>
+
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const GAS_URL = 'https://script.google.com/macros/s/AKfycbyJ81UzZAq-m8BJ11QY06rhFfcORUQDICpnhWoTim6u51hvd98ztuOscrj_svsIi_OK/exec';
+            let state = { orders: [], currentOrder: null, currentClient: null };
 
-            // State Management
-            let state = {
-                loggedIn: false,
-                currentScreen: 'login', // 'login', 'dashboard', 'order'
-                orders: [], 
-                currentOrder: null, // Order being edited or created
-                currentClient: null // Holds the identified client's data
-            };
-
-            // DOM Elements
             const screens = {
                 login: document.getElementById('login-screen'),
                 dashboard: document.getElementById('dashboard-screen'),
                 order: document.getElementById('order-screen')
             };
-            const loginInput = document.getElementById('login-input');
-            const loginBtn = document.getElementById('login-btn');
-            const logoutBtn = document.getElementById('logout-btn');
-            const newOrderBtn = document.getElementById('new-order-btn');
-            const backToDashboardBtn = document.getElementById('back-to-dashboard-btn');
-            const ordersList = document.getElementById('orders-list');
-            const orderTitle = document.getElementById('order-title');
-            const orderForm = document.getElementById('order-form');
-            const saveOrderBtn = document.getElementById('save-order-btn');
-            const shareWhatsappBtn = document.getElementById('share-whatsapp-btn');
-            const smartPasteArea = document.getElementById('smart-paste-area');
-            const parseBtn = document.getElementById('parse-btn');
-            const clientGreeting = document.getElementById('client-greeting');
-
-            // --- Core Functions ---
-
+            const productModal = document.getElementById('product-modal');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+            
             function navigateTo(screenName) {
-                state.currentScreen = screenName;
                 Object.values(screens).forEach(screen => screen.classList.add('hidden'));
-                if (screens[screenName]) {
-                    screens[screenName].classList.remove('hidden');
-                }
-            }
-
-            function init() {
-                // Application starts at the login screen. Data is loaded after login.
-                navigateTo('login');
+                if (screens[screenName]) screens[screenName].classList.remove('hidden');
             }
             
             async function loadOrdersFromServer() {
-                if (GAS_URL.includes('YOUR_GOOGLE_APPS_SCRIPT_URL_HERE')) {
-                    alert('אנא הגדר את כתובת ה-URL של Google Apps Script בקוד.');
-                    return;
-                }
-                ordersList.innerHTML = `<p class="text-center text-gray-500">טוען הזמנות...</p>`;
+                screens.dashboard.querySelector('#orders-list').innerHTML = `<p class="text-center text-gray-500">טוען הזמנות...</p>`;
                 try {
                     const response = await fetch(GAS_URL);
                     const result = await response.json();
-                    if (result.success) {
-                        state.orders = result.data;
-                    } else {
-                        console.error('Error fetching orders:', result.error);
-                        alert('שגיאה בטעינת ההזמנות מהשרת.');
-                    }
+                    if (result.success) state.orders = result.data; else throw new Error(result.error);
                 } catch (error) {
-                    console.error('Network error:', error);
-                    alert('שגיאת רשת בטעינת הזמנות.');
+                    console.error('Error fetching orders:', error);
+                    alert('שגיאה בטעינת ההזמנות מהשרת.');
                 }
                 renderDashboard();
             }
 
-            // --- Rendering Functions ---
-
             function renderDashboard() {
-                if (state.currentClient) {
-                    clientGreeting.textContent = `שלום, ${state.currentClient.clientName}`;
-                } else {
-                    clientGreeting.textContent = 'עובד כאורח';
-                }
+                const clientGreeting = screens.dashboard.querySelector('#client-greeting');
+                clientGreeting.textContent = state.currentClient ? `שלום, ${state.currentClient.clientName}` : 'עובד כאורח';
 
+                const ordersList = screens.dashboard.querySelector('#orders-list');
                 ordersList.innerHTML = '';
-                if (state.orders.length === 0) {
+                if (!state.orders || state.orders.length === 0) {
                     ordersList.innerHTML = `<p class="text-center text-gray-500">אין הזמנות להצגה.</p>`;
                 } else {
                     state.orders.slice().reverse().forEach(order => {
                         const card = document.createElement('div');
                         card.className = 'bg-white p-4 rounded-lg border border-gray-200 shadow-sm';
-                        
-                        const statusColors = {
-                            New: 'bg-blue-500',
-                            Pending: 'bg-yellow-500',
-                            Confirmed: 'bg-green-500',
-                        };
-                        
+                        const statusColors = { New: 'bg-blue-500', Pending: 'bg-yellow-500', Confirmed: 'bg-green-500' };
                         card.innerHTML = `
                             <div class="flex justify-between items-start">
                                 <div class="cursor-pointer" data-order-id="${order.id}">
                                     <p class="font-bold text-lg">${order.clientName}</p>
                                     <p class="text-sm text-gray-600">${order.deliveryAddress}</p>
-                                    <p class="text-sm text-gray-500">#${order.id} - ${new Date(order.deliveryDate).toLocaleDateString('he-IL')}</p>
+                                    <p class="text-sm text-gray-500">#${order.id} - ${new Date(order.deliveryDate || Date.now()).toLocaleDateString('he-IL')}</p>
                                 </div>
-                                <span class="text-white text-xs font-semibold px-2 py-1 rounded-full ${statusColors[order.status] || 'bg-gray-500'}">${order.status}</span>
+                                <span class="text-white text-xs font-semibold px-2 py-1 rounded-full ${statusColors[order.status] || 'bg-gray-500'}">${order.status || 'לא ידוע'}</span>
                             </div>
-                            ${order.driveFolderUrl && !order.driveFolderUrl.startsWith('ERROR') ? `
-                            <div class="mt-3 border-t pt-2 flex justify-start">
-                                <a href="${order.driveFolderUrl}" target="_blank" class="text-sm text-blue-600 hover:underline">
-                                    פתח תיקיית הזמנה 
-                                </a>
-                            </div>` : ''}
+                            ${order.driveFolderUrl && !order.driveFolderUrl.startsWith('ERROR') ? `<div class="mt-3 border-t pt-2 flex justify-start"><a href="${order.driveFolderUrl}" target="_blank" class="text-sm text-blue-600 hover:underline">פתח תיקיית הזמנה</a></div>` : ''}
                         `;
                         card.querySelector('[data-order-id]').addEventListener('click', () => handleEditOrder(order.id));
                         ordersList.appendChild(card);
                     });
                 }
-                // Update counts
                 document.getElementById('new-orders-count').textContent = state.orders.filter(o => o.status === 'New').length;
                 document.getElementById('pending-orders-count').textContent = state.orders.filter(o => o.status === 'Pending').length;
                 const today = new Date().toISOString().split('T')[0];
@@ -257,99 +190,164 @@
 
             function renderOrderForm(order) {
                 state.currentOrder = order;
-                orderForm.reset();
-                smartPasteArea.value = '';
-                
-                document.getElementById('order-id').value = order ? order.id : '';
-                
-                // Pre-fill from identified client on NEW order, otherwise use order data
+                const form = screens.order.querySelector('#order-form');
+                form.reset();
+                screens.order.querySelector('#smart-paste-area').value = '';
+                form.querySelector('#order-id').value = order ? order.id : '';
+
                 if (!order && state.currentClient) {
-                    document.getElementById('client-name').value = state.currentClient.clientName || '';
-                    document.getElementById('contact-phone').value = state.currentClient.contactPhone || '';
-                    document.getElementById('delivery-address').value = state.currentClient.defaultAddress || '';
+                    form.querySelector('#client-name').value = state.currentClient.clientName || '';
+                    form.querySelector('#contact-phone').value = state.currentClient.contactPhone || '';
+                    form.querySelector('#delivery-address').value = state.currentClient.defaultAddress || '';
                 } else {
-                    document.getElementById('client-name').value = order ? order.clientName : '';
-                    document.getElementById('contact-phone').value = order ? order.contactPhone : '';
-                    document.getElementById('delivery-address').value = order ? order.deliveryAddress : '';
+                    form.querySelector('#client-name').value = order ? order.clientName : '';
+                    form.querySelector('#contact-phone').value = order ? order.contactPhone : '';
+                    form.querySelector('#delivery-address').value = order ? order.deliveryAddress : '';
                 }
                 
-                document.getElementById('delivery-date').value = order ? order.deliveryDate : new Date().toISOString().split('T')[0];
-                document.getElementById('notes').value = order ? (order.notes || '') : '';
+                form.querySelector('#delivery-date').value = order ? order.deliveryDate : new Date().toISOString().split('T')[0];
+                form.querySelector('#notes').value = order ? (order.notes || '') : '';
 
                 renderItems(order ? order.items : []);
-
-                orderTitle.textContent = order ? `עריכת הזמנה #${order.id}` : 'הזמנה חדשה';
-                shareWhatsappBtn.disabled = !order; 
+                screens.order.querySelector('#order-title').textContent = order ? `עריכת הזמנה #${order.id}` : 'הזמנה חדשה';
+                screens.order.querySelector('#share-whatsapp-btn').disabled = !order;
                 navigateTo('order');
             }
 
             function renderItems(items) {
-                const container = document.getElementById('items-container');
+                const container = screens.order.querySelector('#items-container');
                 container.innerHTML = '';
                 if (items && items.length > 0) {
-                    items.forEach(item => createItemRow(item.name, item.qty));
+                    items.forEach(item => createItemRow(item.name, item.qty, item.sku));
                 } else {
                      createItemRow();
                 }
             }
             
-            function createItemRow(name = '', qty = '') {
-                 const container = document.getElementById('items-container');
+            function createItemRow(name = '', qty = '', sku = '') {
+                 const container = screens.order.querySelector('#items-container');
                  const itemRow = document.createElement('div');
-                 itemRow.className = 'grid grid-cols-12 gap-2 items-center';
+                 itemRow.className = 'grid grid-cols-12 gap-2 items-center relative';
                  itemRow.innerHTML = `
-                    <input type="text" placeholder="שם מוצר" value="${name}" class="col-span-7 p-2 border border-gray-300 rounded-lg item-name">
+                    <input type="text" placeholder="הקלד שם מוצר..." autocomplete="off" value="${name}" class="product-search-input col-span-7 p-2 border border-gray-300 rounded-lg">
+                    <input type="hidden" class="item-sku" value="${sku}">
+                    <div class="product-search-results hidden"></div>
                     <input type="number" placeholder="כמות" value="${qty}" class="col-span-3 p-2 border border-gray-300 rounded-lg item-qty">
                     <button type="button" class="col-span-2 text-red-500 font-bold text-2xl remove-item-btn">×</button>
                  `;
                  container.appendChild(itemRow);
             }
 
-            // --- Event Handlers ---
+            async function handleProductSearch(event) {
+                const input = event.target;
+                const resultsContainer = input.parentElement.querySelector('.product-search-results');
+                const query = input.value.trim();
 
-            loginBtn.addEventListener('click', handleLogin);
-
-            logoutBtn.addEventListener('click', () => {
-                state.loggedIn = false;
-                state.currentClient = null;
-                loginInput.value = '';
-                navigateTo('login');
-            });
-
-            newOrderBtn.addEventListener('click', () => renderOrderForm(null));
-            backToDashboardBtn.addEventListener('click', () => {
-                // On back, we should reload the data in case of changes
-                loadOrdersFromServer();
-                navigateTo('dashboard');
-            });
-
-            document.getElementById('items-container').addEventListener('click', (e) => {
-                if(e.target.classList.contains('remove-item-btn')) {
-                    if (document.querySelectorAll('#items-container .grid').length > 1) {
-                         e.target.closest('.grid').remove();
-                    }
+                if (query.length < 2) {
+                    resultsContainer.innerHTML = '';
+                    resultsContainer.classList.add('hidden');
+                    return;
                 }
-            });
-            
-            document.getElementById('add-item-btn').addEventListener('click', () => createItemRow());
-            
-            saveOrderBtn.addEventListener('click', handleSaveOrder);
-            
-            shareWhatsappBtn.addEventListener('click', handleShareToWhatsapp);
+                
+                resultsContainer.classList.remove('hidden');
+                resultsContainer.innerHTML = '<div class="p-2 text-center text-gray-500">מחפש...</div>';
 
-            parseBtn.addEventListener('click', handleParseText);
+                try {
+                    const response = await fetch(`${GAS_URL}?action=searchProducts&query=${encodeURIComponent(query)}`);
+                    const result = await response.json();
+                    if (result.success) {
+                        renderSearchResults(result.data, input, resultsContainer);
+                    } else { throw new Error(result.error); }
+                } catch (error) {
+                    console.error('Product search error:', error);
+                    resultsContainer.innerHTML = `<div class="p-2 text-red-500">שגיאה בחיפוש</div>`;
+                }
+            }
+
+            function renderSearchResults(products, input, container) {
+                container.innerHTML = '';
+                if (products.length === 0) {
+                    container.innerHTML = `<div class="p-2 text-center text-gray-500">לא נמצאו מוצרים</div>`;
+                    return;
+                }
+                products.forEach(product => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'search-item border-b last:border-b-0 flex justify-between items-center';
+                    itemDiv.innerHTML = `
+                        <div>
+                            <p class="font-semibold">${product.name}</p>
+                            <p class="text-sm text-gray-500">מק"ט: ${product.sku || 'N/A'}</p>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            ${product.image ? `<span class="view-image-btn text-xl cursor-pointer">👁️</span>` : ''}
+                            ${product.description ? `<span class="view-desc-btn text-xl cursor-pointer">ℹ️</span>` : ''}
+                        </div>
+                    `;
+                    itemDiv.addEventListener('click', (e) => {
+                        if (!e.target.classList.contains('view-image-btn') && !e.target.classList.contains('view-desc-btn')) {
+                            const parentRow = input.closest('.grid');
+                            parentRow.querySelector('.product-search-input').value = product.name;
+                            parentRow.querySelector('.item-sku').value = product.sku;
+                            container.classList.add('hidden');
+                        }
+                    });
+                    if (product.image) {
+                        itemDiv.querySelector('.view-image-btn').addEventListener('click', () => showProductModal(product));
+                    }
+                    if (product.description) {
+                         itemDiv.querySelector('.view-desc-btn').addEventListener('click', () => showProductModal(product));
+                    }
+                    container.appendChild(itemDiv);
+                });
+            }
+
+            function showProductModal(product) {
+                productModal.querySelector('#modal-image').src = product.image || 'https://placehold.co/400x300?text=No+Image';
+                productModal.querySelector('#modal-image').classList.toggle('hidden', !product.image);
+                productModal.querySelector('#modal-title').textContent = product.name;
+                productModal.querySelector('#modal-description').textContent = product.description || 'אין תיאור זמין.';
+                productModal.classList.remove('hidden');
+            }
+
+            function handleParseText() {
+                const text = screens.order.querySelector('#smart-paste-area').value;
+                if (!text.trim()) return;
+                const parsedData = { contactPhone: '', deliveryAddress: '', items: [] };
+                const lines = text.split('\n').filter(line => line.trim() !== '');
+                const phoneRegex = /(05\d-?\d{7})/;
+                const phoneMatch = text.match(phoneRegex);
+                if (phoneMatch) parsedData.contactPhone = phoneMatch[0];
+                const itemRegex1 = /(.+?)\s+(\d+)\s*(?:יח'|שק|שקים|בלות|בלה|קרטון|חבילה|קילו|מטר|יח)?\.?$/i;
+                const itemRegex2 = /(.+?)\s*(?:x|×|כמות:?)\s*(\d+)/i;
+                let potentialAddressLines = [];
+                lines.forEach(line => {
+                    const trimmedLine = line.trim();
+                    if (phoneRegex.test(trimmedLine)) return;
+                    let match = trimmedLine.match(itemRegex1) || trimmedLine.match(itemRegex2);
+                    if (match) {
+                        const name = match[1].replace(/^[.\d\s-]+/, '').trim();
+                        const qty = match[2].trim();
+                        if (name) parsedData.items.push({ name, qty, sku: '' });
+                    } else {
+                        potentialAddressLines.push(trimmedLine);
+                    }
+                });
+                parsedData.deliveryAddress = potentialAddressLines.join(' ');
+                document.getElementById('contact-phone').value = parsedData.contactPhone;
+                document.getElementById('delivery-address').value = parsedData.deliveryAddress.trim();
+                renderItems(parsedData.items.length > 0 ? parsedData.items : []);
+                alert('הטקסט נותח. אנא בדוק וודא שהפריטים והכתובת הופרדו כראוי.');
+            }
             
             async function handleLogin() {
+                const loginInput = screens.login.querySelector('#login-input');
+                const loginBtn = screens.login.querySelector('#login-btn');
                 const query = loginInput.value.trim();
                 if (!query) return;
-
-                loginBtn.disabled = true;
-                loginBtn.textContent = 'מחפש...';
-
+                loginBtn.disabled = true; loginBtn.textContent = 'מחפש...';
                 try {
                     const response = await fetch(`${GAS_URL}?action=findClient&query=${encodeURIComponent(query)}`);
                     const result = await response.json();
-
                     if (result.success && result.data) {
                         state.currentClient = result.data;
                         alert(`זוהה לקוח: ${state.currentClient.clientName}`);
@@ -357,43 +355,34 @@
                         state.currentClient = null;
                         alert('לקוח לא נמצא. ניתן להמשיך ליצירת הזמנה חדשה.');
                     }
-                    
-                    state.loggedIn = true;
                     await loadOrdersFromServer(); 
                     navigateTo('dashboard');
-
                 } catch (error) {
                     console.error("Login error:", error);
                     alert("שגיאה בתהליך הזיהוי. נכנס במצב אורח.");
-                    state.loggedIn = true;
                     await loadOrdersFromServer();
                     navigateTo('dashboard');
                 } finally {
-                    loginBtn.disabled = false;
-                    loginBtn.textContent = 'כניסה / חיפוש';
+                    loginBtn.disabled = false; loginBtn.textContent = 'כניסה / חיפוש';
                 }
             }
 
             function handleEditOrder(orderId) {
                 const order = state.orders.find(o => o.id == orderId);
-                if(order) {
-                    renderOrderForm(order);
-                }
+                if(order) renderOrderForm(order);
             }
 
             async function handleSaveOrder() {
-                const id = document.getElementById('order-id').value;
+                const saveOrderBtn = document.getElementById('save-order-btn');
                 const items = [];
                 document.querySelectorAll('#items-container .grid').forEach(row => {
-                    const name = row.querySelector('.item-name').value.trim();
+                    const name = row.querySelector('.product-search-input').value.trim();
                     const qty = row.querySelector('.item-qty').value.trim();
-                    if(name && qty) {
-                        items.push({ name, qty });
-                    }
+                    const sku = row.querySelector('.item-sku').value.trim();
+                    if(name && qty) items.push({ name, qty, sku });
                 });
-
                 const orderData = {
-                    id: id || null,
+                    id: document.getElementById('order-id').value || null,
                     clientName: document.getElementById('client-name').value.trim(),
                     contactPhone: document.getElementById('contact-phone').value.trim(),
                     deliveryAddress: document.getElementById('delivery-address').value.trim(),
@@ -401,109 +390,74 @@
                     notes: document.getElementById('notes').value.trim(),
                     items: items
                 };
-                
                 if (!orderData.clientName || !orderData.contactPhone || !orderData.deliveryAddress || !orderData.deliveryDate) {
-                    alert('נא למלא את כל שדות החובה (*)');
-                    return;
+                    return alert('נא למלא את כל שדות החובה (*)');
                 }
-                
-                saveOrderBtn.disabled = true;
-                saveOrderBtn.textContent = 'שומר...';
-
+                saveOrderBtn.disabled = true; saveOrderBtn.textContent = 'שומר...';
                 try {
-                    const response = await fetch(GAS_URL, {
-                        method: 'POST',
-                        body: JSON.stringify(orderData), 
-                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    });
+                    const response = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(orderData), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
                     const result = await response.json();
-
                     if (result.success) {
                         await loadOrdersFromServer(); 
                         navigateTo('dashboard');
-                    } else {
-                        throw new Error(result.error);
-                    }
+                    } else { throw new Error(result.error); }
                 } catch (error) {
                     console.error('Error saving order:', error);
                     alert('שגיאה בשמירת ההזמנה: ' + error.message);
                 } finally {
-                    saveOrderBtn.disabled = false;
-                    saveOrderBtn.textContent = 'שמור הזמנה';
+                    saveOrderBtn.disabled = false; saveOrderBtn.textContent = 'שמור הזמנה';
                 }
             }
 
             function handleShareToWhatsapp() {
                 if (!state.currentOrder) return;
-                
                 const order = state.currentOrder;
                 let message = `*סיכום הזמנה מס' ${order.id}*\n\n`;
-                message += `*לקוח:* ${order.clientName}\n`;
-                message += `*כתובת:* ${order.deliveryAddress}\n`;
-                message += `*איש קשר:* ${order.contactPhone}\n`;
-                message += `*תאריך אספקה:* ${new Date(order.deliveryDate).toLocaleDateString('he-IL')}\n\n`;
-                message += `*פירוט:*\n`;
+                message += `*לקוח:* ${order.clientName}\n*כתובת:* ${order.deliveryAddress}\n`;
+                message += `*איש קשר:* ${order.contactPhone}\n*תאריך אספקה:* ${new Date(order.deliveryDate).toLocaleDateString('he-IL')}\n\n*פירוט:*\n`;
                 order.items.forEach(item => {
-                    message += `• ${item.name} (כמות: ${item.qty})\n`;
+                    message += `• ${item.name} (כמות: ${item.qty}, מק"ט: ${item.sku || 'לא צוין'})\n`;
                 });
-                if(order.notes) {
-                    message += `\n*הערות:* ${order.notes}\n`;
-                }
-                
-                // Add the PDF link if it exists and is not an error message
+                if(order.notes) message += `\n*הערות:* ${order.notes}\n`;
                 if (order.pdfUrl && !order.pdfUrl.startsWith('ERROR')) {
                     message += `\n*קישור למסמך הזמנה רשמי (PDF):*\n${order.pdfUrl}`;
                 } else {
                      message += `\n(מסמך PDF עדיין לא נוצר עבור הזמנה זו)`;
                 }
-
-                const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
-                window.open(whatsappUrl, '_blank');
+                window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`, '_blank');
             }
 
-            function handleParseText() {
-                const text = smartPasteArea.value;
-                if (!text.trim()) return;
-
-                const parsedData = {
-                    contactPhone: '',
-                    deliveryAddress: '',
-                    items: []
-                };
-
-                const lines = text.split('\n').filter(line => line.trim() !== '');
-                
-                // Phone Regex
-                const phoneRegex = /05\d-?\d{7}/;
-                const phoneMatch = text.match(phoneRegex);
-                if (phoneMatch) {
-                    parsedData.contactPhone = phoneMatch[0];
+            // Global event listeners for dynamic content
+            document.getElementById('items-container').addEventListener('click', (e) => {
+                if(e.target.classList.contains('remove-item-btn')) {
+                    if (document.querySelectorAll('#items-container .grid').length > 1) e.target.closest('.grid').remove();
                 }
-                
-                // Very basic item and address parsing
-                lines.forEach(line => {
-                    const itemRegex = /(?:x|×|כמות:?)\s*(\d+)/i;
-                    if(line.match(itemRegex)){
-                       let name = line.replace(itemRegex, '').trim();
-                       let qty = line.match(itemRegex)[1];
-                       parsedData.items.push({ name, qty });
-                    } else if (!line.match(phoneRegex)) {
-                        // Assume lines without quantity are part of the address
-                        parsedData.deliveryAddress += line + ' ';
-                    }
-                });
-
-                document.getElementById('contact-phone').value = parsedData.contactPhone;
-                document.getElementById('delivery-address').value = parsedData.deliveryAddress.trim();
-                
-                if (parsedData.items.length > 0) {
-                     renderItems(parsedData.items);
+            });
+            document.getElementById('items-container').addEventListener('input', (e) => {
+                if (e.target.classList.contains('product-search-input')) {
+                    // Debounce search to avoid too many requests
+                    clearTimeout(e.target.debounce);
+                    e.target.debounce = setTimeout(() => handleProductSearch(e), 300);
                 }
-                
-                alert('הטקסט נותח. אנא בדוק והשלם את הפרטים החסרים.');
-            }
+            });
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.product-search-input') && !e.target.closest('.product-search-results')) {
+                    document.querySelectorAll('.product-search-results').forEach(res => res.classList.add('hidden'));
+                }
+            });
 
-            init();
+            // Init and other listeners
+            document.getElementById('login-btn').addEventListener('click', handleLogin);
+            document.getElementById('logout-btn').addEventListener('click', () => { state.currentClient = null; navigateTo('login'); });
+            document.getElementById('new-order-btn').addEventListener('click', () => renderOrderForm(null));
+            document.getElementById('back-to-dashboard-btn').addEventListener('click', () => { loadOrdersFromServer(); navigateTo('dashboard'); });
+            document.getElementById('add-item-btn').addEventListener('click', () => createItemRow());
+            document.getElementById('save-order-btn').addEventListener('click', handleSaveOrder);
+            document.getElementById('share-whatsapp-btn').addEventListener('click', handleShareToWhatsapp);
+            document.getElementById('parse-btn').addEventListener('click', handleParseText);
+            closeModalBtn.addEventListener('click', () => productModal.classList.add('hidden'));
+
+            navigateTo('login');
         });
     </script>
 </body>
