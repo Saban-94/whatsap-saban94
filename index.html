@@ -27,7 +27,7 @@
         <div id="login-screen" class="p-8 flex flex-col items-center justify-center h-screen">
             <h1 class="text-4xl font-bold text-gray-800 mb-4">שער הזמנות</h1>
             <p class="text-gray-600 mb-8">זיהוי לקוח או הזמנה קיימת</p>
-            <input type="tel" id="login-input" placeholder="הכנס מספר טלפון / לקוח / הזמנה" class="w-full p-4 border border-gray-300 rounded-lg text-center text-lg focus:ring-2 focus:ring-blue-500 transition">
+            <input type="tel" id="login-input" placeholder="הכנס מספר טלפון / שם / מס' לקוח" class="w-full p-4 border border-gray-300 rounded-lg text-center text-lg focus:ring-2 focus:ring-blue-500 transition">
             <button id="login-btn" class="w-full bg-blue-600 text-white font-bold py-4 px-6 rounded-lg mt-4 hover:bg-blue-700 transition-transform transform hover:scale-105">
                 כניסה / חיפוש
             </button>
@@ -36,7 +36,10 @@
         <!-- ===== Dashboard Screen ===== -->
         <div id="dashboard-screen" class="hidden">
             <header class="bg-gray-800 text-white p-4 flex justify-between items-center">
-                <h1 class="text-xl font-bold">ניהול הזמנות</h1>
+                <div>
+                    <h1 class="text-xl font-bold">ניהול הזמנות</h1>
+                    <p id="client-greeting" class="text-sm text-gray-300"></p>
+                </div>
                 <button id="logout-btn" class="text-sm">התנתק</button>
             </header>
             <main class="p-4">
@@ -134,32 +137,363 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // <<-- שלב 4: הכתובת עודכנה! המערכת מחוברת.
             const GAS_URL = 'https://script.google.com/macros/s/AKfycby1tah97jxRfl5dGhMoXMdBYDKh-Q8mdVzUfzqtAgQ3BhU8xgSDjWEo3NZ1TmRIcXk/exec';
 
             // State Management
             let state = {
-// ... existing code ... -->
+                loggedIn: false,
+                currentScreen: 'login', // 'login', 'dashboard', 'order'
+                orders: [], 
+                currentOrder: null, // Order being edited or created
+                currentClient: null // Holds the identified client's data
+            };
+
+            // DOM Elements
+            const screens = {
+                login: document.getElementById('login-screen'),
+                dashboard: document.getElementById('dashboard-screen'),
+                order: document.getElementById('order-screen')
+            };
+            const loginInput = document.getElementById('login-input');
+            const loginBtn = document.getElementById('login-btn');
+            const logoutBtn = document.getElementById('logout-btn');
+            const newOrderBtn = document.getElementById('new-order-btn');
+            const backToDashboardBtn = document.getElementById('back-to-dashboard-btn');
+            const ordersList = document.getElementById('orders-list');
+            const orderTitle = document.getElementById('order-title');
+            const orderForm = document.getElementById('order-form');
+            const saveOrderBtn = document.getElementById('save-order-btn');
+            const shareWhatsappBtn = document.getElementById('share-whatsapp-btn');
+            const smartPasteArea = document.getElementById('smart-paste-area');
+            const parseBtn = document.getElementById('parse-btn');
+            const clientGreeting = document.getElementById('client-greeting');
+
+            // --- Core Functions ---
+
+            function navigateTo(screenName) {
+                state.currentScreen = screenName;
+                Object.values(screens).forEach(screen => screen.classList.add('hidden'));
+                if (screens[screenName]) {
+                    screens[screenName].classList.remove('hidden');
+                }
+            }
+
+            function init() {
+                // Application starts at the login screen. Data is loaded after login.
+                navigateTo('login');
             }
             
             async function loadOrdersFromServer() {
                 if (GAS_URL.includes('YOUR_GOOGLE_APPS_SCRIPT_URL_HERE')) {
                     alert('אנא הגדר את כתובת ה-URL של Google Apps Script בקוד.');
-                    loadMockData(); // Fallback to mock data if URL is not set
-                    renderDashboard();
-// ... existing code ... -->
-// ... existing code ... -->
+                    return;
+                }
+                ordersList.innerHTML = `<p class="text-center text-gray-500">טוען הזמנות...</p>`;
+                try {
+                    const response = await fetch(GAS_URL);
+                    const result = await response.json();
+                    if (result.success) {
+                        state.orders = result.data;
+                    } else {
+                        console.error('Error fetching orders:', result.error);
+                        alert('שגיאה בטעינת ההזמנות מהשרת.');
+                    }
+                } catch (error) {
+                    console.error('Network error:', error);
+                    alert('שגיאת רשת בטעינת הזמנות.');
+                }
+                renderDashboard();
+            }
+
+            // --- Rendering Functions ---
+
+            function renderDashboard() {
+                if (state.currentClient) {
+                    clientGreeting.textContent = `שלום, ${state.currentClient.clientName}`;
+                } else {
+                    clientGreeting.textContent = 'עובד כאורח';
+                }
+
+                ordersList.innerHTML = '';
+                if (state.orders.length === 0) {
+                    ordersList.innerHTML = `<p class="text-center text-gray-500">אין הזמנות להצגה.</p>`;
+                } else {
+                    state.orders.slice().reverse().forEach(order => {
+                        const card = document.createElement('div');
+                        card.className = 'bg-white p-4 rounded-lg border border-gray-200 shadow-sm cursor-pointer hover:border-blue-500';
+                        card.dataset.orderId = order.id;
+                        
+                        const statusColors = {
+                            New: 'bg-blue-500',
+                            Pending: 'bg-yellow-500',
+                            Confirmed: 'bg-green-500',
+                        };
+                        
+                        card.innerHTML = `
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="font-bold text-lg">${order.clientName}</p>
+                                    <p class="text-sm text-gray-600">${order.deliveryAddress}</p>
+                                    <p class="text-sm text-gray-500">#${order.id} - ${new Date(order.deliveryDate).toLocaleDateString('he-IL')}</p>
+                                </div>
+                                <span class="text-white text-xs font-semibold px-2 py-1 rounded-full ${statusColors[order.status] || 'bg-gray-500'}">${order.status}</span>
+                            </div>
+                        `;
+                        card.addEventListener('click', () => handleEditOrder(order.id));
+                        ordersList.appendChild(card);
+                    });
+                }
+                // Update counts
+                document.getElementById('new-orders-count').textContent = state.orders.filter(o => o.status === 'New').length;
+                document.getElementById('pending-orders-count').textContent = state.orders.filter(o => o.status === 'Pending').length;
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('today-orders-count').textContent = state.orders.filter(o => o.deliveryDate === today).length;
+            }
+
+            function renderOrderForm(order) {
+                state.currentOrder = order;
+                orderForm.reset();
+                smartPasteArea.value = '';
+                
+                document.getElementById('order-id').value = order ? order.id : '';
+                
+                // Pre-fill from identified client on NEW order, otherwise use order data
+                if (!order && state.currentClient) {
+                    document.getElementById('client-name').value = state.currentClient.clientName || '';
+                    document.getElementById('contact-phone').value = state.currentClient.contactPhone || '';
+                    document.getElementById('delivery-address').value = state.currentClient.defaultAddress || '';
+                } else {
+                    document.getElementById('client-name').value = order ? order.clientName : '';
+                    document.getElementById('contact-phone').value = order ? order.contactPhone : '';
+                    document.getElementById('delivery-address').value = order ? order.deliveryAddress : '';
+                }
+                
+                document.getElementById('delivery-date').value = order ? order.deliveryDate : new Date().toISOString().split('T')[0];
+                document.getElementById('notes').value = order ? (order.notes || '') : '';
+
+                renderItems(order ? order.items : []);
+
+                orderTitle.textContent = order ? `עריכת הזמנה #${order.id}` : 'הזמנה חדשה';
+                shareWhatsappBtn.disabled = !order; 
+                navigateTo('order');
+            }
+
+            function renderItems(items) {
+                const container = document.getElementById('items-container');
+                container.innerHTML = '';
+                if (items && items.length > 0) {
+                    items.forEach(item => createItemRow(item.name, item.qty));
+                } else {
+                     createItemRow();
+                }
+            }
+            
+            function createItemRow(name = '', qty = '') {
+                 const container = document.getElementById('items-container');
+                 const itemRow = document.createElement('div');
+                 itemRow.className = 'grid grid-cols-12 gap-2 items-center';
+                 itemRow.innerHTML = `
+                    <input type="text" placeholder="שם מוצר" value="${name}" class="col-span-7 p-2 border border-gray-300 rounded-lg item-name">
+                    <input type="number" placeholder="כמות" value="${qty}" class="col-span-3 p-2 border border-gray-300 rounded-lg item-qty">
+                    <button type="button" class="col-span-2 text-red-500 font-bold text-2xl remove-item-btn">×</button>
+                 `;
+                 container.appendChild(itemRow);
+            }
+
+            // --- Event Handlers ---
+
+            loginBtn.addEventListener('click', handleLogin);
+
+            logoutBtn.addEventListener('click', () => {
+                state.loggedIn = false;
+                state.currentClient = null;
+                loginInput.value = '';
+                navigateTo('login');
+            });
+
+            newOrderBtn.addEventListener('click', () => renderOrderForm(null));
+            backToDashboardBtn.addEventListener('click', () => {
+                // On back, we should reload the data in case of changes
+                loadOrdersFromServer();
+                navigateTo('dashboard');
+            });
+
+            document.getElementById('items-container').addEventListener('click', (e) => {
+                if(e.target.classList.contains('remove-item-btn')) {
+                    if (document.querySelectorAll('#items-container .grid').length > 1) {
+                         e.target.closest('.grid').remove();
+                    }
+                }
+            });
+            
+            document.getElementById('add-item-btn').addEventListener('click', () => createItemRow());
+            
+            saveOrderBtn.addEventListener('click', handleSaveOrder);
+            
+            shareWhatsappBtn.addEventListener('click', handleShareToWhatsapp);
+
+            parseBtn.addEventListener('click', handleParseText);
+            
+            async function handleLogin() {
+                const query = loginInput.value.trim();
+                if (!query) return;
+
+                loginBtn.disabled = true;
+                loginBtn.textContent = 'מחפש...';
+
+                try {
+                    const response = await fetch(`${GAS_URL}?action=findClient&query=${encodeURIComponent(query)}`);
+                    const result = await response.json();
+
+                    if (result.success && result.data) {
+                        state.currentClient = result.data;
+                        alert(`זוהה לקוח: ${state.currentClient.clientName}`);
+                    } else {
+                        state.currentClient = null;
+                        alert('לקוח לא נמצא. ניתן להמשיך ליצירת הזמנה חדשה.');
+                    }
+                    
+                    state.loggedIn = true;
+                    await loadOrdersFromServer(); 
+                    navigateTo('dashboard');
+
+                } catch (error) {
+                    console.error("Login error:", error);
+                    alert("שגיאה בתהליך הזיהוי. נכנס במצב אורח.");
+                    state.loggedIn = true;
+                    await loadOrdersFromServer();
+                    navigateTo('dashboard');
+                } finally {
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = 'כניסה / חיפוש';
+                }
+            }
+
+            function handleEditOrder(orderId) {
+                const order = state.orders.find(o => o.id == orderId);
+                if(order) {
+                    renderOrderForm(order);
+                }
+            }
+
             async function handleSaveOrder() {
-// ... existing code ... -->
+                const id = document.getElementById('order-id').value;
+                const items = [];
+                document.querySelectorAll('#items-container .grid').forEach(row => {
+                    const name = row.querySelector('.item-name').value.trim();
+                    const qty = row.querySelector('.item-qty').value.trim();
+                    if(name && qty) {
+                        items.push({ name, qty });
+                    }
+                });
+
+                const orderData = {
+                    id: id || null,
+                    clientName: document.getElementById('client-name').value.trim(),
+                    contactPhone: document.getElementById('contact-phone').value.trim(),
+                    deliveryAddress: document.getElementById('delivery-address').value.trim(),
+                    deliveryDate: document.getElementById('delivery-date').value,
+                    notes: document.getElementById('notes').value.trim(),
+                    items: items
+                };
+                
+                if (!orderData.clientName || !orderData.contactPhone || !orderData.deliveryAddress || !orderData.deliveryDate) {
+                    alert('נא למלא את כל שדות החובה (*)');
+                    return;
+                }
+                
                 saveOrderBtn.disabled = true;
                 saveOrderBtn.textContent = 'שומר...';
 
                 try {
-                    if (GAS_URL.includes('YOUR_GOOGLE_APPS_SCRIPT_URL_HERE')) {
-                        throw new Error('לא ניתן לשמור. כתובת ה-Backend אינה מוגדרת.');
-                    }
-
                     const response = await fetch(GAS_URL, {
                         method: 'POST',
-// ... existing code ... -->
+                        body: JSON.stringify(orderData), 
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    });
+                    const result = await response.json();
+
+                    if (result.success) {
+                        await loadOrdersFromServer(); 
+                        navigateTo('dashboard');
+                    } else {
+                        throw new Error(result.error);
+                    }
+                } catch (error) {
+                    console.error('Error saving order:', error);
+                    alert('שגיאה בשמירת ההזמנה: ' + error.message);
+                } finally {
+                    saveOrderBtn.disabled = false;
+                    saveOrderBtn.textContent = 'שמור הזמנה';
+                }
+            }
+
+            function handleShareToWhatsapp() {
+                if (!state.currentOrder) return;
+                
+                const order = state.currentOrder;
+                let message = `*הזמנה #${order.id}*\n\n`;
+                message += `*לקוח:* ${order.clientName}\n`;
+                message += `*כתובת:* ${order.deliveryAddress}\n`;
+                message += `*איש קשר:* ${order.contactPhone}\n`;
+                message += `*תאריך אספקה:* ${new Date(order.deliveryDate).toLocaleDateString('he-IL')}\n\n`;
+                message += `*פירוט:*\n`;
+                order.items.forEach(item => {
+                    message += `- ${item.name} (כמות: ${item.qty})\n`;
+                });
+                if(order.notes) {
+                    message += `\n*הערות:* ${order.notes}`;
+                }
+                
+                const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+                window.open(whatsappUrl, '_blank');
+            }
+
+            function handleParseText() {
+                const text = smartPasteArea.value;
+                if (!text.trim()) return;
+
+                const parsedData = {
+                    contactPhone: '',
+                    deliveryAddress: '',
+                    items: []
+                };
+
+                const lines = text.split('\n').filter(line => line.trim() !== '');
+                
+                // Phone Regex
+                const phoneRegex = /05\d-?\d{7}/;
+                const phoneMatch = text.match(phoneRegex);
+                if (phoneMatch) {
+                    parsedData.contactPhone = phoneMatch[0];
+                }
+                
+                // Very basic item and address parsing
+                lines.forEach(line => {
+                    const itemRegex = /(?:x|×|כמות:?)\s*(\d+)/i;
+                    if(line.match(itemRegex)){
+                       let name = line.replace(itemRegex, '').trim();
+                       let qty = line.match(itemRegex)[1];
+                       parsedData.items.push({ name, qty });
+                    } else if (!line.match(phoneRegex)) {
+                        // Assume lines without quantity are part of the address
+                        parsedData.deliveryAddress += line + ' ';
+                    }
+                });
+
+                document.getElementById('contact-phone').value = parsedData.contactPhone;
+                document.getElementById('delivery-address').value = parsedData.deliveryAddress.trim();
+                
+                if (parsedData.items.length > 0) {
+                     renderItems(parsedData.items);
+                }
+                
+                alert('הטקסט נותח. אנא בדוק והשלם את הפרטים החסרים.');
+            }
+
+            init();
+        });
+    </script>
+</body>
+</html>
 
