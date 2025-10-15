@@ -1,207 +1,176 @@
-/**
- * @OnlyCurrentDoc
- * Logistics Engine V3.3 (Fixed): הוספת תמיכה ב-CORS + עדכון אבטחה.
- */
-const SHEETS = {
-  ORDERS: 'כתיבת הזמנה לסידור - Orders',
-  CUSTOMERS: 'כתיבת הזמנה לסידור - Customers',
-  SETTINGS: 'כתיבת הזמנה לסידור - Settings',
-  MAPS: 'כתיבת הזמנה לסידור - maps',
-  CITIES: 'כתיבת הזמנה לסידור - cities',
-  HISTORY: 'כתיבת הזמנה לסידור - History'
-};
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>סידור עבודה</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        /* * רקע האפליקציה. מומלץ להשתמש בתמונה עדינה ולא רועשת.
+         * מידות מומלצות: 1920x1080 פיקסלים.
+         * החלף את הלינק הבא בלינק לתמונה שלך.
+         */
+        body { 
+            font-family: 'Rubik', sans-serif; 
+            background-color: #e2e8f0;
+            background-image: url('https://www.transparenttextures.com/patterns/cubes.png');
+        }
+        .app-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.3); }
+        .timeline-slot { min-height: 80px; border-left: 3px solid #cbd5e1; }
+        .order-item { cursor: grab; transition: all 0.2s ease-in-out; }
+        .order-item:active { cursor: grabbing; transform: scale(1.05); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        .drop-active { background-color: #93c5fd !important; }
+        .driver-avatar { object-fit: cover; object-position: center; }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="login-screen" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background: inherit;">
+        <div class="w-full max-w-sm text-center">
+            <img src="https://i.postimg.cc/Yq2N1crt/image.png" alt="לוגו החברה" class="w-32 h-32 rounded-full mx-auto mb-6 shadow-lg">
+            <div class="app-card rounded-xl p-6 shadow-xl">
+                <h1 class="text-2xl font-bold text-slate-800 mb-4">כניסה למערכת</h1>
+                <input type="password" id="password-input" placeholder="הקלד סיסמה" class="w-full text-center p-3 rounded-lg border-2 border-slate-300 focus:border-blue-500 focus:ring-0">
+                <button id="login-button" class="w-full bg-blue-600 text-white font-bold py-3 mt-4 rounded-lg hover:bg-blue-700 transition">כניסה</button>
+            </div>
+        </div>
+    </div>
 
-// ✅ טיפול מלא ב-CORS למניעת חסימות בין דומיינים
-function doGet(e) {
-  if (e.parameter.action) {
-    try {
-      let data;
-      switch (e.parameter.action) {
-        case 'getInitialData':
-          data = getInitialData();
-          break;
-        case 'getDashboardAnalytics':
-          data = getDashboardAnalytics();
-          break;
-        case 'getOrdersByDate':
-          data = getOrdersByDate(e.parameter.date);
-          break;
-        case 'getHistoricalData':
-          data = getHistoricalData(e.parameter.address);
-          break;
-        default:
-          throw new Error(`Invalid GET action: ${e.parameter.action}`);
-      }
-      return createCorsResponse({ status: 'success', data: data });
-    } catch (err) {
-      Logger.log(`doGet Error: ${err.stack}`);
-      return createCorsResponse({ status: 'error', message: err.message });
-    }
-  }
-  return HtmlService.createHtmlOutputFromFile('dashboard').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
-}
+    <!-- Main App Content (hidden by default) -->
+    <div id="app-content" class="hidden container mx-auto p-2 md:p-4">
+        <header class="flex items-center justify-between mb-4 p-2">
+            <h1 class="text-3xl font-bold text-slate-900">סידור עבודה</h1>
+            <p id="current-date" class="text-sm font-medium text-slate-600"></p>
+        </header>
+        <div class="flex flex-col md:flex-row gap-4">
+            <div class="w-full md:w-1/2">
+                <div class="flex items-center gap-4 mb-4">
+                    <img src="https://i.postimg.cc/tCNbgXK3/Screenshot-20250623-200744-Tik-Tok.jpg" alt="עלי" class="driver-avatar w-16 h-16 rounded-full border-4 border-white shadow-md">
+                    <h2 class="text-2xl font-bold text-slate-800">עלי</h2>
+                </div>
+                <div id="ali-timeline" class="app-card rounded-xl p-2 space-y-1"></div>
+            </div>
+            <div class="w-full md:w-1/2">
+                 <div class="flex items-center gap-4 mb-4">
+                    <img src="https://i.postimg.cc/d3S0NJJZ/Screenshot-20250623-200646-Facebook.jpg" alt="חכמת" class="driver-avatar w-16 h-16 rounded-full border-4 border-white shadow-md">
+                    <h2 class="text-2xl font-bold text-slate-800">חכמת</h2>
+                </div>
+                <div id="hakmat-timeline" class="app-card rounded-xl p-2 space-y-1"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyX2XqFeCQiiX1ehtPy-q-fZzGBDWZ9ZJvJ1FKe6C6PSKInAqVwlQRY6XABZtmqMbY8/exec'; // 👈 הדבק פה את כתובת הסקריפט
 
-function doPost(e) {
-  try {
-    // בדיקת preflight (OPTIONS)
-    if (e && e.parameter && e.parameter._cors) {
-      return createCorsResponse({ status: 'ok', message: 'Preflight success' });
-    }
+        // --- AUTHENTICATION ---
+        document.getElementById('login-button').addEventListener('click', () => {
+            if (document.getElementById('password-input').value === 'סידור') {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('app-content').classList.remove('hidden');
+                initializeApp();
+            } else {
+                alert('סיסמה שגויה');
+            }
+        });
 
-    const requestData = JSON.parse(e.postData.contents);
-    if (!requestData || !requestData.action) {
-      throw new Error('Invalid POST request: "action" is missing.');
-    }
+        // --- APPLICATION LOGIC ---
+        function initializeApp() {
+            document.getElementById('current-date').textContent = new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
+            
+            const aliTimeline = document.getElementById('ali-timeline');
+            const hakmatTimeline = document.getElementById('hakmat-timeline');
+            for (let hour = 6; hour < 20; hour++) {
+                for (let minute of ['00', '30']) {
+                    const time = `${String(hour).padStart(2, '0')}:${minute}`;
+                    aliTimeline.appendChild(createTimelineSlot(time));
+                    hakmatTimeline.appendChild(createTimelineSlot(time));
+                }
+            }
+            loadAndPlaceOrders();
+        }
 
-    switch (requestData.action) {
-      case 'addOrder':
-        handleNewCustomer(requestData.payload.customer);
-        return createCorsResponse({ status: 'success', data: addOrderToSheet(requestData.payload) });
-      case 'updateOrder':
-        return createCorsResponse({ status: 'success', data: updateOrderInSheet(requestData.payload) });
-      case 'archiveOrder':
-        archiveOrder(requestData.payload);
-        return createCorsResponse({ status: 'success', message: 'Order archived' });
-      case 'ping':
-        return createCorsResponse({ status: 'ok', message: 'Ping success' });
-      default:
-        throw new Error(`Invalid POST action: ${requestData.action}`);
-    }
-  } catch (error) {
-    Logger.log(`doPost Error: ${error.stack}`);
-    return createCorsResponse({ status: 'error', message: error.toString() });
-  }
-}
+        function createTimelineSlot(time) {
+            const slot = document.createElement('div');
+            slot.className = 'timeline-slot p-2 flex';
+            slot.dataset.time = time;
+            slot.innerHTML = `<div class="w-12 text-xs text-slate-500 pt-1">${time}</div><div class="flex-1 min-h-[40px]"></div>`;
+            
+            slot.addEventListener('dragover', e => { e.preventDefault(); slot.classList.add('drop-active'); });
+            slot.addEventListener('dragleave', () => slot.classList.remove('drop-active'));
+            slot.addEventListener('drop', handleDrop);
+            
+            return slot;
+        }
 
-// 🧩 פונקציה מרכזית שיוצרת תגובה תקינה עם כותרות CORS
-function createCorsResponse(data) {
-  return ContentService.createTextOutput(JSON.stringify(data))
-    .setMimeType(ContentService.MimeType.JSON)
-    .setHeader('Access-Control-Allow-Origin', '*')
-    .setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-    .setHeader('Access-Control-Allow-Headers', 'Content-Type');
-}
+        async function loadAndPlaceOrders() {
+            try {
+                const data = await runGAS({action: 'getTeamData'});
+                placeOrders(data.aliOrders, 'ali-timeline');
+                placeOrders(data.hakmatOrders, 'hakmat-timeline');
+            } catch (error) { alert(`שגיאה בטעינת הזמנות: ${error.message}`); }
+        }
+        
+        function placeOrders(orders, timelineId) {
+            orders.forEach(order => {
+                if (!order.time) return;
+                const orderTime = String(order.time).substring(0, 5);
+                const targetSlot = document.querySelector(`#${timelineId} [data-time="${orderTime}"] > div:last-child`);
+                if (targetSlot) {
+                    targetSlot.appendChild(createOrderCard(order));
+                }
+            });
+        }
+        
+        function createOrderCard(order) {
+            const card = document.createElement('div');
+            card.className = 'order-item bg-white rounded-lg p-3 shadow-md border-l-4 border-blue-500';
+            card.draggable = true;
+            card.dataset.orderId = order.id;
+            card.innerHTML = `<h4 class="font-bold text-slate-800">${order.customer}</h4><p class="text-sm text-slate-600">${order.street} ${order.street_number || ''}, ${order.city}</p>`;
+            card.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', order.id); });
+            return card;
+        }
 
-// 🧱 שאר הפונקציות (ללא שינוי לוגי)
-function archiveOrder(payload) {
-  const { orderId, departureTime, returnTime } = payload;
-  const ordersSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.ORDERS);
-  const historySheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.HISTORY);
-  if (!ordersSheet || !historySheet) throw new Error('Sheet not found.');
-  const data = ordersSheet.getDataRange().getValues();
-  const headers = data[0];
-  const idColIndex = headers.findIndex(h => h.toLowerCase() === 'id');
-  if (idColIndex === -1) throw new Error("'id' column not found.");
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][idColIndex] == orderId) {
-      const rowToArchive = data[i];
-      historySheet.appendRow([...rowToArchive, departureTime, returnTime, new Date()]);
-      ordersSheet.deleteRow(i + 1);
-      return;
-    }
-  }
-  throw new Error('Order ID not found for archiving.');
-}
+        async function handleDrop(e) {
+            e.preventDefault();
+            const slot = e.currentTarget;
+            slot.classList.remove('drop-active');
+            
+            const enteredPassword = prompt("נא להזין סיסמה לביצוע השינוי:");
+            if (enteredPassword !== '1125') {
+                if(enteredPassword) alert('סיסמה שגויה. הפעולה בוטלה.');
+                return;
+            }
+            
+            const orderId = e.dataTransfer.getData('text/plain');
+            const newTime = slot.dataset.time;
+            const orderCard = document.querySelector(`[data-order-id="${orderId}"]`);
 
-function updateOrderInSheet(order) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.ORDERS);
-  const data = sheet.getDataRange().getValues();
-  const headers = data.shift().map(h => String(h || ''));
-  const idColIndex = headers.findIndex(h => h.toLowerCase() === 'id');
-  for (let i = 0; i < data.length; i++) {
-    if (data[i][idColIndex] == order.id) {
-      const updatedRow = headers.map(header => order[header] || '');
-      sheet.getRange(i + 2, 1, 1, updatedRow.length).setValues([updatedRow]);
-      return order;
-    }
-  }
-  throw new Error('Order ID not found for update.');
-}
+            if (orderCard && newTime) {
+                slot.querySelector('div:last-child').appendChild(orderCard);
+                try {
+                    await runGAS({action: 'updateOrderTime', payload: { orderId, newTime }});
+                } catch (error) { alert(`שגיאה בעדכון השעה: ${error.message}`); }
+            }
+        }
+        
+        function runGAS(params) {
+             return new Promise((resolve, reject) => {
+                const options = { method: 'POST', body: JSON.stringify(params), headers: { 'Content-Type': 'application/json' } };
+                fetch(SCRIPT_URL, options)
+                    .then(res => res.json())
+                    .then(response => {
+                        if (response.status === 'success') resolve(response.data);
+                        else reject(new Error(response.message));
+                    })
+                    .catch(error => reject(error));
+             });
+        }
+    </script>
+</body>
+</html>
 
-function getHistoricalData(address) {
-  if (!address) return [];
-  const data = getSheetDataAsJson(SHEETS.HISTORY, true);
-  return data.filter(entry => {
-    const entryAddress = `${entry.street || ''} ${entry.street_number || ''}, ${entry.city || ''}`.trim();
-    return entryAddress === address;
-  });
-}
-
-function getInitialData() {
-  return {
-    activeOrders: getSheetDataAsJson(SHEETS.ORDERS, true),
-    warehouses: getSheetDataAsJson(SHEETS.SETTINGS).filter(w => w.key?.startsWith('warehouse_')).map(w => w.value),
-    deliveryTypes: getSheetDataAsJson(SHEETS.MAPS).map(item => item.delivery_type).filter(Boolean),
-    customers: getSheetDataAsJson(SHEETS.CUSTOMERS, true),
-    cities: getSheetDataAsJson(SHEETS.CITIES).map(item => item.city).filter(Boolean).sort()
-  };
-}
-
-function addOrderToSheet(order) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.ORDERS);
-  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  order.id = `ORD-${Date.now()}`;
-  order.timestamp = new Date().toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' });
-  order.status = 'חדשה';
-  const newRow = headers.map(header => order[header] || '');
-  sheet.appendRow(newRow);
-  return order;
-}
-
-function getSheetDataAsJson(sheetName, useRawHeaders = false) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName(sheetName);
-  if (!sheet) throw new Error(`Sheet named "${sheetName}" was not found.`);
-  const dataRange = sheet.getDataRange();
-  if (dataRange.getNumRows() <= 1) return [];
-  const values = dataRange.getValues();
-  const headersRaw = values.shift();
-  const headers = headersRaw.map(h => useRawHeaders ? (h || '').toString().trim() : (h || '').toString().trim().toLowerCase().replace(/[^a-z0-9_]/g, '_'));
-  return values.map(row => {
-    let obj = {};
-    headers.forEach((header, index) => {
-      if (header) {
-        const value = row[index];
-        obj[header] = (value instanceof Date) ? Utilities.formatDate(value, ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd') : value;
-      }
-    });
-    return obj;
-  });
-}
-
-function getDashboardAnalytics() {
-  const orders = getSheetDataAsJson(SHEETS.ORDERS, true);
-  const ordersByCity = {}, ordersByType = {}, ordersByCustomer = {};
-  orders.forEach(order => {
-    if (order.city) ordersByCity[order.city] = (ordersByCity[order.city] || 0) + 1;
-    if (order.delivery_type) ordersByType[order.delivery_type] = (ordersByType[order.delivery_type] || 0) + 1;
-    if (order.customer) ordersByCustomer[order.customer] = (ordersByCustomer[order.customer] || 0) + 1;
-  });
-  const topCities = Object.entries(ordersByCity).sort(([, a], [, b]) => b - a).slice(0, 5);
-  const topCustomers = Object.entries(ordersByCustomer).sort(([, a], [, b]) => b - a).slice(0, 5);
-  return {
-    totalOrders: orders.length,
-    topCities: { labels: topCities.map(i => i[0]), data: topCities.map(i => i[1]) },
-    deliveryTypes: { labels: Object.keys(ordersByType), data: Object.values(ordersByType) },
-    topCustomers: { labels: topCustomers.map(i => i[0]), data: topCustomers.map(i => i[1]) }
-  };
-}
-
-function getOrdersByDate(dateString) {
-  return getSheetDataAsJson(SHEETS.ORDERS, true).filter(order => order.date === dateString);
-}
-
-function handleNewCustomer(name) {
-  if (!name) return;
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.CUSTOMERS);
-  if (!sheet) return;
-  const existing = sheet.getDataRange().getValues().map(row => (row[0] || '').toString().trim().toLowerCase());
-  if (!existing.includes(name.trim().toLowerCase())) sheet.appendRow([name.trim()]);
-}
-
-// 🪄 הדרכה להמשך:
-// 1️⃣ הדבק את הקוד הזה בקובץ Code.gs שלך והחלף את הישן.
-// 2️⃣ לחץ Deploy → New Deployment → Web App.
-// 3️⃣ בחר Anyone → Allow access.
-// 4️⃣ עדכן את ה-SCRIPT_URL באתר שלך בכתובת החדשה.
-// 5️⃣ טען מחדש את האתר וודא שאין הודעות CORS בקונסול.
