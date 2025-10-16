@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsOrder - מערכת הזמנות</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --whatsapp-green: #25D366;
+            --whatsapp-dark: #075E54;
+            --whatsapp-light: #128C7E;
+            --whatsapp-chat: #E5DDD5;
+            --whatsapp-message-sent: #DCF8C6;
+            --whatsapp-message-received: #FFFFFF;
+        }
+        
+        body { 
+            font-family: 'Rubik', sans-serif;
+            background: linear-gradient(135deg, var(--whatsapp-dark) 0%, var(--whatsapp-light) 100%);
+            min-height: 100vh;
+        }
+        
+        .hidden { display: none !important; }
+        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+        
+        /* אנימציות ומעברים */
+        .slide-enter { transform: translateX(100%); opacity: 0; }
+        .slide-enter-active { transform: translateX(0); opacity: 1; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .fade-in { animation: fadeIn 0.6s ease-in; }
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(20px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+        
+        .scale-in { animation: scaleIn 0.5s ease-out; }
+        @keyframes scaleIn { 
+            from { opacity: 0; transform: scale(0.9); } 
+            to { opacity: 1; transform: scale(1); } 
+        }
+        
+        /* עיצוב WhatsApp */
+        .whatsapp-bg {
+            background-color: var(--whatsapp-chat);
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23075e54' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
+        }
+        
+        .whatsapp-header {
+            background-color: var(--whatsapp-dark);
+        }
+        
+        .whatsapp-message-sent {
+            background-color: var(--whatsapp-message-sent);
+            border-radius: 15px 15px 0 15px;
+        }
+        
+        .whatsapp-message-received {
+            background-color: var(--whatsapp-message-received);
+            border-radius: 15px 15px 15px 0;
+        }
+        
+        .whatsapp-green-btn {
+            background-color: var(--whatsapp-green);
+        }
+        
+        .whatsapp-green-btn:hover {
+            background-color: #20b858;
+        }
+        
+        /* עיצובים נוספים */
+        .product-search-results {
+            position: absolute;
+            background: white;
+            border-radius: 12px;
+            max-height: 250px;
+            overflow-y: auto;
+            z-index: 1000;
+            width: calc(100% - 2rem);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            border: 1px solid #e2e8f0;
+        }
+        
+        .search-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        
+        .search-item:hover {
+            background-color: #f8fafc;
+            transform: translateX(5px);
+        }
+        
+        .search-item:last-child {
+            border-bottom: none;
+        }
+        
+        .auto-save-indicator {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            background: var(--whatsapp-green);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            z-index: 1000;
+            animation: slideInLeft 0.3s ease-out;
+            box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+        }
+        
+        @keyframes slideInLeft {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        /* עיצוב רספונסיבי */
+        @media (max-width: 640px) {
+            .stats-grid { grid-template-columns: 1fr !important; gap: 1rem !important; }
+            .item-grid { grid-template-columns: 1fr !important; gap: 0.5rem !important; }
+            .footer-buttons { grid-template-columns: 1fr !important; }
+            .remove-item-btn { position: absolute !important; top: 0.5rem !important; left: 0.5rem !important; }
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--whatsapp-light);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--whatsapp-dark);
+        }
+        
+        /* Loading spinner */
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--whatsapp-green);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Chat-like input */
+        .chat-input {
+            border-radius: 20px;
+            padding: 12px 16px;
+            background-color: white;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .chat-input:focus {
+            outline: none;
+            border-color: var(--whatsapp-light);
+            box-shadow: 0 0 0 2px rgba(18, 140, 126, 0.2);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div id="app-container" class="w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden min-h-screen md:min-h-0">
+        
+        <!-- ===== Login Screen ===== -->
+        <div id="login-screen" class="p-8 flex flex-col items-center justify-center h-screen fade-in" style="background: linear-gradient(135deg, var(--whatsapp-dark) 0%, var(--whatsapp-light) 100%); color: white;">
+            <div class="text-center mb-8">
+                <div class="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <i class="fab fa-whatsapp text-3xl text-white"></i>
+                </div>
+                <h1 class="text-4xl font-bold mb-2">WhatsOrder</h1>
+                <p class="text-white/80">מערכת הזמנות בעיצוב WhatsApp</p>
+            </div>
+            
+            <div class="w-full max-w-xs">
+                <p class="text-white/80 mb-6 text-center">התחברות למערכת ההזמנות</p>
+                
+                <div class="relative mb-4">
+                    <input type="tel" id="login-input" placeholder="מספר טלפון / שם לקוח" 
+                           class="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/60 text-center text-lg focus:ring-2 focus:ring-white/50 focus:border-white/30 transition-all backdrop-blur-sm"
+                           aria-describedby="phone-help">
+                    <div class="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60">
+                        <i class="fas fa-user"></i>
+                    </div>
+                </div>
+                
+                <div id="phone-help" class="sr-only">הכנס מספר טלפון או שם לקוח</div>
+                
+                <button id="login-btn" class="w-full whatsapp-green-btn text-white font-bold py-4 px-6 rounded-xl mt-4 transition-all transform hover:scale-105 shadow-lg flex items-center justify-center gap-2">
+                    <i class="fab fa-whatsapp"></i>
+                    כניסה למערכת
+                </button>
+            </div>
+            
+            <div class="mt-12 text-center text-white/60 text-sm">
+                <p>פותח במיוחד עבור מחלקת ההזמנות</p>
+            </div>
+        </div>
+
+        <!-- ===== Dashboard Screen ===== -->
+        <div id="dashboard-screen" class="hidden slide-enter-active h-screen flex flex-col">
+            <header class="whatsapp-header text-white p-6 pb-4 rounded-b-3xl">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h1 class="text-2xl font-bold">WhatsOrder</h1>
+                        <p id="client-greeting" class="text-white/80 text-sm"></p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div id="notification-bell" class="relative cursor-pointer">
+                            <div class="relative">
+                                <i class="fas fa-shopping-cart text-xl"></i>
+                                <span id="notification-count" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center hidden">0</span>
+                            </div>
+                        </div>
+                        <button id="logout-btn" class="text-sm bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg transition">יציאה</button>
+                    </div>
+                </div>
+                
+                <div class="mb-4 relative">
+                    <input type="search" id="search-orders" placeholder="חיפוש הזמנות..." 
+                           class="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/60 focus:ring-2 focus:ring-white/50 focus:border-white/30 transition-all backdrop-blur-sm pr-12">
+                    <div class="absolute left-4 top-1/2 transform -translate-y-1/2 text-white/60">
+                        <i class="fas fa-search"></i>
+                    </div>
+                </div>
+            </header>
+            
+            <main class="flex-1 p-6 overflow-auto whatsapp-bg">
+                <div class="stats-grid grid grid-cols-3 gap-4 text-center mb-8">
+                    <div class="bg-white p-4 rounded-2xl border border-green-100 shadow-sm">
+                        <div class="font-bold text-2xl text-green-600 mb-1" id="new-orders-count">0</div>
+                        <div class="text-green-500 text-sm">הזמנות חדשות</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl border border-blue-100 shadow-sm">
+                        <div class="font-bold text-2xl text-blue-600 mb-1" id="pending-orders-count">0</div>
+                        <div class="text-blue-500 text-sm">בטיפול</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl border border-purple-100 shadow-sm">
+                        <div class="font-bold text-2xl text-purple-600 mb-1" id="today-orders-count">0</div>
+                        <div class="text-purple-500 text-sm">להיום</div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-bold text-gray-800">ההזמנות שלי</h2>
+                    <div class="text-sm text-gray-500" id="orders-counter">0 הזמנות</div>
+                </div>
+                
+                <div id="orders-list" class="space-y-4"></div>
+            </main>
+            
+            <div class="p-6 pt-4 bg-white">
+                <button id="new-order-btn" class="w-full whatsapp-green-btn text-white font-bold py-4 px-6 rounded-2xl shadow-xl hover:shadow-2xl transition-all transform hover:scale-105 flex items-center justify-center gap-2">
+                    <i class="fas fa-plus-circle"></i>
+                    הזמנה חדשה
+                </button>
+            </div>
+        </div>
+
+        <!-- ===== Order Screen ===== -->
+        <div id="order-screen" class="hidden slide-enter-active h-screen flex flex-col">
+            <header class="whatsapp-header text-white p-6 pb-4 rounded-b-3xl sticky top-0 z-10">
+                <div class="flex justify-between items-center">
+                    <button id="back-to-dashboard-btn" class="text-xl bg-white/20 hover:bg-white/30 w-10 h-10 rounded-full flex items-center justify-center">
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                    <h1 id="order-title" class="text-xl font-bold">הזמנה חדשה</h1>
+                    <div class="w-10"></div>
+                </div>
+            </header>
+            
+            <main class="flex-1 p-6 overflow-auto whatsapp-bg">
+                <!-- Product Search Chat Interface -->
+                <div class="mb-6">
+                    <div class="whatsapp-message-received p-4 mb-4 shadow-sm">
+                        <p class="text-gray-700">שלום! מה תרצה להזמין היום?</p>
+                        <span class="text-xs text-gray-500 mt-1">מערכת ההזמנות</span>
+                    </div>
+                    
+                    <div id="chat-messages" class="space-y-3 mb-4">
+                        <!-- הודעות הצ'אט יתווספו כאן באופן דינמי -->
+                    </div>
+                    
+                    <div class="flex gap-2">
+                        <input type="text" id="product-search-input" placeholder="רשום את שם המוצר..." 
+                               class="flex-1 chat-input">
+                        <button id="send-search-btn" class="whatsapp-green-btn text-white w-12 h-12 rounded-full flex items-center justify-center">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                    
+                    <div id="search-suggestions" class="mt-4 space-y-2 hidden">
+                        <!-- הצעות חיפוש יתווספו כאן -->
+                    </div>
+                </div>
+
+                <!-- Order Form -->
+                <div class="bg-white rounded-2xl p-4 shadow-sm mb-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">פרטי ההזמנה</h3>
+                    
+                    <form id="order-form" class="space-y-4">
+                        <input type="hidden" id="order-id">
+                        
+                        <div>
+                            <label for="client-name" class="block font-medium text-gray-700 mb-1">שם הלקוח *</label>
+                            <input type="text" id="client-name" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-200 focus:border-green-300 transition" required>
+                        </div>
+                        
+                        <div>
+                            <label for="contact-phone" class="block font-medium text-gray-700 mb-1">טלפון *</label>
+                            <input type="tel" id="contact-phone" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-200 focus:border-green-300 transition" required>
+                        </div>
+                        
+                        <div>
+                            <label for="delivery-address" class="block font-medium text-gray-700 mb-1">כתובת למשלוח *</label>
+                            <input type="text" id="delivery-address" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-200 focus:border-green-300 transition" required>
+                        </div>
+                        
+                        <div>
+                            <label for="delivery-date" class="block font-medium text-gray-700 mb-1">תאריך אספקה *</label>
+                            <input type="date" id="delivery-date" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-200 focus:border-green-300 transition" required>
+                        </div>
+
+                        <div class="border-t pt-4">
+                             <h3 class="text-lg font-bold text-gray-800 mb-4">פריטים שנבחרו</h3>
+                             <div id="selected-items" class="space-y-2 mb-4">
+                                <!-- הפריטים שנבחרו יתווספו כאן -->
+                             </div>
+                        </div>
+                        
+                        <div>
+                            <label for="notes" class="block font-medium text-gray-700 mb-1">הערות נוספות</label>
+                            <textarea id="notes" rows="3" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-200 focus:border-green-300 transition" placeholder="הערות למשלוח..."></textarea>
+                        </div>
+                    </form>
+                </div>
+            </main>
+            
+            <footer class="footer-buttons bg-white border-t p-4 grid grid-cols-2 gap-3">
+                <button id="save-order-btn" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-xl hover:bg-green-700 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+                    <i class="fas fa-save"></i>
+                    שמור הזמנה
+                </button>
+                <button id="share-whatsapp-btn" class="w-full whatsapp-green-btn text-white font-bold py-3 px-4 rounded-xl hover:shadow-lg transition-all shadow-md flex items-center justify-center gap-2">
+                    <i class="fab fa-whatsapp"></i>
+                    שלח להזמנה
+                </button>
+            </footer>
+        </div>
+
+        <!-- Product Suggestions Modal -->
+        <div id="suggestions-modal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+            <div class="bg-white rounded-2xl max-w-md w-full p-6 scale-in">
+                <h3 class="text-xl font-bold mb-4 text-gray-800">הצעות למוצרים דומים</h3>
+                <div id="suggestions-list" class="space-y-3 max-h-60 overflow-y-auto">
+                    <!-- ההצעות יתווספו כאן -->
+                </div>
+                <div class="mt-6 flex justify-end space-x-2">
+                    <button id="close-suggestions-btn" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-xl hover:bg-gray-400 transition">סגור</button>
+                    <button id="continue-search-btn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition">המשך חיפוש</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const GAS_URL = 'https://script.google.com/macros/s/AKfycbyJ81UzZAq-m8BJ11QY06rhFfcORUQDICpnhWoTim6u51hvd98ztuOscrj_svsIi_OK/exec';
+            const ORDER_DEPARTMENT_NUMBER = '972508860896';
+            
+            // הגדרות סטטוסים
+            const STATUS_OPTIONS = {
+                'New': { text: 'חדשה', color: 'bg-green-500', icon: '🆕' },
+                'Pending': { text: 'בטיפול', color: 'bg-yellow-500', icon: '⏳' },
+                'Confirmed': { text: 'מאושרת', color: 'bg-blue-500', icon: '✅' },
+                'Shipped': { text: 'נשלחה', color: 'bg-purple-500', icon: '🚚' },
+                'Delivered': { text: 'סופקה', color: 'bg-gray-500', icon: '📦' }
+            };
+
+            let state = { 
+                orders: [], 
+                currentOrder: null, 
+                currentClient: null,
+                filteredOrders: [],
+                isSearching: false,
+                selectedItems: [],
+                chatMessages: []
+            };
+
+            const screens = {
+                login: document.getElementById('login-screen'),
+                dashboard: document.getElementById('dashboard-screen'),
+                order: document.getElementById('order-screen')
+            };
+            const suggestionsModal = document.getElementById('suggestions-modal');
+            
+            // פונקציית ניווט בין מסכים
+            function navigateTo(screenName) {
+                Object.values(screens).forEach(screen => screen.classList.add('hidden'));
+                if (screens[screenName]) {
+                    screens[screenName].classList.remove('hidden');
+                    screens[screenName].classList.add('slide-enter-active');
+                }
+                
+                if (screenName === 'order') {
+                    // אתחול הצ'אט כאשר נכנסים למסך ההזמנה
+                    initializeChat();
+                }
+            }
+            
+            // טעינת הזמנות מהשרת
+            async function loadOrdersFromServer() {
+                renderSkeletonOrders();
+                try {
+                    const response = await fetch(GAS_URL);
+                    const result = await response.json();
+                    if (result.success) {
+                        state.orders = result.data;
+                        state.filteredOrders = [...state.orders];
+                    } else {
+                        throw new Error(result.error);
+                    }
+                } catch (error) {
+                    console.error('Error fetching orders:', error);
+                    showToast('שגיאה בטעינת ההזמנות מהשרת', 'error');
+                }
+                renderDashboard();
+            }
+
+            // הצגת מסך טעינה עם אנימציה
+            function renderSkeletonOrders() {
+                const ordersList = screens.dashboard.querySelector('#orders-list');
+                ordersList.innerHTML = Array(5).fill(0).map(() => `
+                    <div class="bg-white p-4 rounded-2xl border border-gray-200 animate-pulse">
+                        <div class="flex justify-between items-start">
+                            <div class="space-y-2 flex-1">
+                                <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+                                <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                                <div class="h-3 bg-gray-200 rounded w-1/3"></div>
+                            </div>
+                            <div class="h-6 bg-gray-200 rounded w-16 ml-4"></div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // רינדור לוח הבקרה
+            function renderDashboard() {
+                const clientGreeting = screens.dashboard.querySelector('#client-greeting');
+                clientGreeting.textContent = state.currentClient ? `שלום, ${state.currentClient.clientName}` : 'משתמש אורח';
+
+                const ordersList = screens.dashboard.querySelector('#orders-list');
+                ordersList.innerHTML = '';
+                
+                const ordersToRender = state.isSearching ? state.filteredOrders : state.orders;
+                
+                // עדכון מונה ההזמנות
+                document.getElementById('orders-counter').textContent = `${ordersToRender.length} הזמנות`;
+                
+                if (!ordersToRender || ordersToRender.length === 0) {
+                    ordersList.innerHTML = `
+                        <div class="text-center py-12">
+                            <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-inbox text-gray-400 text-2xl"></i>
+                            </div>
+                            <p class="text-gray-500">${state.isSearching ? 'לא נמצאו תוצאות' : 'אין הזמנות להצגה.'}</p>
+                        </div>
+                    `;
+                } else {
+                    ordersToRender.slice().reverse().forEach(order => {
+                        const statusConfig = STATUS_OPTIONS[order.status] || STATUS_OPTIONS['New'];
+                        const card = document.createElement('div');
+                        card.className = 'bg-white p-4 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition fade-in';
+                        card.innerHTML = `
+                            <div class="flex justify-between items-start">
+                                <div class="cursor-pointer flex-1" data-order-id="${order.id}">
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center text-green-600 mt-1">
+                                            <i class="fas fa-box"></i>
+                                        </div>
+                                        <div class="flex-1">
+                                            <p class="font-bold text-lg text-gray-800">${order.clientName}</p>
+                                            <p class="text-sm text-gray-600 mt-1">${order.deliveryAddress}</p>
+                                            <div class="flex items-center gap-2 mt-2">
+                                                <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">#${order.id}</span>
+                                                <span class="text-xs text-gray-500">${new Date(order.deliveryDate || Date.now()).toLocaleDateString('he-IL')}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <span class="text-white text-xs font-semibold px-3 py-1 rounded-full ${statusConfig.color} ml-2">
+                                    ${statusConfig.text}
+                                </span>
+                            </div>
+                            ${order.driveFolderUrl && !order.driveFolderUrl.startsWith('ERROR') ? 
+                                `<div class="mt-4 border-t pt-3 flex justify-start">
+                                    <a href="${order.driveFolderUrl}" target="_blank" class="text-sm text-green-600 hover:text-green-800 transition flex items-center gap-1">
+                                        <i class="fas fa-folder-open"></i>
+                                        תיקיית ההזמנה
+                                    </a>
+                                </div>` : ''}
+                        `;
+                        card.querySelector('[data-order-id]').addEventListener('click', () => handleEditOrder(order.id));
+                        ordersList.appendChild(card);
+                    });
+                }
+                
+                // עדכון סטטיסטיקות
+                document.getElementById('new-orders-count').textContent = state.orders.filter(o => o.status === 'New').length;
+                document.getElementById('pending-orders-count').textContent = state.orders.filter(o => o.status === 'Pending').length;
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('today-orders-count').textContent = state.orders.filter(o => o.deliveryDate === today).length;
+                
+                // עדכון התראות
+                updateNotificationCount();
+            }
+
+            // חיפוש מתקדם
+            function setupAdvancedSearch() {
+                const searchInput = document.getElementById('search-orders');
+                searchInput.addEventListener('input', debounce((e) => {
+                    const query = e.target.value.toLowerCase();
+                    if (query.length === 0) {
+                        state.isSearching = false;
+                        renderDashboard();
+                        return;
+                    }
+                    
+                    state.isSearching = true;
+                    state.filteredOrders = state.orders.filter(order => 
+                        order.clientName?.toLowerCase().includes(query) ||
+                        order.deliveryAddress?.toLowerCase().includes(query) ||
+                        order.contactPhone?.includes(query) ||
+                        order.id?.toString().includes(query) ||
+                        order.notes?.toLowerCase().includes(query)
+                    );
+                    renderDashboard();
+                }, 300));
+            }
+
+            // עדכון מונה ההתראות
+            function updateNotificationCount() {
+                const notificationCount = document.getElementById('notification-count');
+                const newOrdersCount = state.orders.filter(o => o.status === 'New').length;
+                
+                if (newOrdersCount > 0) {
+                    notificationCount.textContent = newOrdersCount;
+                    notificationCount.classList.remove('hidden');
+                } else {
+                    notificationCount.classList.add('hidden');
+                }
+            }
+
+            // אתחול צ'אט חיפוש מוצרים
+            function initializeChat() {
+                const chatMessages = document.getElementById('chat-messages');
+                chatMessages.innerHTML = '';
+                state.chatMessages = [];
+                state.selectedItems = [];
+                
+                // הודעה ראשונית
+                addChatMessage('system', 'שלום! אני כאן כדי לעזור לך לבנות את ההזמנה. רשם את שם המוצר שאתה מחפש ואמצא עבורך אפשרויות מתאימות.');
+                
+                // ריקון רשימת הפריטים שנבחרו
+                renderSelectedItems();
+            }
+            
+            // הוספת הודעה לצ'אט
+            function addChatMessage(sender, message, products = null) {
+                const chatMessages = document.getElementById('chat-messages');
+                const messageDiv = document.createElement('div');
+                
+                if (sender === 'user') {
+                    messageDiv.className = 'whatsapp-message-sent p-3 ml-12';
+                    messageDiv.innerHTML = `
+                        <p class="text-gray-800">${message}</p>
+                        <span class="text-xs text-gray-500 mt-1 text-left block">אתה</span>
+                    `;
+                } else if (sender === 'system') {
+                    messageDiv.className = 'whatsapp-message-received p-3 mr-12';
+                    messageDiv.innerHTML = `
+                        <p class="text-gray-700">${message}</p>
+                        <span class="text-xs text-gray-500 mt-1">מערכת ההזמנות</span>
+                    `;
+                } else if (sender === 'products') {
+                    messageDiv.className = 'whatsapp-message-received p-3 mr-12';
+                    let productsHTML = '<p class="text-gray-700 mb-2">האם התכוונת לאחד מהמוצרים הבאים?</p>';
+                    
+                    products.forEach((product, index) => {
+                        productsHTML += `
+                            <div class="bg-gray-50 p-2 rounded-lg mb-2 cursor-pointer hover:bg-gray-100 transition product-suggestion" data-product-index="${index}">
+                                <p class="font-medium text-gray-800">${product.name}</p>
+                                <p class="text-xs text-gray-500">מק"ט: ${product.sku || 'לא זמין'}</p>
+                            </div>
+                        `;
+                    });
+                    
+                    productsHTML += '<p class="text-sm text-gray-600 mt-2">לחץ על מוצר כדי להוסיף אותו להזמנה</p>';
+                    
+                    messageDiv.innerHTML = productsHTML + `<span class="text-xs text-gray-500 mt-2 block">מערכת ההזמנות</span>`;
+                }
+                
+                chatMessages.appendChild(messageDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                
+                // שמירת הודעת המערכת במצב
+                if (sender === 'system' || sender === 'products') {
+                    state.chatMessages.push({sender, message, products, timestamp: new Date()});
+                }
+            }
+            
+            // חיפוש מוצרים מתקדם
+            async function handleProductSearch(query) {
+                if (!query || query.trim().length < 2) {
+                    addChatMessage('system', 'נא להזין לפחות 2 תווים לחיפוש.');
+                    return;
+                }
+                
+                addChatMessage('user', query);
+                
+                try {
+                    const response = await fetch(`${GAS_URL}?action=searchProducts&query=${encodeURIComponent(query)}`);
+                    const result = await response.json();
+                    
+                    if (result.success && result.data && result.data.length > 0) {
+                        // הצגת עד 3 מוצרים דומים
+                        const similarProducts = result.data.slice(0, 3);
+                        addChatMessage('products', 'הצעות למוצרים דומים:', similarProducts);
+                        
+                        // הוספת מאזינים למוצרים המוצעים
+                        setTimeout(() => {
+                            document.querySelectorAll('.product-suggestion').forEach((el, index) => {
+                                el.addEventListener('click', () => {
+                                    selectProduct(similarProducts[index]);
+                                });
+                            });
+                        }, 100);
+                    } else {
+                        addChatMessage('system', 'לא נמצאו מוצרים התואמים לחיפוש שלך. נסה מוצר אחר.');
+                    }
+                } catch (error) {
+                    console.error('Product search error:', error);
+                    addChatMessage('system', 'אירעה שגיאה בחיפוש. נסה שוב מאוחר יותר.');
+                }
+            }
+            
+            // בחירת מוצר מההצעות
+            function selectProduct(product) {
+                // הוספת הפריט לרשימה הנבחרת
+                state.selectedItems.push({
+                    name: product.name,
+                    qty: 1,
+                    sku: product.sku || ''
+                });
+                
+                // עדכון התצוגה
+                renderSelectedItems();
+                
+                // הודעת אישור
+                addChatMessage('system', `הוספתי את "${product.name}" להזמנה. תוכל לשנות את הכמות בטופס. מה עוד תרצה להזמין?`);
+                
+                // איפוס שדה החיפוש
+                document.getElementById('product-search-input').value = '';
+            }
+            
+            // רינדור הפריטים שנבחרו
+            function renderSelectedItems() {
+                const container = document.getElementById('selected-items');
+                container.innerHTML = '';
+                
+                if (state.selectedItems.length === 0) {
+                    container.innerHTML = '<p class="text-gray-500 text-center py-4">עדיין לא נוספו פריטים להזמנה</p>';
+                    return;
+                }
+                
+                state.selectedItems.forEach((item, index) => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'flex justify-between items-center bg-gray-50 p-3 rounded-lg';
+                    itemDiv.innerHTML = `
+                        <div class="flex-1">
+                            <p class="font-medium text-gray-800">${item.name}</p>
+                            <p class="text-sm text-gray-500">מק"ט: ${item.sku || 'לא צוין'}</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="number" value="${item.qty}" min="1" class="w-16 p-1 border border-gray-300 rounded text-center item-qty" data-index="${index}">
+                            <button class="text-red-500 hover:text-red-700 remove-item" data-index="${index}">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    `;
+                    container.appendChild(itemDiv);
+                });
+                
+                // הוספת מאזינים לכמויות ולכפתורי מחיקה
+                document.querySelectorAll('.item-qty').forEach(input => {
+                    input.addEventListener('change', (e) => {
+                        const index = parseInt(e.target.dataset.index);
+                        state.selectedItems[index].qty = parseInt(e.target.value) || 1;
+                    });
+                });
+                
+                document.querySelectorAll('.remove-item').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const index = parseInt(e.target.closest('button').dataset.index);
+                        state.selectedItems.splice(index, 1);
+                        renderSelectedItems();
+                    });
+                });
+            }
+            
+            // רינדור טופס הזמנה
+            function renderOrderForm(order) {
+                state.currentOrder = order;
+                const form = screens.order.querySelector('#order-form');
+                form.reset();
+                
+                // טעינת טיוטה אם קיימת
+                loadDraft();
+
+                if (!order && state.currentClient) {
+                    form.querySelector('#client-name').value = state.currentClient.clientName || '';
+                    form.querySelector('#contact-phone').value = state.currentClient.contactPhone || '';
+                    form.querySelector('#delivery-address').value = state.currentClient.defaultAddress || '';
+                } else if (order) {
+                    form.querySelector('#client-name').value = order.clientName || '';
+                    form.querySelector('#contact-phone').value = order.contactPhone || '';
+                    form.querySelector('#delivery-address').value = order.deliveryAddress || '';
+                    form.querySelector('#delivery-date').value = order.deliveryDate || '';
+                    form.querySelector('#notes').value = order.notes || '';
+                    
+                    // טעינת פריטים קיימים
+                    state.selectedItems = order.items || [];
+                    renderSelectedItems();
+                }
+                
+                form.querySelector('#delivery-date').value = order ? order.deliveryDate : new Date().toISOString().split('T')[0];
+                screens.order.querySelector('#order-title').textContent = order ? `עריכת הזמנה #${order.id}` : 'הזמנה חדשה';
+                
+                // הגדרת שמירה אוטומטית
+                setupAutoSave();
+                
+                navigateTo('order');
+            }
+
+            // מערכת שמירה אוטומטית
+            function setupAutoSave() {
+                let autoSaveTimer;
+                const form = document.getElementById('order-form');
+                
+                form.addEventListener('input', debounce(() => {
+                    const formData = getFormData();
+                    localStorage.setItem('orderDraft', JSON.stringify(formData));
+                    showAutoSaveIndicator('נשמר אוטומטית');
+                }, 1000));
+            }
+
+            // טעינת טיוטה
+            function loadDraft() {
+                if (state.currentOrder) return; // לא טוענים טיוטה בעריכת הזמנה קיימת
+                
+                const draft = localStorage.getItem('orderDraft');
+                if (draft) {
+                    if (confirm('נמצאה טיוטה שלא נשמרה. האם ברצונך להמשיך ממנה?')) {
+                        applyFormData(JSON.parse(draft));
+                    } else {
+                        localStorage.removeItem('orderDraft');
+                    }
+                }
+            }
+
+            // קבלת נתוני הטופס
+            function getFormData() {
+                return {
+                    clientName: document.getElementById('client-name').value.trim(),
+                    contactPhone: document.getElementById('contact-phone').value.trim(),
+                    deliveryAddress: document.getElementById('delivery-address').value.trim(),
+                    deliveryDate: document.getElementById('delivery-date').value,
+                    notes: document.getElementById('notes').value.trim(),
+                    items: state.selectedItems
+                };
+            }
+
+            // החלת נתונים על הטופס
+            function applyFormData(formData) {
+                document.getElementById('client-name').value = formData.clientName || '';
+                document.getElementById('contact-phone').value = formData.contactPhone || '';
+                document.getElementById('delivery-address').value = formData.deliveryAddress || '';
+                document.getElementById('delivery-date').value = formData.deliveryDate || '';
+                document.getElementById('notes').value = formData.notes || '';
+                state.selectedItems = formData.items || [];
+                renderSelectedItems();
+            }
+
+            // הצגת אינדיקטור שמירה אוטומטית
+            function showAutoSaveIndicator(message = 'נשמר אוטומטית') {
+                let indicator = document.getElementById('auto-save-indicator');
+                if (!indicator) {
+                    indicator = document.createElement('div');
+                    indicator.id = 'auto-save-indicator';
+                    indicator.className = 'auto-save-indicator';
+                    document.body.appendChild(indicator);
+                }
+                
+                indicator.textContent = message;
+                indicator.style.display = 'block';
+                
+                setTimeout(() => {
+                    indicator.style.display = 'none';
+                }, 2000);
+            }
+
+            // הצגת הודעות Toast
+            function showToast(message, type = 'info') {
+                // הסרת toast קיים אם קיים
+                const existingToast = document.getElementById('custom-toast');
+                if (existingToast) {
+                    existingToast.remove();
+                }
+                
+                const toast = document.createElement('div');
+                toast.id = 'custom-toast';
+                toast.className = `fixed top-4 right-4 z-50 p-4 rounded-xl text-white shadow-lg transform transition-all duration-300 scale-in`;
+                
+                // צבעים לפי סוג ההודעה
+                const colors = {
+                    success: 'bg-green-500',
+                    error: 'bg-red-500',
+                    warning: 'bg-yellow-500',
+                    info: 'bg-blue-500'
+                };
+                
+                toast.className += ` ${colors[type] || colors.info}`;
+                
+                // אייקון לפי סוג ההודעה
+                const icons = {
+                    success: 'fa-check-circle',
+                    error: 'fa-exclamation-circle',
+                    warning: 'fa-exclamation-triangle',
+                    info: 'fa-info-circle'
+                };
+                
+                toast.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <i class="fas ${icons[type] || icons.info}"></i>
+                        <span>${message}</span>
+                    </div>
+                `;
+                
+                document.body.appendChild(toast);
+                
+                // הסרת ההודעה אחרי 4 שניות
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateX(100%)';
+                    setTimeout(() => {
+                        if (toast.parentNode) {
+                            toast.parentNode.removeChild(toast);
+                        }
+                    }, 300);
+                }, 4000);
+            }
+
+            // כניסה למערכת
+            async function handleLogin() {
+                const loginInput = screens.login.querySelector('#login-input');
+                const loginBtn = screens.login.querySelector('#login-btn');
+                const query = loginInput.value.trim();
+                if (!query) {
+                    showToast('נא להזין ערך לחיפוש', 'warning');
+                    return;
+                }
+                
+                loginBtn.disabled = true; 
+                loginBtn.innerHTML = '<div class="spinner"></div>';
+                
+                try {
+                    const response = await fetch(`${GAS_URL}?action=findClient&query=${encodeURIComponent(query)}`);
+                    const result = await response.json();
+                    if (result.success && result.data) {
+                        state.currentClient = result.data;
+                        showToast(`ברוך הבא, ${state.currentClient.clientName}`, 'success');
+                    } else {
+                        state.currentClient = null;
+                        showToast('משתמש אורח - ניתן ליצור הזמנות חדשות', 'info');
+                    }
+                    await loadOrdersFromServer(); 
+                    navigateTo('dashboard');
+                } catch (error) {
+                    console.error("Login error:", error);
+                    showToast("שגיאה בתהליך הזיהוי. נכנס במצב אורח.", "error");
+                    await loadOrdersFromServer();
+                    navigateTo('dashboard');
+                } finally {
+                    loginBtn.disabled = false; 
+                    loginBtn.innerHTML = '<i class="fab fa-whatsapp"></i> כניסה למערכת';
+                }
+            }
+
+            // עריכת הזמנה
+            function handleEditOrder(orderId) {
+                const order = state.orders.find(o => o.id == orderId);
+                if(order) renderOrderForm(order);
+            }
+
+            // שמירת הזמנה
+            async function handleSaveOrder() {
+                const saveOrderBtn = document.getElementById('save-order-btn');
+                
+                const orderData = {
+                    id: document.getElementById('order-id').value || null,
+                    clientName: document.getElementById('client-name').value.trim(),
+                    contactPhone: document.getElementById('contact-phone').value.trim(),
+                    deliveryAddress: document.getElementById('delivery-address').value.trim(),
+                    deliveryDate: document.getElementById('delivery-date').value,
+                    notes: document.getElementById('notes').value.trim(),
+                    items: state.selectedItems
+                };
+                
+                if (!orderData.clientName || !orderData.contactPhone || !orderData.deliveryAddress || !orderData.deliveryDate) {
+                    showToast('נא למלא את כל שדות החובה (*)', 'warning');
+                    return;
+                }
+                
+                if (state.selectedItems.length === 0) {
+                    showToast('נא להוסיף לפחות פריט אחד להזמנה', 'warning');
+                    return;
+                }
+                
+                saveOrderBtn.disabled = true; 
+                saveOrderBtn.innerHTML = '<div class="spinner"></div>';
+                
+                try {
+                    const response = await fetch(GAS_URL, { 
+                        method: 'POST', 
+                        body: JSON.stringify(orderData), 
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' } 
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        const savedOrder = result.data;
+                        // ניקוי טיוטה לאחר שמירה מוצלחת
+                        localStorage.removeItem('orderDraft');
+                        await loadOrdersFromServer(); 
+                        renderOrderForm(savedOrder);
+                        showToast('ההזמנה נשמרה בהצלחה!', 'success');
+                        
+                        // הפעלת כפתור השיתוף
+                        document.getElementById('share-whatsapp-btn').disabled = false;
+                    } else { 
+                        throw new Error(result.error); 
+                    }
+                } catch (error) {
+                    console.error('Error saving order:', error);
+                    showToast('שגיאה בשמירת ההזמנה: ' + error.message, 'error');
+                } finally {
+                    saveOrderBtn.disabled = false; 
+                    saveOrderBtn.innerHTML = '<i class="fas fa-save"></i> שמור הזמנה';
+                }
+            }
+
+            // שיתוף בוואטסאפ
+            function handleShareToWhatsapp() {
+                if (!state.currentOrder) {
+                    showToast('נא לשמור את ההזמנה לפני השיתוף', 'warning');
+                    return;
+                }
+                
+                const order = state.currentOrder;
+                let message = `*הזמנה חדשה - WhatsOrder*\n\n`;
+                message += `*לקוח:* ${order.clientName}\n`;
+                message += `*טלפון:* ${order.contactPhone}\n`;
+                message += `*כתובת:* ${order.deliveryAddress}\n`;
+                message += `*תאריך אספקה:* ${new Date(order.deliveryDate).toLocaleDateString('he-IL')}\n\n`;
+                message += `*פירוט ההזמנה:*\n`;
+                
+                order.items.forEach((item, index) => {
+                    message += `${index + 1}. ${item.name} - ${item.qty} יח'\n`;
+                });
+                
+                if(order.notes) {
+                    message += `\n*הערות:* ${order.notes}\n`;
+                }
+                
+                message += `\nמספר הזמנה: ${order.id}`;
+                
+                // שליחה למחלקת ההזמנות
+                const whatsappUrl = `https://api.whatsapp.com/send?phone=${ORDER_DEPARTMENT_NUMBER}&text=${encodeURIComponent(message)}`;
+                window.open(whatsappUrl, '_blank');
+                
+                showToast('ההזמנה נשלחה לוואטסאפ!', 'success');
+            }
+
+            // פונקציית debounce
+            function debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+
+            // אתחול ומאזינים נוספים
+            document.getElementById('login-btn').addEventListener('click', handleLogin);
+            document.getElementById('login-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleLogin();
+            });
+            
+            document.getElementById('logout-btn').addEventListener('click', () => { 
+                state.currentClient = null; 
+                navigateTo('login'); 
+            });
+            
+            document.getElementById('new-order-btn').addEventListener('click', () => {
+                state.selectedItems = [];
+                renderOrderForm(null);
+            });
+            
+            document.getElementById('back-to-dashboard-btn').addEventListener('click', () => { 
+                loadOrdersFromServer(); 
+                navigateTo('dashboard'); 
+            });
+            
+            document.getElementById('save-order-btn').addEventListener('click', handleSaveOrder);
+            document.getElementById('share-whatsapp-btn').addEventListener('click', handleShareToWhatsapp);
+            
+            // חיפוש מוצרים בצ'אט
+            document.getElementById('send-search-btn').addEventListener('click', () => {
+                const query = document.getElementById('product-search-input').value.trim();
+                if (query) {
+                    handleProductSearch(query);
+                    document.getElementById('product-search-input').value = '';
+                }
+            });
+            
+            document.getElementById('product-search-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const query = document.getElementById('product-search-input').value.trim();
+                    if (query) {
+                        handleProductSearch(query);
+                        document.getElementById('product-search-input').value = '';
+                    }
+                }
+            });
+
+            // אתחול חיפוש מתקדם
+            setupAdvancedSearch();
+
+            navigateTo('login');
+        });
+    </script>
+</body>
+</html>
