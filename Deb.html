@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OrderGate WhatsApp - מערכת הזמנות חכמה</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --whatsapp-green: #25D366;
+            --whatsapp-dark: #075E54;
+            --whatsapp-light: #128C7E;
+            --whatsapp-chat-bg: #E5DDD5;
+            --whatsapp-message-sent: #DCF8C6;
+            --whatsapp-message-received: #FFFFFF;
+        }
+
+        body { 
+            font-family: 'Rubik', sans-serif;
+            background: var(--whatsapp-chat-bg);
+            min-height: 100vh;
+        }
+
+        .hidden { display: none !important; }
+
+        /* WhatsApp Design System */
+        .whatsapp-header {
+            background: var(--whatsapp-dark);
+        }
+
+        .whatsapp-chat-bg {
+            background-color: var(--whatsapp-chat-bg);
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23075e54' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
+        }
+
+        .message-bubble {
+            max-width: 85%;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-bottom: 4px;
+            position: relative;
+        }
+
+        .message-received {
+            background: var(--whatsapp-message-received);
+            align-self: flex-start;
+            border-bottom-left-radius: 2px;
+        }
+
+        .message-sent {
+            background: var(--whatsapp-message-sent);
+            align-self: flex-end;
+            border-bottom-right-radius: 2px;
+        }
+
+        .message-time {
+            font-size: 11px;
+            color: #667781;
+            text-align: left;
+            margin-top: 2px;
+        }
+
+        .chat-input-container {
+            background: var(--whatsapp-message-received);
+            border-top: 1px solid #e0e0e0;
+        }
+
+        /* Animations */
+        .slide-enter {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+
+        .slide-enter-active {
+            transform: translateX(0);
+            opacity: 1;
+            transition: all 0.3s ease-out;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Product Search */
+        .search-suggestions {
+            position: absolute;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            width: 100%;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .search-suggestion-item {
+            padding: 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .search-suggestion-item:hover {
+            background: #f8f9fa;
+        }
+
+        /* Product Cards */
+        .product-message-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 12px;
+            margin: 8px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .product-message-card:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }  mt* @i  0%:ot0 re(g)  n{  ao pin. ud"ne uf 4">e"u -ie2orecni  -e-> idncas mces-lnr(vra-hsa" <st" a=h/0 fxtxt
+ sftxtit < t4od"ah  s תז47  d x  ai  npi"eפ   asp obd2xwore- c0ceipum = ma-t/  f"i     li"fu-eop-rlg nomjuif-a- la w"  ה 
+ /   <
+ ntSn-
+ <cnhih>
+ eap-dhe =l -  i l   r- b dl g3l  i10-0ltcfer  isr6  d    la   <txe> p> v  /
+  =gp  nwt/-t  sad b  a8i  s/   <v  d <  csel tabec   <-a- ims"-t
+ !ba  -P <vcnr d- e  yextrtp ח  su 0runs-g   lt last2 0  s/    v  darsc >d     an
+  "ci  xtce  to ib 1-eryeeetn   p o  iln b-e trn lsa>  <u  d=mic-1w-neatt"   an<     sfe  p =no   a3on-cucrt
+  t s osatrye-si   "r/     v   tiegsuen0cifreir-i  arl u  <  <  
+
+ l-d"a s
+ vlt" eoכ "tu s" "bd=nnax ry0> a  cM"le1xr0p-tn   utc( c=e-x-unזהo><v /d> v<ic=oid  o
+ csfldm-oe dl4v
+ "="mnasb0m>   cf2>  cf droxt- u<  ikol0u-uo 
+d> 
+ -i itsboge- -0 mn d>
+r GUt:ezBOphe  t o r{ ,
+ of iI  ,  r '
+l dl  Clet ouCg   : r' D eyי' 
+  p85,5   r l s:' :מ,י,  , o kP- י 9  a c7', r
+nt/w אi,' d רs  :P-E י 1
+ i�
+ ירIn no, tno pn 
+   A   e  p'רו    [  !שוךהמשכלם  uaeימויולמ.  
+ oc a,גם,  ח aאק
+  }nמהק' 
+  ti nd
+tit R  uie icgiadt,hanndcnmd'ske' ehd    a n'k-L { (r=  oa  
+
+oeBdseLneuntese e'es  c dltatnik gdr 
+oamtIt-
+ eEe(adPt
+ p.ven'
+ oau )
+ /ci u.I'owrn tdecn(dene'e oAo andR;  rds
+ oh sthu h<  /SPAlrv se tsulpuc wstLor| kLse.|  .Lsrto  i svsl    a nu  om'a- inTd   shtnu=i is> d  =mm>  sacsu{ci i
+    .n( ns;  ae.aor
+  .Ere> cdcu.at) dc  
+ )
+  t{
+ gi unra-vu Pu    tPd; lr
+
+ / si r{ ie ai   of  g{t tearis{  neor  on]; dav  due 
+ .o  ge  /  etI(c.( t)  e crrro o❌    ( (isRdg    i{  ds  uip   swlo6 
+ f mnI.'b  i .ei  v ir mas  }r(  nel  nr  .   c4rl] ob  aU(   iA  y eaG   De hT'  eti  aai  li
+  :sca n    r  o'u   oa'  
+ /nu n Itm.l lI 
+!e tליס      .= n o )0 dto}   mt'-'eacea,{rCna ne( za } uta
+ e) eimu    צ' 
+ uien=  cigla
+  ue
+ Dclsm n:u}  seet =`st m 
+ t sLa'rbl   ir  "r hl$read  vt)i i2gd>    aid .D;nicrs  e.  
+  e s
+tie dy)n.
+  t ae i'  u Ina
+ ,0   
+uit y;aso 
+ Rcp;fzs  L  ftcanb re (r.e{  sne esdsn     s i       r
+ s'l  n   unice  pets rpsuRsoetenu'')
+ sss(tomnh}nopscose n ed  >  h' תהם'
+  T r   b }uent)
+ uenr( f hn u}
+ ta a i(n) rs s  egs  tnnd enydtoוo.;med-re
+ td E'ah atc=
+ oant satut(ap ntco odet ti } ioOn
+st.cm    ig;} ne .o      
+ns, trtrc q) or t me Em; s n'lr'); beeg-msd'uM  "duem "nte<nt-0-tnou({    u   cye> sa sc fo-o>.pn/   dvpr-r-r.a>    aeaeb
+ ut(pCe  n ne vqecprbn  as('g; meBnitp) wdutpuonds=  t doty-uetru  enmnIdtie  di>ק>{d.>
+ <rntgodi מרr
+ i<soe> d<oor}  dcnteteh.i  tc'.c(' 
+dcMal  mntltoaan;  or cemtB't).n
+dsteל{r;
+ ut    i(  hM' י לpa10 y a .o   edtod }  ue eoRd arr ft sRoi na=t-  iutm( clsNei   lDtrn Di.aeagwg   lHL"exg fEi T=  <-2 es-0"   idk'" o b ;
+
+ oM=<    bDert isDb nah(
+  sonh; tnck aeat eMa  c ot (oen,estam 
+ iFtfcoeey.s(d)dueeceaL.'  egre'l e=}coglc nsEm(rc'
+sw  sie; uy'ucr-t)   cnse
+ er; eln  
+S  nt(ao)Ld'}
+t set t.c>
+hT{  do.s) oeo;otve     et > a( }} fet{ tm tu.  l  aro  (   m =e) 
+ /l
