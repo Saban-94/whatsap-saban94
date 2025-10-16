@@ -125,24 +125,44 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const GAS_URL = 'https://script.google.com/macros/s/AKfycbyJ81UzZAq-m8BJ11QY06rhFfcORUQDICpnhWoTim6u51hvd98ztuOscrj_svsIi_OK/exec';
+            // --- Configuration ---
+            const GAS_URL = 'https://script.google.com/macros/s/AKfycby1tah97jxRfl5dGhMoXMdBYDKh-Q8mdVzUfzqtAgQ3BhU8xgSDjWEo3NZ1TmRIcXk/exec';
+            
+            // --- State Management ---
             let state = { orders: [], currentOrder: null, currentClient: null };
 
+            // --- DOM Element Selection (Centralized) ---
             const screens = {
                 login: document.getElementById('login-screen'),
                 dashboard: document.getElementById('dashboard-screen'),
                 order: document.getElementById('order-screen')
             };
+            const loginInput = document.getElementById('login-input');
+            const loginBtn = document.getElementById('login-btn');
+            const logoutBtn = document.getElementById('logout-btn');
+            const clientGreeting = document.getElementById('client-greeting');
+            const ordersList = document.getElementById('orders-list');
+            const newOrderBtn = document.getElementById('new-order-btn');
+            const backToDashboardBtn = document.getElementById('back-to-dashboard-btn');
+            const orderTitle = document.getElementById('order-title');
+            const orderForm = document.getElementById('order-form');
+            const smartPasteArea = document.getElementById('smart-paste-area');
+            const parseBtn = document.getElementById('parse-btn');
+            const itemsContainer = document.getElementById('items-container');
+            const addItemBtn = document.getElementById('add-item-btn');
+            const saveOrderBtn = document.getElementById('save-order-btn');
+            const shareWhatsappBtn = document.getElementById('share-whatsapp-btn');
             const productModal = document.getElementById('product-modal');
             const closeModalBtn = document.getElementById('close-modal-btn');
             
+            // --- Core Functions ---
             function navigateTo(screenName) {
                 Object.values(screens).forEach(screen => screen.classList.add('hidden'));
                 if (screens[screenName]) screens[screenName].classList.remove('hidden');
             }
             
             async function loadOrdersFromServer() {
-                screens.dashboard.querySelector('#orders-list').innerHTML = `<p class="text-center text-gray-500">טוען הזמנות...</p>`;
+                ordersList.innerHTML = `<p class="text-center text-gray-500">טוען הזמנות...</p>`;
                 try {
                     const response = await fetch(GAS_URL);
                     const result = await response.json();
@@ -154,11 +174,9 @@
                 renderDashboard();
             }
 
+            // --- Rendering Functions ---
             function renderDashboard() {
-                const clientGreeting = screens.dashboard.querySelector('#client-greeting');
                 clientGreeting.textContent = state.currentClient ? `שלום, ${state.currentClient.clientName}` : 'עובד כאורח';
-
-                const ordersList = screens.dashboard.querySelector('#orders-list');
                 ordersList.innerHTML = '';
                 if (!state.orders || state.orders.length === 0) {
                     ordersList.innerHTML = `<p class="text-center text-gray-500">אין הזמנות להצגה.</p>`;
@@ -190,33 +208,31 @@
 
             function renderOrderForm(order) {
                 state.currentOrder = order;
-                const form = screens.order.querySelector('#order-form');
-                form.reset();
-                screens.order.querySelector('#smart-paste-area').value = '';
-                form.querySelector('#order-id').value = order ? order.id : '';
+                orderForm.reset();
+                smartPasteArea.value = '';
+                orderForm.querySelector('#order-id').value = order ? order.id : '';
 
                 if (!order && state.currentClient) {
-                    form.querySelector('#client-name').value = state.currentClient.clientName || '';
-                    form.querySelector('#contact-phone').value = state.currentClient.contactPhone || '';
-                    form.querySelector('#delivery-address').value = state.currentClient.defaultAddress || '';
+                    orderForm.querySelector('#client-name').value = state.currentClient.clientName || '';
+                    orderForm.querySelector('#contact-phone').value = state.currentClient.contactPhone || '';
+                    orderForm.querySelector('#delivery-address').value = state.currentClient.defaultAddress || '';
                 } else {
-                    form.querySelector('#client-name').value = order ? order.clientName : '';
-                    form.querySelector('#contact-phone').value = order ? order.contactPhone : '';
-                    form.querySelector('#delivery-address').value = order ? order.deliveryAddress : '';
+                    orderForm.querySelector('#client-name').value = order ? order.clientName : '';
+                    orderForm.querySelector('#contact-phone').value = order ? order.contactPhone : '';
+                    orderForm.querySelector('#delivery-address').value = order ? order.deliveryAddress : '';
                 }
                 
-                form.querySelector('#delivery-date').value = order ? order.deliveryDate : new Date().toISOString().split('T')[0];
-                form.querySelector('#notes').value = order ? (order.notes || '') : '';
+                orderForm.querySelector('#delivery-date').value = order ? order.deliveryDate : new Date().toISOString().split('T')[0];
+                orderForm.querySelector('#notes').value = order ? (order.notes || '') : '';
 
                 renderItems(order ? order.items : []);
-                screens.order.querySelector('#order-title').textContent = order ? `עריכת הזמנה #${order.id}` : 'הזמנה חדשה';
-                screens.order.querySelector('#share-whatsapp-btn').disabled = !order;
+                orderTitle.textContent = order ? `עריכת הזמנה #${order.id}` : 'הזמנה חדשה';
+                shareWhatsappBtn.disabled = !order;
                 navigateTo('order');
             }
 
             function renderItems(items) {
-                const container = screens.order.querySelector('#items-container');
-                container.innerHTML = '';
+                itemsContainer.innerHTML = '';
                 if (items && items.length > 0) {
                     items.forEach(item => createItemRow(item.name, item.qty, item.sku));
                 } else {
@@ -225,7 +241,6 @@
             }
             
             function createItemRow(name = '', qty = '', sku = '') {
-                 const container = screens.order.querySelector('#items-container');
                  const itemRow = document.createElement('div');
                  itemRow.className = 'grid grid-cols-12 gap-2 items-center relative';
                  itemRow.innerHTML = `
@@ -235,9 +250,10 @@
                     <input type="number" placeholder="כמות" value="${qty}" class="col-span-3 p-2 border border-gray-300 rounded-lg item-qty">
                     <button type="button" class="col-span-2 text-red-500 font-bold text-2xl remove-item-btn">×</button>
                  `;
-                 container.appendChild(itemRow);
+                 itemsContainer.appendChild(itemRow);
             }
 
+            // --- Event Handlers & Logic ---
             async function handleProductSearch(event) {
                 const input = event.target;
                 const resultsContainer = input.parentElement.querySelector('.product-search-results');
@@ -310,8 +326,8 @@
             }
 
             function handleParseText() {
-                const text = screens.order.querySelector('#smart-paste-area').value;
-                if (!text.trim()) return;
+                if (!smartPasteArea.value.trim()) return;
+                const text = smartPasteArea.value;
                 const parsedData = { contactPhone: '', deliveryAddress: '', items: [] };
                 const lines = text.split('\n').filter(line => line.trim() !== '');
                 const phoneRegex = /(05\d-?\d{7})/;
@@ -333,15 +349,13 @@
                     }
                 });
                 parsedData.deliveryAddress = potentialAddressLines.join(' ');
-                document.getElementById('contact-phone').value = parsedData.contactPhone;
-                document.getElementById('delivery-address').value = parsedData.deliveryAddress.trim();
+                orderForm.querySelector('#contact-phone').value = parsedData.contactPhone;
+                orderForm.querySelector('#delivery-address').value = parsedData.deliveryAddress.trim();
                 renderItems(parsedData.items.length > 0 ? parsedData.items : []);
                 alert('הטקסט נותח. אנא בדוק וודא שהפריטים והכתובת הופרדו כראוי.');
             }
             
             async function handleLogin() {
-                const loginInput = screens.login.querySelector('#login-input');
-                const loginBtn = screens.login.querySelector('#login-btn');
                 const query = loginInput.value.trim();
                 if (!query) return;
                 loginBtn.disabled = true; loginBtn.textContent = 'מחפש...';
@@ -373,21 +387,20 @@
             }
 
             async function handleSaveOrder() {
-                const saveOrderBtn = document.getElementById('save-order-btn');
                 const items = [];
-                document.querySelectorAll('#items-container .grid').forEach(row => {
+                itemsContainer.querySelectorAll('.grid').forEach(row => {
                     const name = row.querySelector('.product-search-input').value.trim();
                     const qty = row.querySelector('.item-qty').value.trim();
                     const sku = row.querySelector('.item-sku').value.trim();
                     if(name && qty) items.push({ name, qty, sku });
                 });
                 const orderData = {
-                    id: document.getElementById('order-id').value || null,
-                    clientName: document.getElementById('client-name').value.trim(),
-                    contactPhone: document.getElementById('contact-phone').value.trim(),
-                    deliveryAddress: document.getElementById('delivery-address').value.trim(),
-                    deliveryDate: document.getElementById('delivery-date').value,
-                    notes: document.getElementById('notes').value.trim(),
+                    id: orderForm.querySelector('#order-id').value || null,
+                    clientName: orderForm.querySelector('#client-name').value.trim(),
+                    contactPhone: orderForm.querySelector('#contact-phone').value.trim(),
+                    deliveryAddress: orderForm.querySelector('#delivery-address').value.trim(),
+                    deliveryDate: orderForm.querySelector('#delivery-date').value,
+                    notes: orderForm.querySelector('#notes').value.trim(),
                     items: items
                 };
                 if (!orderData.clientName || !orderData.contactPhone || !orderData.deliveryAddress || !orderData.deliveryDate) {
@@ -429,15 +442,24 @@
                 window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`, '_blank');
             }
 
-            // Global event listeners for dynamic content
-            document.getElementById('items-container').addEventListener('click', (e) => {
+            // --- Event Listener Setup ---
+            loginBtn.addEventListener('click', handleLogin);
+            logoutBtn.addEventListener('click', () => { state.currentClient = null; navigateTo('login'); });
+            newOrderBtn.addEventListener('click', () => renderOrderForm(null));
+            backToDashboardBtn.addEventListener('click', () => { loadOrdersFromServer(); navigateTo('dashboard'); });
+            addItemBtn.addEventListener('click', () => createItemRow());
+            saveOrderBtn.addEventListener('click', handleSaveOrder);
+            shareWhatsappBtn.addEventListener('click', handleShareToWhatsapp);
+            parseBtn.addEventListener('click', handleParseText);
+            closeModalBtn.addEventListener('click', () => productModal.classList.add('hidden'));
+
+            itemsContainer.addEventListener('click', (e) => {
                 if(e.target.classList.contains('remove-item-btn')) {
-                    if (document.querySelectorAll('#items-container .grid').length > 1) e.target.closest('.grid').remove();
+                    if (itemsContainer.querySelectorAll('.grid').length > 1) e.target.closest('.grid').remove();
                 }
             });
-            document.getElementById('items-container').addEventListener('input', (e) => {
+            itemsContainer.addEventListener('input', (e) => {
                 if (e.target.classList.contains('product-search-input')) {
-                    // Debounce search to avoid too many requests
                     clearTimeout(e.target.debounce);
                     e.target.debounce = setTimeout(() => handleProductSearch(e), 300);
                 }
@@ -448,20 +470,11 @@
                 }
             });
 
-            // Init and other listeners
-            document.getElementById('login-btn').addEventListener('click', handleLogin);
-            document.getElementById('logout-btn').addEventListener('click', () => { state.currentClient = null; navigateTo('login'); });
-            document.getElementById('new-order-btn').addEventListener('click', () => renderOrderForm(null));
-            document.getElementById('back-to-dashboard-btn').addEventListener('click', () => { loadOrdersFromServer(); navigateTo('dashboard'); });
-            document.getElementById('add-item-btn').addEventListener('click', () => createItemRow());
-            document.getElementById('save-order-btn').addEventListener('click', handleSaveOrder);
-            document.getElementById('share-whatsapp-btn').addEventListener('click', handleShareToWhatsapp);
-            document.getElementById('parse-btn').addEventListener('click', handleParseText);
-            closeModalBtn.addEventListener('click', () => productModal.classList.add('hidden'));
-
+            // --- App Initialization ---
             navigateTo('login');
         });
     </script>
 </body>
 </html>
+
 
