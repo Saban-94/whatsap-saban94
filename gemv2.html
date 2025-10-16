@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>שער הזמנות V2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Rubik', sans-serif; }
+        .hidden { display: none !important; }
+        .product-search-results {
+            position: absolute;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 0.5rem;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            width: calc(100% - 2rem);
+        }
+        .search-item { padding: 0.75rem; cursor: pointer; }
+        .search-item:hover { background-color: #f0f0f0; }
+        .favorite-star.favorited { color: #facc15; } /* Yellow-400 */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div id="app-container" class="max-w-lg mx-auto bg-white min-h-screen shadow-lg">
+        
+        <!-- ===== Login Screen ===== -->
+        <div id="login-screen" class="p-8 flex flex-col items-center justify-center h-screen">
+            <h1 class="text-4xl font-bold text-gray-800 mb-4">שער הזמנות V2</h1>
+            <p class="text-gray-600 mb-8">זיהוי לקוח או הזמנה קיימת</p>
+            <input type="tel" id="login-input" placeholder="הכנס מספר טלפון / שם / מס' לקוח" class="w-full p-4 border border-gray-300 rounded-lg text-center text-lg focus:ring-2 focus:ring-blue-500 transition">
+            <button id="login-btn" class="w-full bg-blue-600 text-white font-bold py-4 px-6 rounded-lg mt-4 hover:bg-blue-700 transition-transform transform hover:scale-105">
+                כניסה / חיפוש
+            </button>
+        </div>
+
+        <!-- ===== Dashboard Screen ===== -->
+        <div id="dashboard-screen" class="hidden">
+            <header class="bg-gray-800 text-white p-4 flex justify-between items-center">
+                <div>
+                    <h1 class="text-xl font-bold">לוח מחוונים</h1>
+                    <p id="client-greeting" class="text-sm text-gray-300"></p>
+                </div>
+                <button id="logout-btn" class="text-sm">התנתק</button>
+            </header>
+            <main class="p-4">
+                <div class="mb-4 flex gap-2">
+                    <input type="search" id="search-orders" placeholder="חיפוש לפי לקוח, כתובת, פריט..." class="w-full p-3 border border-gray-300 rounded-lg">
+                </div>
+                <div id="dashboard-filters" class="flex border-b mb-4">
+                    <button data-status="All" class="filter-btn flex-1 p-3 text-center font-semibold border-b-2 border-blue-500 text-blue-600">הכל</button>
+                    <button data-status="New" class="filter-btn flex-1 p-3 text-center text-gray-500 border-b-2 border-transparent">חדשות</button>
+                    <button data-status="In Progress" class="filter-btn flex-1 p-3 text-center text-gray-500 border-b-2 border-transparent">בטיפול</button>
+                    <button data-status="Delivered" class="filter-btn flex-1 p-3 text-center text-gray-500 border-b-2 border-transparent">הושלמו</button>
+                </div>
+                <div id="orders-list" class="space-y-3">
+                    <div class="loader"></div>
+                </div>
+            </main>
+            <div class="fixed bottom-0 bg-white p-3 shadow-lg" style="max-width: 512px; width: 100%;">
+                 <button id="new-order-btn" class="w-full bg-blue-600 text-white font-bold py-4 px-6 rounded-lg shadow-xl hover:bg-blue-700 transition-transform transform hover:scale-105 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                    הזמנה חדשה
+                </button>
+            </div>
+        </div>
+
+        <!-- ===== Order Screen ===== -->
+        <div id="order-screen" class="hidden">
+             <header class="bg-gray-800 text-white p-4 flex justify-between items-center sticky top-0 z-10">
+                <button id="back-to-dashboard-btn" class="text-xl">→</button>
+                <h1 id="order-title" class="text-xl font-bold">הזמנה חדשה</h1>
+                <div class="w-8"></div>
+            </header>
+            <main class="p-4 pb-20">
+                <div id="order-tabs" class="flex border-b mb-4">
+                    <button data-tab="details" class="order-tab-btn flex-1 p-3 text-center font-semibold border-b-2 border-blue-500 text-blue-600">פרטי הזמנה</button>
+                    <button data-tab="favorites" class="order-tab-btn flex-1 p-3 text-center text-gray-500 border-b-2 border-transparent">מועדפים</button>
+                </div>
+
+                <!-- Order Details Tab -->
+                <div id="order-tab-details">
+                    <div class="mb-6 bg-gray-50 p-4 rounded-lg border border-dashed border-gray-400">
+                        <label for="smart-paste-area" class="block text-lg font-semibold text-gray-700 mb-2">הדבקה חכמה מ-WhatsApp</label>
+                        <textarea id="smart-paste-area" rows="6" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="הדבק כאן את תוכן ההודעה..."></textarea>
+                        <button id="parse-btn" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg mt-2 hover:bg-indigo-700 transition">נתח טקסט ומלא טופס</button>
+                    </div>
+
+                    <form id="order-form" class="space-y-4">
+                        <input type="hidden" id="order-id">
+                        <div><label for="client-name" class="block font-medium text-gray-700">שם לקוח / פרויקט*</label><input type="text" id="client-name" class="w-full mt-1 p-2 border border-gray-300 rounded-lg" required></div>
+                        <div><label for="contact-phone" class="block font-medium text-gray-700">טלפון איש קשר בשטח*</label><input type="tel" id="contact-phone" class="w-full mt-1 p-2 border border-gray-300 rounded-lg" required></div>
+                        <div><label for="delivery-address" class="block font-medium text-gray-700">כתובת אספקה*</label><input type="text" id="delivery-address" class="w-full mt-1 p-2 border border-gray-300 rounded-lg" required></div>
+                        <div><label for="delivery-date" class="block font-medium text-gray-700">תאריך אספקה*</label><input type="date" id="delivery-date" class="w-full mt-1 p-2 border border-gray-300 rounded-lg" required></div>
+
+                        <div class="border-t pt-4">
+                             <h3 class="text-lg font-semibold text-gray-800">פריטים</h3>
+                             <div id="items-container" class="space-y-2 mt-2"></div>
+                             <button type="button" id="add-item-btn" class="mt-2 text-blue-600 font-semibold">+ הוסף פריט</button>
+                        </div>
+                        
+                        <div class="border-t pt-4">
+                            <h3 class="text-lg font-semibold text-gray-800">תיעוד מצולם</h3>
+                            <input type="file" id="photo-upload" class="hidden" accept="image/*" multiple>
+                            <button type="button" id="upload-photo-btn" class="w-full border border-dashed border-gray-400 p-4 rounded-lg mt-2 text-gray-600 hover:bg-gray-50">
+                                + הוסף תמונה (לתיעוד, אישור, וכו')
+                            </button>
+                            <div id="photo-previews" class="mt-4 grid grid-cols-3 gap-2"></div>
+                        </div>
+
+                        <div><label for="notes" class="block font-medium text-gray-700">הערות</label><textarea id="notes" rows="3" class="w-full mt-1 p-2 border border-gray-300 rounded-lg"></textarea></div>
+
+                        <div class="border-t pt-4">
+                            <label for="order-status" class="block font-medium text-gray-700">סטטוס הזמנה</label>
+                            <select id="order-status" class="w-full mt-1 p-2 border border-gray-300 rounded-lg">
+                                <option value="New">חדשה</option>
+                                <option value="In Progress">בטיפול</option>
+                                <option value="Delivered">הושלמה</option>
+                                <option value="Cancelled">בוטלה</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Favorites Tab -->
+                <div id="order-tab-favorites" class="hidden">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-2">מוצרים שמורים</h3>
+                    <div id="favorites-list" class="space-y-2">
+                        <p class="text-gray-500">טוען מועדפים...</p>
+                    </div>
+                </div>
+
+                <!-- Activity Log Section -->
+                <div id="activity-log-section" class="mt-6 border-t pt-4">
+                    <h3 class="text-lg font-semibold text-gray-800">היסטוריית עדכונים</h3>
+                    <div id="activity-log" class="mt-2 space-y-2 text-sm">
+                        <!-- Log entries will be injected here -->
+                    </div>
+                </div>
+
+            </main>
+             <footer class="fixed bottom-0 bg-white border-t p-3 grid grid-cols-2 gap-3" style="max-width: 512px; width: 100%;">
+                <button id="save-order-btn" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition">שמור הזמנה</button>
+                <button id="share-whatsapp-btn" class="w-full bg-green-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-600 transition flex items-center justify-center" disabled>
+                     <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 ml-2" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.894 11.892-1.99 0-3.903-.52-5.586-1.456l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.886-.001 2.267.655 4.398 1.803 6.283l-.52 1.905 1.973-.518zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.626.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+                     שתף ב-WhatsApp
+                </button>
+            </footer>
+        </div>
+
+        <!-- Product Details Modal -->
+        <div id="product-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-lg max-w-sm w-full p-4 relative">
+                <button id="close-modal-btn" class="absolute top-2 right-2 text-2xl font-bold">&times;</button>
+                <img id="modal-image" src="" alt="תמונת מוצר" class="w-full h-48 object-contain mb-4 rounded">
+                <h3 id="modal-title" class="text-xl font-bold mb-2"></h3>
+                <p id="modal-description" class="text-gray-600"></p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Configuration ---
+            const GAS_URL = 'https://script.google.com/macros/s/AKfycbyJ81UzZAq-m8BJ11QY06rhFfcORUQDICpnhWoTim6u51hvd98ztuOscrj_svsIi_OK/exec';
+            
+            // --- State Management ---
+            let state = { orders: [], currentOrder: null, currentClient: null, favorites: [] };
+
+            // --- DOM Element Selection (Centralized) ---
+            const screens = {
+                login: document.getElementById('login-screen'),
+                dashboard: document.getElementById('dashboard-screen'),
+                order: document.getElementById('order-screen')
+            };
+            const loginInput = document.getElementById('login-input');
+            const loginBtn = document.getElementById('login-btn');
+            const logoutBtn = document.getElementById('logout-btn');
+            const clientGreeting = document.getElementById('client-greeting');
+            const dashboardFilters = document.getElementById('dashboard-filters');
+            const searchOrdersInput = document.getElementById('search-orders');
+            const ordersList = document.getElementById('orders-list');
+            const newOrderBtn = document.getElementById('new-order-btn');
+            const backToDashboardBtn = document.getElementById('back-to-dashboard-btn');
+            const orderTitle = document.getElementById('order-title');
+            const orderForm = document.getElementById('order-form');
+            const orderTabs = document.getElementById('order-tabs');
+            const orderTabDetails = document.getElementById('order-tab-details');
+            const orderTabFavorites = document.getElementById('order-tab-favorites');
+            const smartPasteArea = document.getElementById('smart-paste-area');
+            const parseBtn = document.getElementById('parse-btn');
+            const itemsContainer = document.getElementById('items-container');
+            const addItemBtn = document.getElementById('add-item-btn');
+            const saveOrderBtn = document.getElementById('save-order-btn');
+            const shareWhatsappBtn = document.getElementById('share-whatsapp-btn');
+            const productModal = document.getElementById('product-modal');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+            const photoUploadInput = document.getElementById('photo-upload');
+            const uploadPhotoBtn = document.getElementById('upload-photo-btn');
+            const photoPreviewsContainer = document.getElementById('photo-previews');
+            const activityLogContainer = document.getElementById('activity-log');
+            
+            // --- Core Functions ---
+            function navigateTo(screenName) {
+                Object.values(screens).forEach(screen => screen.classList.add('hidden'));
+                if (screens[screenName]) screens[screenName].classList.remove('hidden');
+            }
+            
+            async function loadInitialData() {
+                ordersList.innerHTML = `<div class="loader"></div>`;
+                try {
+                    const response = await fetch(`${GAS_URL}?clientId=${state.currentClient.clientId}`);
+                    const result = await response.json();
+                    if (result.success) {
+                        state.orders = result.data.orders;
+                        state.favorites = result.data.favorites;
+                    } else throw new Error(result.error);
+                } catch (error) {
+                    console.error('Error fetching initial data:', error);
+                    alert('שגיאה בטעינת נתונים מהשרת.');
+                }
+                renderDashboard();
+            }
+
+            // --- Rendering Functions ---
+            function renderDashboard() {
+                clientGreeting.textContent = state.currentClient ? `שלום, ${state.currentClient.clientName}` : 'עובד כאורח';
+                
+                const currentFilter = dashboardFilters.querySelector('.border-blue-500').dataset.status;
+                const searchQuery = searchOrdersInput.value.toLowerCase();
+
+                let filteredOrders = state.orders;
+
+                if (currentFilter !== 'All') {
+                    filteredOrders = filteredOrders.filter(o => o.status === currentFilter);
+                }
+
+                if (searchQuery) {
+                    filteredOrders = filteredOrders.filter(o => 
+                        o.clientName.toLowerCase().includes(searchQuery) ||
+                        o.deliveryAddress.toLowerCase().includes(searchQuery) ||
+                        o.id.toString().includes(searchQuery) ||
+                        (o.items && o.items.some(item => item.name.toLowerCase().includes(searchQuery)))
+                    );
+                }
+
+                ordersList.innerHTML = '';
+                if (!filteredOrders || filteredOrders.length === 0) {
+                    ordersList.innerHTML = `<p class="text-center text-gray-500">אין הזמנות להצגה.</p>`;
+                } else {
+                    filteredOrders.slice().reverse().forEach(order => {
+                        const card = document.createElement('div');
+                        card.className = 'bg-white p-4 rounded-lg border border-gray-200 shadow-sm';
+                        const statusColors = { New: 'bg-blue-500', 'In Progress': 'bg-yellow-500', Delivered: 'bg-green-500', Cancelled: 'bg-red-500' };
+                        card.innerHTML = `
+                            <div class="flex justify-between items-start">
+                                <div class="cursor-pointer" data-order-id="${order.id}">
+                                    <p class="font-bold text-lg">${order.clientName}</p>
+                                    <p class="text-sm text-gray-600">${order.deliveryAddress}</p>
+                                    <p class="text-sm text-gray-500">#${order.id} - ${new Date(order.deliveryDate || Date.now()).toLocaleDateString('he-IL')}</p>
+                                </div>
+                                <span class="text-white text-xs font-semibold px-2 py-1 rounded-full ${statusColors[order.status] || 'bg-gray-500'}">${order.status || 'לא ידוע'}</span>
+                            </div>
+                            ${order.driveFolderUrl && !order.driveFolderUrl.startsWith('ERROR') ? `<div class="mt-3 border-t pt-2 flex justify-start"><a href="${order.driveFolderUrl}" target="_blank" class="text-sm text-blue-600 hover:underline">פתח תיקיית הזמנה</a></div>` : ''}
+                        `;
+                        card.querySelector('[data-order-id]').addEventListener('click', () => handleEditOrder(order.id));
+                        ordersList.appendChild(card);
+                    });
+                }
+            }
+
+            function renderOrderForm(order) {
+                state.currentOrder = order;
+                orderForm.reset();
+                smartPasteArea.value = '';
+                photoPreviewsContainer.innerHTML = '';
+                orderForm.querySelector('#order-id').value = order ? order.id : '';
+
+                if (!order && state.currentClient) {
+                    orderForm.querySelector('#client-name').value = state.currentClient.clientName || '';
+                    orderForm.querySelector('#contact-phone').value = state.currentClient.contactPhone || '';
+                    orderForm.querySelector('#delivery-address').value = state.currentClient.defaultAddress || '';
+                } else {
+                    orderForm.querySelector('#client-name').value = order ? order.clientName : '';
+                    orderForm.querySelector('#contact-phone').value = order ? order.contactPhone : '';
+                    orderForm.querySelector('#delivery-address').value = order ? order.deliveryAddress : '';
+                }
+                
+                orderForm.querySelector('#delivery-date').value = order ? order.deliveryDate : new Date().toISOString().split('T')[0];
+                orderForm.querySelector('#notes').value = order ? (order.notes || '') : '';
+                orderForm.querySelector('#order-status').value = order ? (order.status || 'New') : 'New';
+
+                renderItems(order ? order.items : []);
+                renderActivityLog(order ? order.activityLog : []);
+                
+                orderTitle.textContent = order ? `עריכת הזמנה #${order.id}` : 'הזמנה חדשה';
+                shareWhatsappBtn.disabled = !order;
+                switchOrderTab('details');
+                navigateTo('order');
+            }
+
+            function renderItems(items) {
+                itemsContainer.innerHTML = '';
+                if (items && items.length > 0) {
+                    items.forEach(item => createItemRow(item.name, item.qty, item.sku));
+                } else {
+                     createItemRow();
+                }
+            }
+            
+            function createItemRow(name = '', qty = '', sku = '') {
+                 const itemRow = document.createElement('div');
+                 itemRow.className = 'grid grid-cols-12 gap-2 items-center relative';
+                 itemRow.innerHTML = `
+                    <input type="text" placeholder="הקלד שם מוצר..." autocomplete="off" value="${name}" class="product-search-input col-span-7 p-2 border border-gray-300 rounded-lg">
+                    <input type="hidden" class="item-sku" value="${sku}">
+                    <div class="product-search-results hidden"></div>
+                    <input type="number" placeholder="כמות" value="${qty}" class="col-span-3 p-2 border border-gray-300 rounded-lg item-qty">
+                    <button type="button" class="col-span-2 text-red-500 font-bold text-2xl remove-item-btn">×</button>
+                 `;
+                 itemsContainer.appendChild(itemRow);
+            }
+
+            function renderActivityLog(logs) {
+                activityLogContainer.innerHTML = '';
+                if (!logs || logs.length === 0) {
+                    activityLogContainer.innerHTML = '<p class="text-gray-500">אין עדכונים להצגה.</p>';
+                    return;
+                }
+                logs.slice().reverse().forEach(log => {
+                    const logEntry = document.createElement('div');
+                    logEntry.className = 'p-2 bg-gray-50 rounded';
+                    logEntry.innerHTML = `
+                        <p class="font-semibold">${log.update}</p>
+                        <p class="text-xs text-gray-500">${new Date(log.timestamp).toLocaleString('he-IL')}</p>
+                    `;
+                    activityLogContainer.appendChild(logEntry);
+                });
+            }
+
+            async function handleProductSearch(event) {
+                const input = event.target;
+                const resultsContainer = input.parentElement.querySelector('.product-search-results');
+                const query = input.value.trim();
+
+                if (query.length < 2) {
+                    resultsContainer.innerHTML = '';
+                    resultsContainer.classList.add('hidden');
+                    return;
+                }
+                
+                resultsContainer.classList.remove('hidden');
+                resultsContainer.innerHTML = '<div class="p-2 text-center text-gray-500">מחפש...</div>';
+
+                try {
+                    const response = await fetch(`${GAS_URL}?action=searchProducts&query=${encodeURIComponent(query)}`);
+                    const result = await response.json();
+                    if (result.success) {
+                        renderSearchResults(result.data, input, resultsContainer);
+                    } else { throw new Error(result.error); }
+                } catch (error) {
+                    console.error('Product search error:', error);
+                    resultsContainer.innerHTML = `<div class="p-2 text-red-500">שגיאה בחיפוש</div>`;
+                }
+            }
+
+            function renderSearchResults(products, input, container) {
+                container.innerHTML = '';
+                if (products.length === 0) {
+                    container.innerHTML = `<div class="p-2 text-center text-gray-500">לא נמצאו מוצרים</div>`;
+                    return;
+                }
+                products.forEach(product => {
+                    const isFavorited = state.favorites.some(fav => fav.sku === product.sku);
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'search-item border-b last:border-b-0 flex justify-between items-center';
+                    itemDiv.innerHTML = `
+                        <div>
+                            <p class="font-semibold">${product.name}</p>
+                            <p class="text-sm text-gray-500">מק"ט: ${product.sku || 'N/A'}</p>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <span class="favorite-star text-2xl cursor-pointer ${isFavorited ? 'favorited' : ''}" data-sku="${product.sku}">★</span>
+                            ${product.image ? `<span class="view-image-btn text-xl cursor-pointer">👁️</span>` : ''}
+                            ${product.description ? `<span class="view-desc-btn text-xl cursor-pointer">ℹ️</span>` : ''}
+                        </div>
+                    `;
+                    itemDiv.addEventListener('click', (e) => {
+                        if (!e.target.classList.contains('view-image-btn') && !e.target.classList.contains('view-desc-btn') && !e.target.classList.contains('favorite-star')) {
+                            const parentRow = input.closest('.grid');
+                            parentRow.querySelector('.product-search-input').value = product.name;
+                            parentRow.querySelector('.item-sku').value = product.sku;
+                            container.classList.add('hidden');
+                        }
+                    });
+                    
+                    itemDiv.querySelector('.favorite-star').addEventListener('click', (e) => toggleFavorite(e, product));
+
+                    if (product.image || product.description) {
+                         const viewBtn = product.image ? itemDiv.querySelector('.view-image-btn') : itemDiv.querySelector('.view-desc-btn');
+                         viewBtn.addEventListener('click', () => showProductModal(product));
+                    }
+                    container.appendChild(itemDiv);
+                });
+            }
+
+            async function toggleFavorite(event, product) {
+                event.stopPropagation();
+                const star = event.target;
+                const sku = product.sku;
+                if (!sku || !state.currentClient) return;
+
+                const isCurrentlyFavorited = state.favorites.some(fav => fav.sku === sku);
+                star.classList.toggle('favorited', !isCurrentlyFavorited);
+
+                if (isCurrentlyFavorited) {
+                    state.favorites = state.favorites.filter(fav => fav.sku !== sku);
+                } else {
+                    state.favorites.push(product);
+                }
+
+                try {
+                    await fetch(GAS_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ action: 'toggleFavorite', clientId: state.currentClient.clientId, product: product }),
+                    });
+                } catch (error) {
+                    console.error("Error toggling favorite:", error);
+                    alert("שגיאה בעדכון מועדפים");
+                    // Revert UI on failure
+                    star.classList.toggle('favorited', isCurrentlyFavorited);
+                }
+            }
+
+            function renderFavorites() {
+                const favoritesList = document.getElementById('favorites-list');
+                favoritesList.innerHTML = '';
+                if (state.favorites.length === 0) {
+                    favoritesList.innerHTML = '<p class="text-gray-500">עדיין לא הוספת מוצרים למועדפים.</p>';
+                    return;
+                }
+                state.favorites.forEach(fav => {
+                    const favDiv = document.createElement('div');
+                    favDiv.className = 'p-3 bg-gray-50 rounded-lg flex justify-between items-center';
+                    favDiv.innerHTML = `
+                        <div>
+                            <p class="font-semibold">${fav.name}</p>
+                            <p class="text-sm text-gray-500">מק"ט: ${fav.sku}</p>
+                        </div>
+                        <button type="button" class="add-fav-to-order-btn bg-blue-500 text-white px-3 py-1 rounded">הוסף</button>
+                    `;
+                    favDiv.querySelector('.add-fav-to-order-btn').addEventListener('click', () => {
+                        const firstEmptyRow = Array.from(itemsContainer.querySelectorAll('.product-search-input')).find(input => !input.value);
+                        if(firstEmptyRow) {
+                            const parent = firstEmptyRow.closest('.grid');
+                            parent.querySelector('.product-search-input').value = fav.name;
+                            parent.querySelector('.item-sku').value = fav.sku;
+                        } else {
+                            createItemRow(fav.name, '', fav.sku);
+                        }
+                        switchOrderTab('details');
+                        alert(`"${fav.name}" נוסף להזמנה.`);
+                    });
+                    favoritesList.appendChild(favDiv);
+                });
+            }
+
+            function switchOrderTab(tabName) {
+                document.querySelectorAll('.order-tab-btn').forEach(btn => {
+                    btn.classList.remove('border-blue-500', 'text-blue-600');
+                    btn.classList.add('border-transparent', 'text-gray-500');
+                });
+                document.querySelector(`.order-tab-btn[data-tab="${tabName}"]`).classList.add('border-blue-500', 'text-blue-600');
+                
+                orderTabDetails.classList.toggle('hidden', tabName !== 'details');
+                orderTabFavorites.classList.toggle('hidden', tabName !== 'favorites');
+
+                if (tabName === 'favorites') {
+                    renderFavorites();
+                }
+            }
+
+            function showProductModal(product) {
+                productModal.querySelector('#modal-image').src = product.image || 'https://placehold.co/400x300?text=No+Image';
+                productModal.querySelector('#modal-image').classList.toggle('hidden', !product.image);
+                productModal.querySelector('#modal-title').textContent = product.name;
+                productModal.querySelector('#modal-description').textContent = product.description || 'אין תיאור זמין.';
+                productModal.classList.remove('hidden');
+            }
+
+            function handleFileSelect(event) {
+                const files = event.target.files;
+                for (const file of files) {
+                    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                        alert(`הקובץ ${file.name} גדול מדי (מעל 5MB).`);
+                        continue;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const previewDiv = document.createElement('div');
+                        previewDiv.className = 'relative';
+                        previewDiv.innerHTML = `
+                            <img src="${e.target.result}" class="w-full h-24 object-cover rounded-lg">
+                            <button class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold remove-preview-btn">&times;</button>
+                        `;
+                        previewDiv.dataset.fileContent = e.target.result;
+                        previewDiv.dataset.fileName = file.name;
+                        photoPreviewsContainer.appendChild(previewDiv);
+                    };
+                    reader.readAsDataURL(file);
+                }
+                photoUploadInput.value = ''; // Reset input
+            }
+
+            async function handleLogin() {
+                const query = loginInput.value.trim();
+                if (!query) return;
+                loginBtn.disabled = true; loginBtn.textContent = 'מחפש...';
+                try {
+                    const response = await fetch(`${GAS_URL}?action=findClient&query=${encodeURIComponent(query)}`);
+                    const result = await response.json();
+                    if (result.success && result.data) {
+                        state.currentClient = result.data;
+                        await loadInitialData(); 
+                        navigateTo('dashboard');
+                    } else {
+                        state.currentClient = null;
+                        alert('לקוח לא נמצא. המשך כאורח?');
+                        navigateTo('dashboard');
+                    }
+                } catch (error) {
+                    console.error("Login error:", error);
+                    alert("שגיאה בתהליך הזיהוי. נכנס במצב אורח.");
+                    state.currentClient = {clientId: 'guest', clientName: 'אורח'};
+                    await loadInitialData();
+                    navigateTo('dashboard');
+                } finally {
+                    loginBtn.disabled = false; loginBtn.textContent = 'כניסה / חיפוש';
+                }
+            }
+
+            function handleEditOrder(orderId) {
+                const order = state.orders.find(o => o.id == orderId);
+                if(order) renderOrderForm(order);
+            }
+
+            async function handleSaveOrder() {
+                const items = [];
+                itemsContainer.querySelectorAll('.grid').forEach(row => {
+                    const name = row.querySelector('.product-search-input').value.trim();
+                    const qty = row.querySelector('.item-qty').value.trim();
+                    const sku = row.querySelector('.item-sku').value.trim();
+                    if(name && qty) items.push({ name, qty, sku });
+                });
+                
+                const attachments = [];
+                photoPreviewsContainer.querySelectorAll('[data-file-content]').forEach(preview => {
+                    const [header, base64] = preview.dataset.fileContent.split(',');
+                    attachments.push({
+                        fileName: preview.dataset.fileName,
+                        mimeType: header.match(/:(.*?);/)[1],
+                        base64Content: base64
+                    });
+                });
+
+                const orderData = {
+                    action: 'saveOrder',
+                    id: orderForm.querySelector('#order-id').value || null,
+                    clientName: orderForm.querySelector('#client-name').value.trim(),
+                    contactPhone: orderForm.querySelector('#contact-phone').value.trim(),
+                    deliveryAddress: orderForm.querySelector('#delivery-address').value.trim(),
+                    deliveryDate: orderForm.querySelector('#delivery-date').value,
+                    notes: orderForm.querySelector('#notes').value.trim(),
+                    status: orderForm.querySelector('#order-status').value,
+                    items: items,
+                    attachments: attachments,
+                    updatedBy: state.currentClient ? state.currentClient.clientName : 'System'
+                };
+
+                if (!orderData.clientName || !orderData.contactPhone || !orderData.deliveryAddress || !orderData.deliveryDate) {
+                    return alert('נא למלא את כל שדות החובה (*)');
+                }
+                saveOrderBtn.disabled = true; saveOrderBtn.textContent = 'שומר...';
+                try {
+                    const response = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(orderData), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
+                    const result = await response.json();
+                    if (result.success) {
+                        const savedOrder = result.data;
+                        await loadInitialData();
+                        renderOrderForm(savedOrder); // Re-render form with saved data (including new ID, logs etc)
+                        alert('ההזמנה נשמרה בהצלחה!');
+                    } else { throw new Error(result.error); }
+                } catch (error) {
+                    console.error('Error saving order:', error);
+                    alert('שגיאה בשמירת ההזמנה: ' + error.message);
+                } finally {
+                    saveOrderBtn.disabled = false; saveOrderBtn.textContent = 'שמור הזמנה';
+                }
+            }
+            
+            // --- Event Listener Setup ---
+            loginBtn.addEventListener('click', handleLogin);
+            logoutBtn.addEventListener('click', () => { state.currentClient = null; navigateTo('login'); loginInput.value = ''});
+            newOrderBtn.addEventListener('click', () => renderOrderForm(null));
+            backToDashboardBtn.addEventListener('click', () => { navigateTo('dashboard'); });
+            addItemBtn.addEventListener('click', () => createItemRow());
+            saveOrderBtn.addEventListener('click', handleSaveOrder);
+            shareWhatsappBtn.addEventListener('click', () => {/* logic for sharing */});
+            parseBtn.addEventListener('click', () => {/* logic for parsing */});
+            closeModalBtn.addEventListener('click', () => productModal.classList.add('hidden'));
+            uploadPhotoBtn.addEventListener('click', () => photoUploadInput.click());
+            photoUploadInput.addEventListener('change', handleFileSelect);
+
+            photoPreviewsContainer.addEventListener('click', (e) => {
+                if (e.target.classList.contains('remove-preview-btn')) {
+                    e.target.parentElement.remove();
+                }
+            });
+
+            dashboardFilters.addEventListener('click', (e) => {
+                if(e.target.classList.contains('filter-btn')) {
+                    dashboardFilters.querySelectorAll('.filter-btn').forEach(btn => {
+                        btn.classList.remove('border-blue-500', 'text-blue-600');
+                        btn.classList.add('border-transparent');
+                    });
+                    e.target.classList.add('border-blue-500', 'text-blue-600');
+                    e.target.classList.remove('border-transparent');
+                    renderDashboard();
+                }
+            });
+
+            searchOrdersInput.addEventListener('input', () => {
+                clearTimeout(searchOrdersInput.debounce);
+                searchOrdersInput.debounce = setTimeout(renderDashboard, 300);
+            });
+
+            orderTabs.addEventListener('click', (e) => {
+                if (e.target.classList.contains('order-tab-btn')) {
+                    switchOrderTab(e.target.dataset.tab);
+                }
+            });
+            
+            itemsContainer.addEventListener('input', (e) => {
+                if (e.target.classList.contains('product-search-input')) {
+                    clearTimeout(e.target.debounce);
+                    e.target.debounce = setTimeout(() => handleProductSearch(e), 300);
+                }
+            });
+            
+            itemsContainer.addEventListener('click', (e) => {
+                if(e.target.classList.contains('remove-item-btn')) {
+                    if (itemsContainer.querySelectorAll('.grid').length > 1) e.target.closest('.grid').remove();
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.product-search-input') && !e.target.closest('.product-search-results')) {
+                    document.querySelectorAll('.product-search-results').forEach(res => res.classList.add('hidden'));
+                }
+            });
+
+            // --- App Initialization ---
+            navigateTo('login');
+        });
+    </script>
+</body>
+</html>
+
