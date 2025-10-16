@@ -62,7 +62,7 @@
                 </div>
                 <button id="logout-btn" class="text-sm">התנתק</button>
             </header>
-            <main class="p-4">
+            <main class="p-4 pb-24">
                 <div class="mb-4 flex gap-2">
                     <input type="search" id="search-orders" placeholder="חיפוש לפי לקוח, כתובת, פריט..." class="w-full p-3 border border-gray-300 rounded-lg">
                 </div>
@@ -152,7 +152,7 @@
                 <!-- Activity Log Section -->
                 <div id="activity-log-section" class="mt-6 border-t pt-4">
                     <h3 class="text-lg font-semibold text-gray-800">היסטוריית עדכונים</h3>
-                    <div id="activity-log" class="mt-2 space-y-2 text-sm">
+                    <div id="activity-log" class="mt-2 space-y-2 text-sm max-h-40 overflow-y-auto">
                         <!-- Log entries will be injected here -->
                     </div>
                 </div>
@@ -229,15 +229,21 @@
             async function loadInitialData() {
                 ordersList.innerHTML = `<div class="loader"></div>`;
                 try {
-                    const response = await fetch(`${GAS_URL}?clientId=${state.currentClient.clientId}`);
+                    const clientId = state.currentClient ? state.currentClient.clientId : 'guest';
+                    const response = await fetch(`${GAS_URL}?clientId=${clientId}`);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                     const result = await response.json();
-                    if (result.success) {
-                        state.orders = result.data.orders;
-                        state.favorites = result.data.favorites;
-                    } else throw new Error(result.error);
+                    if (result.success && result.data) {
+                        state.orders = result.data.orders || []; 
+                        state.favorites = result.data.favorites || [];
+                    } else {
+                         throw new Error(result.error || 'Malformed response from server');
+                    }
                 } catch (error) {
                     console.error('Error fetching initial data:', error);
                     alert('שגיאה בטעינת נתונים מהשרת.');
+                    state.orders = []; // Ensure state is clean on error
+                    state.favorites = [];
                 }
                 renderDashboard();
             }
@@ -249,7 +255,7 @@
                 const currentFilter = dashboardFilters.querySelector('.border-blue-500').dataset.status;
                 const searchQuery = searchOrdersInput.value.toLowerCase();
 
-                let filteredOrders = state.orders;
+                let filteredOrders = state.orders || []; // Defensive coding
 
                 if (currentFilter !== 'All') {
                     filteredOrders = filteredOrders.filter(o => o.status === currentFilter);
@@ -257,9 +263,9 @@
 
                 if (searchQuery) {
                     filteredOrders = filteredOrders.filter(o => 
-                        o.clientName.toLowerCase().includes(searchQuery) ||
-                        o.deliveryAddress.toLowerCase().includes(searchQuery) ||
-                        o.id.toString().includes(searchQuery) ||
+                        (o.clientName && o.clientName.toLowerCase().includes(searchQuery)) ||
+                        (o.deliveryAddress && o.deliveryAddress.toLowerCase().includes(searchQuery)) ||
+                        (o.id && o.id.toString().includes(searchQuery)) ||
                         (o.items && o.items.some(item => item.name.toLowerCase().includes(searchQuery)))
                     );
                 }
@@ -300,10 +306,10 @@
                     orderForm.querySelector('#client-name').value = state.currentClient.clientName || '';
                     orderForm.querySelector('#contact-phone').value = state.currentClient.contactPhone || '';
                     orderForm.querySelector('#delivery-address').value = state.currentClient.defaultAddress || '';
-                } else {
-                    orderForm.querySelector('#client-name').value = order ? order.clientName : '';
-                    orderForm.querySelector('#contact-phone').value = order ? order.contactPhone : '';
-                    orderForm.querySelector('#delivery-address').value = order ? order.deliveryAddress : '';
+                } else if (order) {
+                    orderForm.querySelector('#client-name').value = order.clientName || '';
+                    orderForm.querySelector('#contact-phone').value = order.contactPhone || '';
+                    orderForm.querySelector('#delivery-address').value = order.deliveryAddress || '';
                 }
                 
                 orderForm.querySelector('#delivery-date').value = order ? order.deliveryDate : new Date().toISOString().split('T')[0];
@@ -352,7 +358,7 @@
                     logEntry.className = 'p-2 bg-gray-50 rounded';
                     logEntry.innerHTML = `
                         <p class="font-semibold">${log.update}</p>
-                        <p class="text-xs text-gray-500">${new Date(log.timestamp).toLocaleString('he-IL')}</p>
+                        <p class="text-xs text-gray-500">${new Date(log.timestamp).toLocaleString('he-IL')} על ידי ${log.user}</p>
                     `;
                     activityLogContainer.appendChild(logEntry);
                 });
@@ -370,7 +376,7 @@
                 }
                 
                 resultsContainer.classList.remove('hidden');
-                resultsContainer.innerHTML = '<div class="p-2 text-center text-gray-500">מחפש...</div>';
+                resultsContainer.innerHTML = '<div class="loader" style="width: 20px; height: 20px;"></div>';
 
                 try {
                     const response = await fetch(`${GAS_URL}?action=searchProducts&query=${encodeURIComponent(query)}`);
@@ -401,12 +407,11 @@
                         </div>
                         <div class="flex items-center space-x-3">
                             <span class="favorite-star text-2xl cursor-pointer ${isFavorited ? 'favorited' : ''}" data-sku="${product.sku}">★</span>
-                            ${product.image ? `<span class="view-image-btn text-xl cursor-pointer">👁️</span>` : ''}
-                            ${product.description ? `<span class="view-desc-btn text-xl cursor-pointer">ℹ️</span>` : ''}
+                            ${product.image || product.description ? `<span class="view-details-btn text-xl cursor-pointer">ℹ️</span>` : ''}
                         </div>
                     `;
                     itemDiv.addEventListener('click', (e) => {
-                        if (!e.target.classList.contains('view-image-btn') && !e.target.classList.contains('view-desc-btn') && !e.target.classList.contains('favorite-star')) {
+                        if (e.target.tagName !== 'SPAN') {
                             const parentRow = input.closest('.grid');
                             parentRow.querySelector('.product-search-input').value = product.name;
                             parentRow.querySelector('.item-sku').value = product.sku;
@@ -416,8 +421,8 @@
                     
                     itemDiv.querySelector('.favorite-star').addEventListener('click', (e) => toggleFavorite(e, product));
 
-                    if (product.image || product.description) {
-                         const viewBtn = product.image ? itemDiv.querySelector('.view-image-btn') : itemDiv.querySelector('.view-desc-btn');
+                    const viewBtn = itemDiv.querySelector('.view-details-btn');
+                    if(viewBtn) {
                          viewBtn.addEventListener('click', () => showProductModal(product));
                     }
                     container.appendChild(itemDiv);
@@ -428,34 +433,39 @@
                 event.stopPropagation();
                 const star = event.target;
                 const sku = product.sku;
-                if (!sku || !state.currentClient) return;
-
-                const isCurrentlyFavorited = state.favorites.some(fav => fav.sku === sku);
-                star.classList.toggle('favorited', !isCurrentlyFavorited);
-
-                if (isCurrentlyFavorited) {
-                    state.favorites = state.favorites.filter(fav => fav.sku !== sku);
-                } else {
-                    state.favorites.push(product);
+                if (!sku || !state.currentClient || state.currentClient.clientId === 'guest') {
+                    alert("אנא התחבר כלקוח רשום כדי לשמור מועדפים.");
+                    return;
                 }
 
+                const isCurrentlyFavorited = star.classList.contains('favorited');
+                star.classList.toggle('favorited');
+
                 try {
-                    await fetch(GAS_URL, {
+                    const response = await fetch(GAS_URL, {
                         method: 'POST',
                         body: JSON.stringify({ action: 'toggleFavorite', clientId: state.currentClient.clientId, product: product }),
                     });
+                    const result = await response.json();
+                    if(!result.success) throw new Error(result.error);
+                    
+                    // Update local state
+                    if (isCurrentlyFavorited) {
+                        state.favorites = state.favorites.filter(fav => fav.sku !== sku);
+                    } else {
+                        state.favorites.push(product);
+                    }
                 } catch (error) {
                     console.error("Error toggling favorite:", error);
                     alert("שגיאה בעדכון מועדפים");
-                    // Revert UI on failure
-                    star.classList.toggle('favorited', isCurrentlyFavorited);
+                    star.classList.toggle('favorited'); // Revert UI on failure
                 }
             }
 
             function renderFavorites() {
                 const favoritesList = document.getElementById('favorites-list');
                 favoritesList.innerHTML = '';
-                if (state.favorites.length === 0) {
+                if (!state.favorites || state.favorites.length === 0) {
                     favoritesList.innerHTML = '<p class="text-gray-500">עדיין לא הוספת מוצרים למועדפים.</p>';
                     return;
                 }
@@ -507,6 +517,27 @@
                 productModal.querySelector('#modal-description').textContent = product.description || 'אין תיאור זמין.';
                 productModal.classList.remove('hidden');
             }
+            
+            function handleShareToWhatsapp() {
+                if (!state.currentOrder) return;
+                const order = state.currentOrder;
+                let message = `*סיכום הזמנה מס' ${order.id}*\n\n`;
+                message += `*לקוח:* ${order.clientName}\n*כתובת:* ${order.deliveryAddress}\n`;
+                message += `*איש קשר:* ${order.contactPhone}\n*תאריך אספקה:* ${new Date(order.deliveryDate).toLocaleDateString('he-IL')}\n\n*פירוט:*\n`;
+                if(order.items && order.items.length > 0){
+                    order.items.forEach(item => {
+                        message += `• ${item.name} (כמות: ${item.qty}, מק"ט: ${item.sku || 'לא צוין'})\n`;
+                    });
+                }
+                if(order.notes) message += `\n*הערות:* ${order.notes}\n`;
+                if (order.pdfUrl && !order.pdfUrl.startsWith('ERROR')) {
+                    message += `\n*קישור למסמך הזמנה רשמי (PDF):*\n${order.pdfUrl}`;
+                } else {
+                     message += `\n(מסמך PDF עדיין לא נוצר עבור הזמנה זו)`;
+                }
+                window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`, '_blank');
+            }
+
 
             function handleFileSelect(event) {
                 const files = event.target.files;
@@ -521,7 +552,7 @@
                         previewDiv.className = 'relative';
                         previewDiv.innerHTML = `
                             <img src="${e.target.result}" class="w-full h-24 object-cover rounded-lg">
-                            <button class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold remove-preview-btn">&times;</button>
+                            <button type="button" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold remove-preview-btn">&times;</button>
                         `;
                         previewDiv.dataset.fileContent = e.target.result;
                         previewDiv.dataset.fileName = file.name;
@@ -541,13 +572,12 @@
                     const result = await response.json();
                     if (result.success && result.data) {
                         state.currentClient = result.data;
-                        await loadInitialData(); 
-                        navigateTo('dashboard');
                     } else {
-                        state.currentClient = null;
-                        alert('לקוח לא נמצא. המשך כאורח?');
-                        navigateTo('dashboard');
+                        state.currentClient = { clientId: 'guest', clientName: 'אורח' };
+                        alert('לקוח לא נמצא. המשך כאורח כדי לראות את כל ההזמנות.');
                     }
+                    await loadInitialData(); 
+                    navigateTo('dashboard');
                 } catch (error) {
                     console.error("Login error:", error);
                     alert("שגיאה בתהליך הזיהוי. נכנס במצב אורח.");
@@ -587,6 +617,7 @@
                     action: 'saveOrder',
                     id: orderForm.querySelector('#order-id').value || null,
                     clientName: orderForm.querySelector('#client-name').value.trim(),
+                    clientId: state.currentClient ? state.currentClient.clientId : null,
                     contactPhone: orderForm.querySelector('#contact-phone').value.trim(),
                     deliveryAddress: orderForm.querySelector('#delivery-address').value.trim(),
                     deliveryDate: orderForm.querySelector('#delivery-date').value,
@@ -607,7 +638,8 @@
                     if (result.success) {
                         const savedOrder = result.data;
                         await loadInitialData();
-                        renderOrderForm(savedOrder); // Re-render form with saved data (including new ID, logs etc)
+                        const updatedOrderInState = state.orders.find(o => o.id == savedOrder.id);
+                        renderOrderForm(updatedOrderInState || savedOrder); 
                         alert('ההזמנה נשמרה בהצלחה!');
                     } else { throw new Error(result.error); }
                 } catch (error) {
@@ -625,7 +657,7 @@
             backToDashboardBtn.addEventListener('click', () => { navigateTo('dashboard'); });
             addItemBtn.addEventListener('click', () => createItemRow());
             saveOrderBtn.addEventListener('click', handleSaveOrder);
-            shareWhatsappBtn.addEventListener('click', () => {/* logic for sharing */});
+            shareWhatsappBtn.addEventListener('click', handleShareToWhatsapp);
             parseBtn.addEventListener('click', () => {/* logic for parsing */});
             closeModalBtn.addEventListener('click', () => productModal.classList.add('hidden'));
             uploadPhotoBtn.addEventListener('click', () => photoUploadInput.click());
