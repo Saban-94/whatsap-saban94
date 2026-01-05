@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 </head>
 <body>
@@ -17,7 +18,8 @@
             <span id="app-title">ח.סבן חומרי בנין</span>
         </div>
         <div class="actions">
-            <i class="material-icons" id="back-btn" style="display:none; cursor:pointer;">arrow_forward</i>
+            <i class="material-icons" id="mute-btn" style="cursor:pointer; opacity:0.7;">volume_up</i>
+            <i class="material-icons" id="back-btn" style="display:none; cursor:pointer; margin-right:10px;">arrow_forward</i>
         </div>
     </header>
 
@@ -30,8 +32,7 @@
 
     <div id="staff-dashboard" style="display:none; padding:10px;">
         <h3>לקוחות פעילים</h3>
-        <div id="clients-list" class="chat-feed" style="background:none; padding:0;">
-            </div>
+        <div id="clients-list" class="chat-feed" style="background:none; padding:0;"></div>
     </div>
 
     <main id="chat-container" class="chat-feed">
