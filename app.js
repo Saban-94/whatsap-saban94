@@ -1,4 +1,4 @@
-// --- 1. הגדרות Firebase ושמירת מפתחות ---
+// --- 1. הגדרות Firebase ---
 const firebaseConfig = {
   apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60",
   authDomain: "app-saban94-57361.firebaseapp.com",
@@ -20,7 +20,6 @@ const notificationSound = new Audio('https://assets.mixkit.co/active_storage/sfx
 let isInitialLoad = true;
 let isMuted = false;
 
-// כפתור השתקה
 const muteBtn = document.getElementById('mute-btn');
 if(muteBtn) {
     muteBtn.addEventListener('click', function() {
@@ -35,21 +34,16 @@ const urlParams = new URLSearchParams(window.location.search);
 let customerId = urlParams.get('cid'); 
 let staffId = urlParams.get('sid');
 
-// --- 3. OneSignal (התראות - קוד מתוקן) ---
+// --- 3. OneSignal ---
 window.OneSignalDeferred = window.OneSignalDeferred || [];
 OneSignalDeferred.push(async function(OneSignal) {
     await OneSignal.init({
         appId: "546472ac-f9ab-4c6c-beb2-e41c72af9849",
         safari_web_id: "web.onesignal.auto.195e7e66-9dea-4e11-b56c-b4a654da5ab7",
-        
-        // הגדרות הפעמון (ללא הפונקציה שגרמה לקריסה)
         notifyButton: { 
             enable: true,
             position: 'bottom-left',
-            offset: {
-                bottom: '90px',
-                left: '15px'
-            },
+            offset: { bottom: '90px', left: '15px' },
             colors: { 
                 'circle.background': 'rgba(0, 128, 105, 0.4)',
                 'circle.foreground': 'white',
@@ -66,12 +60,11 @@ OneSignalDeferred.push(async function(OneSignal) {
         },
     });
     
-    // תיוג משתמשים (בגרסה החדשה זה User.addTag)
     if (customerId) OneSignal.User.addTag("role", "client");
     if (staffId) OneSignal.User.addTag("role", "staff");
 });
 
-// --- 4. ניהול מצבים (לקוח / מנהל) ---
+// --- 4. ניהול מצבים ---
 const chatContainer = document.getElementById('chat-container');
 const staffDashboard = document.getElementById('staff-dashboard');
 const storiesContainer = document.getElementById('stories-container');
@@ -90,7 +83,6 @@ if (staffId) {
     if(chatContainer) chatContainer.style.display = 'none';
     if(document.querySelector('.input-area')) document.querySelector('.input-area').style.display = 'none';
     if(staffDashboard) staffDashboard.style.display = 'block';
-    
     if(internalMsgBtn) internalMsgBtn.style.display = 'block';
     
     loadAllClients();
@@ -138,7 +130,7 @@ function renderProgressStories(statusIndex) {
     });
 }
 
-// --- 6. צ'אט והודעות ---
+// --- 6. צ'אט ---
 function loadChat(cid) {
     if(!chatContainer) return;
     if (window.unsubscribeChat) window.unsubscribeChat();
@@ -240,7 +232,7 @@ function sendMessage() {
     }
 }
 
-// --- 8. טופס הזמנה וקאש ---
+// --- 8. טופס הזמנה וקאש (מתוקן למניעת קריסות) ---
 const modal = document.getElementById('order-modal');
 const addOrderBtn = document.getElementById('add-order-btn');
 const closeModalBtn = document.getElementById('close-modal-btn');
@@ -252,10 +244,16 @@ if(modal) modal.addEventListener('click', (e) => { if(e.target === modal) modal.
 
 if(submitOrderBtn) {
     submitOrderBtn.addEventListener('click', () => {
-        const contact = document.getElementById('order-contact').value;
-        const address = document.getElementById('order-address').value;
-        const item = document.getElementById('order-item').value;
-        const time = document.getElementById('order-time').value;
+        // שימוש בבדיקה (Safety Check) למקרה שמשהו חסר
+        const contactEl = document.getElementById('order-contact');
+        const addressEl = document.getElementById('order-address');
+        const itemEl = document.getElementById('order-item');
+        const timeEl = document.getElementById('order-time');
+
+        const contact = contactEl ? contactEl.value : '';
+        const address = addressEl ? addressEl.value : '';
+        const item = itemEl ? itemEl.value : '';
+        const time = timeEl ? timeEl.value : '';
 
         if(!item) { alert("יש למלא פירוט הזמנה"); return; }
 
@@ -272,8 +270,8 @@ if(submitOrderBtn) {
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
         
-        document.getElementById('order-item').value = '';
-        modal.style.display = 'none';
+        if(itemEl) itemEl.value = '';
+        if(modal) modal.style.display = 'none';
     });
 }
 
@@ -320,9 +318,7 @@ function loadAllClients() {
                 if(document.querySelector('.input-area')) document.querySelector('.input-area').style.display = 'flex';
                 document.getElementById('back-btn').style.display = 'block';
                 if(subTitle) subTitle.innerText = "משוחח עם: " + (client.name || doc.id);
-                
                 if(storiesContainer) storiesContainer.style.display = 'none';
-                
                 loadChat(doc.id);
             };
             listDiv.appendChild(div);
