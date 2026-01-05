@@ -25,13 +25,19 @@ const appTitle = document.getElementById('app-title');
 const backBtn = document.getElementById('back-btn');
 
 // --- 3. OneSignal (התראות) ---
-window.OneSignalDeferred = window.OneSignalDeferred || [];
-OneSignalDeferred.push(async function(OneSignal) {
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
     await OneSignal.init({
-        appId: "YOUR_ONESIGNAL_APP_ID", // <-- שים פה את ה-ID מ-OneSignal
-        safari_web_id: "web.onesignal.auto.xxxxx",
-        notifyButton: { enable: true },
+      appId: "546472ac-f9ab-4c6c-beb2-e41c72af9849",
+      safari_web_id: "web.onesignal.auto.195e7e66-9dea-4e11-b56c-b4a654da5ab7",
+      notifyButton: {
+        enable: true,
+      },
     });
+  });
+</script>
     
     // רישום תגיות (Tags) לשליחת התראות ממוקדות
     if (customerId) OneSignal.User.addTag("role", "client");
