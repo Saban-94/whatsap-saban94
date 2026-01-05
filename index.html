@@ -49,6 +49,31 @@
         </div>
     </footer>
 
+    <div id="order-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>הזמנה חדשה 📦</h3>
+                <i class="material-icons" id="close-modal-btn">close</i>
+            </div>
+            <div class="modal-body">
+                <label>מה להזמין?</label>
+                <input type="text" id="order-item" placeholder="למשל: 2 משטחי מלט...">
+                
+                <label>לאיפה / הערות?</label>
+                <input type="text" id="order-notes" placeholder="למשל: לפרוק בכניסה...">
+                
+                <label>מתי?</label>
+                <select id="order-time">
+                    <option value="בהקדם האפשרי">בהקדם האפשרי 🚀</option>
+                    <option value="מחר בבוקר">מחר בבוקר ☀️</option>
+                    <option value="תיאום טלפוני">תיאום טלפוני 📞</option>
+                </select>
+                
+                <button id="submit-order-btn" class="full-width-btn">שלח הזמנה</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-analytics-compat.js"></script>
