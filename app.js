@@ -46,7 +46,7 @@ OneSignalDeferred.push(async function(OneSignal) {
     if (staffId) OneSignal.User.addTag("role", "staff");
 });
 
-// --- 4. ניהול מצבים ---
+// --- 4. ניהול מצבים (לוגיקה ראשית) ---
 const chatContainer = document.getElementById('chat-container');
 const staffDashboard = document.getElementById('staff-dashboard');
 const storiesContainer = document.getElementById('stories-container');
@@ -62,6 +62,7 @@ if (staffId) {
     if(appTitle) appTitle.innerText = "ניהול סידור";
     if(subTitle) subTitle.innerText = staffId;
     
+    // הסתרת אלמנטים של לקוח
     if(storiesContainer) storiesContainer.style.display = 'none';
     if(chatContainer) chatContainer.style.display = 'none';
     if(document.querySelector('.input-area')) document.querySelector('.input-area').style.display = 'none';
@@ -74,10 +75,13 @@ if (staffId) {
     // === מצב לקוח ===
     localStorage.setItem('saban_cid', customerId);
     if(appTitle) appTitle.innerText = "ח.סבן חומרי בנין";
-    if(subTitle) subTitle.innerText = "הזמנה: " + customerId;
+    if(subTitle) subTitle.innerText = "הזמנה #" + customerId;
+    
+    // וודא שהסטורי מוצג!
+    if(storiesContainer) storiesContainer.style.display = 'flex';
     
     loadFormCache();
-    listenToStatus(customerId); // האזנה לסטטוס חי!
+    listenToStatus(customerId); // חיבור לשינויים בזמן אמת
     loadChat(customerId);
 } else {
     // === אורח ===
@@ -89,15 +93,21 @@ if (staffId) {
     }
 }
 
-// --- 5. סטורי וסטטוס (הלב הפועם) ---
+// --- 5. סטורי וסטטוס בזמן אמת ---
 function listenToStatus(cid) {
-    // האזנה למסמך המשתמש/הזמנה כדי לקבל עדכוני סטטוס
+    // האזנה למסמך המשתמש - ברגע שמשתנה משהו, זה ירוץ
     db.collection('users').doc(cid).onSnapshot(doc => {
         if(doc.exists) {
             const data = doc.data();
+            // עדכון הסטורי (עיגולים)
             renderProgressStories(data.status || 1);
+            // עדכון השם בכותרת (אם קיים)
+            if(data.name && subTitle) {
+                subTitle.innerText = "שלום, " + data.name;
+            }
         } else {
-            renderProgressStories(1); // ברירת מחדל
+            // אם אין דף משתמש, ניצור אחד בסיסי
+            renderProgressStories(1);
         }
     });
 }
@@ -128,13 +138,12 @@ function renderProgressStories(statusIndex) {
 // פונקציה למנהל לעדכון סטטוס
 window.updateStatus = function(newStatus) {
     if(!customerId) return;
-    // עדכון ב-Firebase
+    
     db.collection('users').doc(customerId).set({
         status: newStatus,
         lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
 
-    // שליחת הודעת מערכת אוטומטית בצ'אט
     let statusText = "";
     if(newStatus == 2) statusText = "ההזמנה בטיפול במחסן 📦";
     if(newStatus == 3) statusText = "ההזמנה יצאה אליך! 🚚";
@@ -142,14 +151,10 @@ window.updateStatus = function(newStatus) {
 
     if(statusText) {
         db.collection('orders').doc(customerId).collection('messages').add({
-            text: statusText,
-            sender: 'system',
-            type: 'regular',
+            text: statusText, sender: 'system', type: 'regular',
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
     }
-    
-    // משוב ויזואלי למנהל
     alert("סטטוס עודכן ל-" + newStatus);
 };
 
@@ -184,18 +189,19 @@ function renderMessage(msg) {
 
     let className = 'message';
     if (isInternal) className += ' internal';
-    else if (isSystem) className += ' received'; // הודעת מערכת נראית כמו הודעה שהתקבלה
+    else if (isSystem) className += ' received system-msg'; // קלאס מיוחד להודעות מערכת
     else if (me) className += ' sent';
     else className += ' received';
 
     div.className = className;
     
-    // עיצוב מיוחד להודעות מערכת (שינוי סטטוס)
     if(isSystem) {
-        div.style.background = "#fff3e0";
+        div.style.background = "#fff8e1";
+        div.style.width = "90%";
         div.style.textAlign = "center";
         div.style.fontSize = "0.85rem";
-        div.style.width = "100%";
+        div.style.alignSelf = "center";
+        div.style.border = "1px solid #ffe082";
     }
 
     let time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '..';
@@ -223,7 +229,7 @@ function playIncomingSound() {
     notificationSound.play().catch(()=>{});
 }
 
-// --- 7. שליחת הודעות ---
+// --- 7. שליחה ---
 if (internalMsgBtn) {
     internalMsgBtn.addEventListener('click', () => {
         isInternalMode = !isInternalMode;
@@ -259,7 +265,7 @@ function sendMessage() {
     }
 }
 
-// --- 8. טופס הזמנה וקאש ---
+// --- 8. מודל הזמנה ---
 const modal = document.getElementById('order-modal');
 const addOrderBtn = document.getElementById('add-order-btn');
 const closeModalBtn = document.getElementById('close-modal-btn');
@@ -286,8 +292,13 @@ if(submitOrderBtn) {
             type: 'regular', isOrder: true, timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
         
-        // עדכון סטטוס ראשוני ל"התקבל"
-        db.collection('users').doc(customerId).set({ status: 1, name: contact, address: address }, { merge: true });
+        // יצירת/עדכון פרטי הלקוח במסד הנתונים
+        db.collection('users').doc(customerId).set({ 
+            status: 1, 
+            name: contact || "לקוח " + customerId, 
+            address: address,
+            lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
 
         document.getElementById('order-item').value = '';
         modal.style.display = 'none';
@@ -310,9 +321,9 @@ function loadFormCache() {
 function loadAllClients() {
     const listDiv = document.getElementById('clients-list');
     if(!listDiv) return;
-    listDiv.innerHTML = '<div style="text-align:center; padding:20px;">טוען נתונים...</div>';
-
-    db.collection('users').orderBy('lastUpdate', 'desc').get().then(snapshot => {
+    
+    // שליפה פשוטה (בלי orderBy כדי למנוע שגיאות אינדקס)
+    db.collection('users').get().then(snapshot => {
         listDiv.innerHTML = '';
         if (snapshot.empty) {
             listDiv.innerHTML = '<div style="text-align:center">אין הזמנות פעילות</div>';
@@ -332,9 +343,7 @@ function loadAllClients() {
                 document.getElementById('chat-container').style.display = 'block';
                 if(document.querySelector('.input-area')) document.querySelector('.input-area').style.display = 'flex';
                 document.getElementById('back-btn').style.display = 'block';
-                // הצגת כפתורי הניהול למנהל
                 if(adminControls) adminControls.style.display = 'block';
-                
                 if(subTitle) subTitle.innerText = "משוחח עם: " + (client.name || doc.id);
                 if(storiesContainer) storiesContainer.style.display = 'none';
                 loadChat(doc.id);
