@@ -1,77 +1,124 @@
-// --- 1. הגדרות Firebase (תעתיק לכאן מהמסוף של Firebase) ---
+// --- 1. הגדרות Firebase (המפתחות שלך) ---
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT.appspot.com",
-    messagingSenderId: "...",
-    appId: "..."
+  apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60",
+  authDomain: "app-saban94-57361.firebaseapp.com",
+  projectId: "app-saban94-57361",
+  storageBucket: "app-saban94-57361.firebasestorage.app",
+  messagingSenderId: "275366913167",
+  appId: "1:275366913167:web:f0c6f808e12f2aeb58fcfa",
+  measurementId: "G-E297QYKZKQ"
 };
 
-// אתחול
+// אתחול Firebase (גרסת דפדפן)
 firebase.initializeApp(firebaseConfig);
+
+// הפעלת שירותים
 const db = firebase.firestore();
+const analytics = firebase.analytics();
 
-// --- 2. זיהוי לקוח (Magic Link Logic) ---
+console.log("Firebase Connected! ✅");
+
+// --- 2. לוגיקת זיהוי לקוח (Magic Link) ---
+// אנחנו מחפשים בכתובת ה-URL אם יש ?cid=12345
 const urlParams = new URLSearchParams(window.location.search);
-let customerId = urlParams.get('cid'); // מחפש ?cid=12345 בלינק
+let customerId = urlParams.get('cid'); 
 
+// אם מצאנו בלינק - נשמור בזיכרון של הטלפון
 if (customerId) {
     localStorage.setItem('saban_cid', customerId);
+    console.log("Customer ID identified:", customerId);
 } else {
+    // אם אין בלינק, נבדוק אם שמרנו פעם
     customerId = localStorage.getItem('saban_cid');
 }
 
-if (!customerId) {
-    // מצב אורח או הפניה לדף שגיאה
-    console.log("לא נמצא מזהה לקוח");
-    // אפשר לייצר מזהה זמני או לבקש התחברות
-}
-
-// --- 3. טעינת הודעות (Realtime) ---
+// --- 3. טעינת הודעות בזמן אמת (Realtime Chat) ---
 const chatContainer = document.getElementById('chat-container');
 
 if (customerId) {
-    // מאזין להודעות ב-Firestore
+    // האזנה להודעות בתוך: orders -> [מספר לקוח] -> messages
     db.collection('orders').doc(customerId).collection('messages')
-    .orderBy('timestamp', 'asc')
-    .onSnapshot(snapshot => {
-        chatContainer.innerHTML = '<div class="date-divider">ההזמנות שלך</div>';
+    .orderBy('timestamp', 'asc') // מסדר לפי זמן (ישן לחדש)
+    .onSnapshot((snapshot) => {
+        // מנקים את המסך וטוענים מחדש כשמשהו משתנה
+        chatContainer.innerHTML = '<div class="date-divider">ההזמנות והשיחות שלך</div>';
+        
+        if (snapshot.empty) {
+            chatContainer.innerHTML += '<div style="text-align:center; color:#999; margin-top:20px;">אין עדיין הודעות. שלח הודעה כדי להתחיל!</div>';
+        }
+
         snapshot.forEach(doc => {
             renderMessage(doc.data());
         });
-        // גלילה למטה
+
+        // גלילה אוטומטית למטה (להודעה הכי חדשה)
         chatContainer.scrollTop = chatContainer.scrollHeight;
+    }, (error) => {
+        console.error("Error loading chat:", error);
+        chatContainer.innerHTML = '<div style="color:red; text-align:center;">שגיאה בטעינת נתונים. וודא שהמסד קיים ב-Firebase.</div>';
     });
+} else {
+    // מצב אורח (אין מספר לקוח)
+    chatContainer.innerHTML = '<div style="text-align:center; padding:20px;">ברוך הבא! <br> אנא היכנס דרך הקישור שקיבלת מהמשרד.</div>';
 }
 
+// פונקציה שמציירת בועת הודעה
 function renderMessage(msg) {
     const div = document.createElement('div');
-    // אם ההודעה מהלקוח -> sent, אם מהמערכת -> received
+    // אם השולח הוא customer -> ירוק (שלי), אחרת -> לבן (משרד)
     const typeClass = msg.sender === 'customer' ? 'sent' : 'received';
     
+    // המרת הזמן לשעה יפה
+    let timeString = "";
+    if (msg.timestamp) {
+        timeString = new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    }
+
     div.className = `message ${typeClass}`;
     div.innerHTML = `
         ${msg.text}
-        <div class="msg-meta">${new Date(msg.timestamp?.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+        <div class="msg-meta">${timeString}</div>
     `;
     chatContainer.appendChild(div);
 }
 
 // --- 4. שליחת הודעה ---
-document.querySelector('.send-btn').addEventListener('click', sendMessage);
+// מאזין ללחיצה על כפתור השליחה
+const sendBtn = document.querySelector('.send-btn');
+if(sendBtn) {
+    sendBtn.addEventListener('click', sendMessage);
+}
+
+// מאזין ללחיצה על Enter במקלדת
+const inputField = document.getElementById('msg-input');
+if(inputField) {
+    inputField.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    });
+}
 
 function sendMessage() {
-    const input = document.getElementById('msg-input');
-    const text = input.value;
+    const text = inputField.value;
     
+    // שולחים רק אם יש טקסט ויש לקוח מזוהה
     if (text.trim() && customerId) {
         db.collection('orders').doc(customerId).collection('messages').add({
             text: text,
-            sender: 'customer',
+            sender: 'customer', // מי שלח? הלקוח
             timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-            read: false // סימן שלא נקרא ע"י המשרד
+            read: false // סימן למשרד שההודעה חדשה
+        })
+        .then(() => {
+            console.log("Message sent!");
+            inputField.value = ''; // ניקוי השדה
+        })
+        .catch((error) => {
+            console.error("Error sending message: ", error);
+            alert("שגיאה בשליחה: " + error.message);
         });
-        input.value = '';
+    } else if (!customerId) {
+        alert("חסר מזהה לקוח. לא ניתן לשלוח הודעה.");
     }
 }
