@@ -21,44 +21,59 @@ let isInitialLoad = true;
 let isMuted = false;
 
 // כפתור השתקה
-document.getElementById('mute-btn').addEventListener('click', function() {
-    isMuted = !isMuted;
-    this.innerText = isMuted ? 'volume_off' : 'volume_up';
-    if(!isMuted) notificationSound.play().then(() => notificationSound.pause()).catch(()=>{});
-});
+const muteBtn = document.getElementById('mute-btn');
+if(muteBtn) {
+    muteBtn.addEventListener('click', function() {
+        isMuted = !isMuted;
+        this.innerText = isMuted ? 'volume_off' : 'volume_up';
+        if(!isMuted) notificationSound.play().then(() => notificationSound.pause()).catch(()=>{});
+    });
+}
 
 // --- 2. זיהוי משתמש ---
 const urlParams = new URLSearchParams(window.location.search);
 let customerId = urlParams.get('cid'); 
 let staffId = urlParams.get('sid');
 
-// --- 3. OneSignal (התראות) ---
-// --- 4. OneSignal (התראות - התיקון) ---
+// --- 3. OneSignal (התראות - התיקון הגדול!) ---
 window.OneSignalDeferred = window.OneSignalDeferred || [];
 OneSignalDeferred.push(async function(OneSignal) {
     await OneSignal.init({
         appId: "546472ac-f9ab-4c6c-beb2-e41c72af9849",
         safari_web_id: "web.onesignal.auto.195e7e66-9dea-4e11-b56c-b4a654da5ab7",
         
-        // כאן התיקון: הזזת הפעמון שמאלה
+        // הגדרות עיצוב הפעמון
         notifyButton: { 
             enable: true,
-            position: 'bottom-left', // מזיז את הפעמון לצד שמאל
+            position: 'bottom-left', // נשאר בצד שמאל
+            
+            // --- כאן הקסם: הרמה לגובה ---
             offset: {
-                bottom: '20px',
-                left: '20px'
+                bottom: '90px', // מרים אותו מעל כפתור הפלוס ומעל המקלדת!
+                left: '15px'
             },
-            colors: { // בונוס: התאמת צבעים לאפליקציה שלך
-                'circle.background': '#008069', // ירוק כמו הוואטסאפ
+            
+            // --- כאן הקסם: שקיפות ---
+            colors: { 
+                'circle.background': 'rgba(0, 128, 105, 0.4)', // ירוק חצי שקוף (40%)
                 'circle.foreground': 'white',
                 'badge.background': '#fbc02d',
                 'badge.foreground': 'black',
-                'badge.bordercolor': 'white',
-                'pulse.color': '#008069',
+                'badge.bordercolor': 'transparent',
+                'pulse.color': 'rgba(0, 128, 105, 0.2)',
                 'dialog.button.background.hovering': '#008069',
                 'dialog.button.background.active': '#008069',
                 'dialog.button.background': '#008069',
                 'dialog.button.foreground': 'white'
+            },
+            // גודל - בינוני כדי לא להשתלט
+            size: 'medium', 
+            // הסתרת הטקסט הצף (Tooltip) כדי למנוע הפרעה נוספת
+            displayPredicate: function() {
+                return OneSignal.isPushNotificationsEnabled()
+                    .then(function(isPushEnabled) {
+                        return !isPushEnabled;
+                    });
             }
         },
     });
@@ -75,35 +90,30 @@ const appTitle = document.getElementById('app-title');
 const subTitle = document.getElementById('sub-title');
 const internalMsgBtn = document.getElementById('internal-msg-btn');
 
-let isInternalMode = false; // מצב שליחת הודעה נסתרת
+let isInternalMode = false;
 
 if (staffId) {
     // === מצב צוות ===
-    appTitle.innerText = "ניהול סידור (מנהל)";
-    subTitle.innerText = "מחובר כ: " + staffId;
+    if(appTitle) appTitle.innerText = "ניהול סידור (מנהל)";
+    if(subTitle) subTitle.innerText = "מחובר כ: " + staffId;
     
-    storiesContainer.style.display = 'none'; // מנהל רואה רשימה, לא סטורי
-    chatContainer.style.display = 'none';
-    document.querySelector('.input-area').style.display = 'none';
-    staffDashboard.style.display = 'block';
+    if(storiesContainer) storiesContainer.style.display = 'none';
+    if(chatContainer) chatContainer.style.display = 'none';
+    if(document.querySelector('.input-area')) document.querySelector('.input-area').style.display = 'none';
+    if(staffDashboard) staffDashboard.style.display = 'block';
     
-    // הצגת כפתור הודעות פנימיות
-    internalMsgBtn.style.display = 'block';
+    if(internalMsgBtn) internalMsgBtn.style.display = 'block';
     
     loadAllClients();
 
 } else if (customerId) {
     // === מצב לקוח ===
     localStorage.setItem('saban_cid', customerId);
-    appTitle.innerText = "ח.סבן חומרי בנין";
-    subTitle.innerText = "הזמנה: " + customerId;
+    if(appTitle) appTitle.innerText = "ח.סבן חומרי בנין";
+    if(subTitle) subTitle.innerText = "הזמנה: " + customerId;
     
-    // טעינת מטמון (Cache) של כתובת ואיש קשר
     loadFormCache();
-    
-    // הצגת סרגל התקדמות
-    renderProgressStories(1); // ברירת מחדל: התקבל
-    
+    renderProgressStories(1); 
     loadChat(customerId);
 } else {
     // === אורח ===
@@ -111,13 +121,12 @@ if (staffId) {
     if (savedCid && !window.location.search.includes('cid')) {
          window.location.href = `?cid=${savedCid}`;
     } else {
-        chatContainer.innerHTML = '<div style="text-align:center; padding:20px;">נא להיכנס דרך הקישור שהתקבל.</div>';
+        if(chatContainer) chatContainer.innerHTML = '<div style="text-align:center; padding:20px;">נא להיכנס דרך הקישור שהתקבל.</div>';
     }
 }
 
-// --- 5. סטורי / סרגל התקדמות ---
+// --- 5. סטורי ---
 function renderProgressStories(statusIndex) {
-    // סטטוסים: 1=התקבל, 2=בליקוט/בטיפול, 3=בדרך, 4=סופקה
     const steps = [
         { icon: 'receipt_long', text: 'התקבלה' },
         { icon: 'inventory_2', text: 'בטיפול' },
@@ -125,6 +134,7 @@ function renderProgressStories(statusIndex) {
         { icon: 'check_circle', text: 'סופקה' }
     ];
 
+    if(!storiesContainer) return;
     storiesContainer.innerHTML = '';
     
     steps.forEach((step, index) => {
@@ -163,15 +173,12 @@ function loadChat(cid) {
 
 function renderMessage(msg) {
     if(!chatContainer) return;
-    
-    // סינון: אם אני לקוח, וההודעה היא פנימית (type='internal') -> אל תציג!
     if (!staffId && msg.type === 'internal') return;
 
     const div = document.createElement('div');
     const me = isMe(msg.sender);
     const isInternal = msg.type === 'internal';
 
-    // קביעת המחלקה (CSS Class)
     let className = 'message';
     if (isInternal) className += ' internal';
     else if (me) className += ' sent';
@@ -180,16 +187,11 @@ function renderMessage(msg) {
     div.className = className;
     
     let time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '..';
-    
-    // תוכן ההודעה
     let content = msg.text;
     
-    // אם זו הודעה פנימית - הוסף אייקון מנעול
     if (isInternal) {
         content = `<div style="display:flex; align-items:center; gap:5px; font-weight:bold; color:#f57f17;"><i class="material-icons" style="font-size:1rem">lock</i> הערה פנימית לצוות</div>` + content;
-    }
-    // אם זו הזמנה - הדגש
-    else if (msg.isOrder) {
+    } else if (msg.isOrder) {
         content = `<div style="font-weight:bold; border-bottom:1px solid #ddd; margin-bottom:5px; padding-bottom:5px;">${msg.title || 'הזמנה חדשה'}</div>` + msg.text.replace(/\n/g, '<br>');
     }
 
@@ -210,26 +212,26 @@ function playIncomingSound() {
 }
 
 // --- 7. שליחת הודעות ---
-// החלפת מצב פנימי (מנעול)
 if (internalMsgBtn) {
     internalMsgBtn.addEventListener('click', () => {
         isInternalMode = !isInternalMode;
-        internalMsgBtn.style.color = isInternalMode ? 'red' : '#fbc02d'; // אדום כשפעיל
+        internalMsgBtn.style.color = isInternalMode ? 'red' : '#fbc02d';
         document.getElementById('msg-input').placeholder = isInternalMode ? "הקלד הערה חסויה לצוות..." : "הקלד הודעה...";
     });
 }
 
-document.querySelector('.send-btn').addEventListener('click', sendMessage);
-document.getElementById('msg-input').addEventListener('keypress', (e) => { if(e.key==='Enter') sendMessage() });
+const sendBtn = document.querySelector('.send-btn');
+if(sendBtn) sendBtn.addEventListener('click', sendMessage);
+const msgInput = document.getElementById('msg-input');
+if(msgInput) msgInput.addEventListener('keypress', (e) => { if(e.key==='Enter') sendMessage() });
 
 function sendMessage() {
     const input = document.getElementById('msg-input');
+    if(!input) return;
     const text = input.value.trim();
     if (!text || !customerId) return;
 
     const senderType = staffId ? 'staff' : 'customer';
-    
-    // האם זו הודעה פנימית?
     const msgType = (staffId && isInternalMode) ? 'internal' : 'regular';
 
     db.collection('orders').doc(customerId).collection('messages').add({
@@ -242,7 +244,6 @@ function sendMessage() {
     });
     
     input.value = '';
-    // איפוס מצב פנימי אחרי שליחה
     if (isInternalMode) {
         isInternalMode = false;
         internalMsgBtn.style.color = '#fbc02d';
@@ -250,39 +251,43 @@ function sendMessage() {
     }
 }
 
-// --- 8. טופס הזמנה וקאש (Cache) ---
+// --- 8. טופס הזמנה וקאש ---
 const modal = document.getElementById('order-modal');
-document.getElementById('add-order-btn').addEventListener('click', () => modal.style.display = 'flex');
-document.getElementById('close-modal-btn').addEventListener('click', () => modal.style.display = 'none');
-modal.addEventListener('click', (e) => { if(e.target === modal) modal.style.display = 'none'; });
+const addOrderBtn = document.getElementById('add-order-btn');
+const closeModalBtn = document.getElementById('close-modal-btn');
+const submitOrderBtn = document.getElementById('submit-order-btn');
 
-document.getElementById('submit-order-btn').addEventListener('click', () => {
-    const contact = document.getElementById('order-contact').value;
-    const address = document.getElementById('order-address').value;
-    const item = document.getElementById('order-item').value;
-    const time = document.getElementById('order-time').value;
+if(addOrderBtn) addOrderBtn.addEventListener('click', () => modal.style.display = 'flex');
+if(closeModalBtn) closeModalBtn.addEventListener('click', () => modal.style.display = 'none');
+if(modal) modal.addEventListener('click', (e) => { if(e.target === modal) modal.style.display = 'none'; });
 
-    if(!item) { alert("יש למלא פירוט הזמנה"); return; }
+if(submitOrderBtn) {
+    submitOrderBtn.addEventListener('click', () => {
+        const contact = document.getElementById('order-contact').value;
+        const address = document.getElementById('order-address').value;
+        const item = document.getElementById('order-item').value;
+        const time = document.getElementById('order-time').value;
 
-    // שמירה במטמון לשימוש הבא
-    saveFormCache(contact, address);
+        if(!item) { alert("יש למלא פירוט הזמנה"); return; }
 
-    const orderText = `👤 איש קשר: ${contact}\n📍 כתובת: ${address}\n📦 פריטים:\n${item}\n⏰ זמן: ${time}`;
-    
-    db.collection('orders').doc(customerId).collection('messages').add({
-        text: orderText,
-        title: "📦 הזמנה חדשה התקבלה",
-        sender: staffId ? 'staff' : 'customer',
-        type: 'regular',
-        isOrder: true,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        saveFormCache(contact, address);
+
+        const orderText = `👤 איש קשר: ${contact}\n📍 כתובת: ${address}\n📦 פריטים:\n${item}\n⏰ זמן: ${time}`;
+        
+        db.collection('orders').doc(customerId).collection('messages').add({
+            text: orderText,
+            title: "📦 הזמנה חדשה התקבלה",
+            sender: staffId ? 'staff' : 'customer',
+            type: 'regular',
+            isOrder: true,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        document.getElementById('order-item').value = '';
+        modal.style.display = 'none';
     });
-    
-    document.getElementById('order-item').value = ''; // ניקוי רק של הפריטים
-    modal.style.display = 'none';
-});
+}
 
-// ניהול מטמון (localStorage)
 function saveFormCache(contact, address) {
     if(contact) localStorage.setItem('last_contact', contact);
     if(address) localStorage.setItem('last_address', address);
@@ -292,17 +297,19 @@ function loadFormCache() {
     const lastContact = localStorage.getItem('last_contact');
     const lastAddress = localStorage.getItem('last_address');
     
-    if(lastContact) document.getElementById('order-contact').value = lastContact;
-    if(lastAddress) document.getElementById('order-address').value = lastAddress;
+    const contactInput = document.getElementById('order-contact');
+    const addressInput = document.getElementById('order-address');
+
+    if(lastContact && contactInput) contactInput.value = lastContact;
+    if(lastAddress && addressInput) addressInput.value = lastAddress;
 }
 
-// --- 9. דשבורד מנהל (טעינת לקוחות) ---
+// --- 9. דשבורד מנהל ---
 function loadAllClients() {
     const listDiv = document.getElementById('clients-list');
+    if(!listDiv) return;
     listDiv.innerHTML = '<div style="text-align:center; padding:20px;">טוען נתונים...</div>';
 
-    // כאן אנחנו מניחים שיש לך קולקציית users, אחרת נשלוף רק הזמנות פעילות
-    // לצורך הדוגמה, נציג פשוט
     db.collection('users').where('type', '==', 'client').get().then(snapshot => {
         listDiv.innerHTML = '';
         if (snapshot.empty) {
@@ -321,14 +328,19 @@ function loadAllClients() {
                 customerId = doc.id;
                 document.getElementById('staff-dashboard').style.display = 'none';
                 document.getElementById('chat-container').style.display = 'block';
-                document.querySelector('.input-area').style.display = 'flex';
+                if(document.querySelector('.input-area')) document.querySelector('.input-area').style.display = 'flex';
                 document.getElementById('back-btn').style.display = 'block';
-                subTitle.innerText = "משוחח עם: " + (client.name || doc.id);
+                if(subTitle) subTitle.innerText = "משוחח עם: " + (client.name || doc.id);
+                
+                // איפוס סטורי למצב מוסתר כשאני בשיחה כמנהל
+                if(storiesContainer) storiesContainer.style.display = 'none';
+                
                 loadChat(doc.id);
             };
             listDiv.appendChild(div);
         });
     });
     
-    document.getElementById('back-btn').onclick = () => window.location.reload();
+    const backBtn = document.getElementById('back-btn');
+    if(backBtn) backBtn.onclick = () => window.location.reload();
 }
