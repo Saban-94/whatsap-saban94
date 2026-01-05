@@ -35,27 +35,23 @@ const urlParams = new URLSearchParams(window.location.search);
 let customerId = urlParams.get('cid'); 
 let staffId = urlParams.get('sid');
 
-// --- 3. OneSignal (התראות - התיקון הגדול!) ---
+// --- 3. OneSignal (התראות - קוד מתוקן) ---
 window.OneSignalDeferred = window.OneSignalDeferred || [];
 OneSignalDeferred.push(async function(OneSignal) {
     await OneSignal.init({
         appId: "546472ac-f9ab-4c6c-beb2-e41c72af9849",
         safari_web_id: "web.onesignal.auto.195e7e66-9dea-4e11-b56c-b4a654da5ab7",
         
-        // הגדרות עיצוב הפעמון
+        // הגדרות הפעמון (ללא הפונקציה שגרמה לקריסה)
         notifyButton: { 
             enable: true,
-            position: 'bottom-left', // נשאר בצד שמאל
-            
-            // --- כאן הקסם: הרמה לגובה ---
+            position: 'bottom-left',
             offset: {
-                bottom: '90px', // מרים אותו מעל כפתור הפלוס ומעל המקלדת!
+                bottom: '90px',
                 left: '15px'
             },
-            
-            // --- כאן הקסם: שקיפות ---
             colors: { 
-                'circle.background': 'rgba(0, 128, 105, 0.4)', // ירוק חצי שקוף (40%)
+                'circle.background': 'rgba(0, 128, 105, 0.4)',
                 'circle.foreground': 'white',
                 'badge.background': '#fbc02d',
                 'badge.foreground': 'black',
@@ -66,18 +62,11 @@ OneSignalDeferred.push(async function(OneSignal) {
                 'dialog.button.background': '#008069',
                 'dialog.button.foreground': 'white'
             },
-            // גודל - בינוני כדי לא להשתלט
-            size: 'medium', 
-            // הסתרת הטקסט הצף (Tooltip) כדי למנוע הפרעה נוספת
-            displayPredicate: function() {
-                return OneSignal.isPushNotificationsEnabled()
-                    .then(function(isPushEnabled) {
-                        return !isPushEnabled;
-                    });
-            }
+            size: 'medium'
         },
     });
     
+    // תיוג משתמשים (בגרסה החדשה זה User.addTag)
     if (customerId) OneSignal.User.addTag("role", "client");
     if (staffId) OneSignal.User.addTag("role", "staff");
 });
@@ -332,7 +321,6 @@ function loadAllClients() {
                 document.getElementById('back-btn').style.display = 'block';
                 if(subTitle) subTitle.innerText = "משוחח עם: " + (client.name || doc.id);
                 
-                // איפוס סטורי למצב מוסתר כשאני בשיחה כמנהל
                 if(storiesContainer) storiesContainer.style.display = 'none';
                 
                 loadChat(doc.id);
