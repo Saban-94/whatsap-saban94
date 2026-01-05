@@ -1,20 +1,28 @@
 {
-  "name": "ח.סבן - הזמנות",
+  "name": "ח.סבן - הזמנות חומרי בנין",
   "short_name": "ח.סבן",
-  "start_url": "/index.html",
+  "description": "מערכת הזמנות וניהול לוגיסטי - ח.סבן",
+  "start_url": "./index.html",
+  "id": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#e5ddd5",
   "theme_color": "#008069",
   "icons": [
     {
-      "src": "https://via.placeholder.com/192", 
+      "src": "icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "https://via.placeholder.com/512",
+      "src": "icon-192.png", 
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
-  ]
+  ],
+  "categories": ["business", "productivity", "utilities"],
+  "dir": "rtl",
+  "lang": "he"
 }
