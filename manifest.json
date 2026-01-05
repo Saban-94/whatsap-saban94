@@ -1,21 +1,20 @@
 {
-  "name": "דוח בוקר - זכוכית מתקדמת",
-  "short_name": "דוח בוקר",
-  "start_url": "index.html",
+  "name": "ח.סבן - הזמנות",
+  "short_name": "ח.סבן",
+  "start_url": "/index.html",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#4587de",
-  "description": "אפליקציה לניהול דוחות בוקר וסידור עבודה.",
+  "background_color": "#e5ddd5",
+  "theme_color": "#008069",
   "icons": [
     {
-      "src": "https://i.postimg.cc/Yq2N1crt/image.png",
+      "src": "https://via.placeholder.com/192", 
       "sizes": "192x192",
-      "type": "image/jpeg"
+      "type": "image/png"
     },
     {
-      "src": "https://i.postimg.cc/Yq2N1crt/image.png",
+      "src": "https://via.placeholder.com/512",
       "sizes": "512x512",
-      "type": "image/jpeg"
+      "type": "image/png"
     }
   ]
 }
