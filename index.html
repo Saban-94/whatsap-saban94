@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 </head>
 <body>
@@ -38,6 +37,15 @@
         <div id="clients-list" class="chat-feed" style="background:none; padding:0;"></div>
     </div>
 
+    <div id="admin-controls" style="display:none; background:#fff3e0; padding:10px; border-bottom:1px solid #ccc; overflow-x:auto;">
+        <div style="display:flex; gap:10px; min-width:max-content;">
+            <button onclick="updateStatus(1)" class="status-btn">📥 התקבל</button>
+            <button onclick="updateStatus(2)" class="status-btn">📦 בטיפול</button>
+            <button onclick="updateStatus(3)" class="status-btn">🚚 בדרך</button>
+            <button onclick="updateStatus(4)" class="status-btn">✅ סופקה</button>
+        </div>
+    </div>
+
     <main id="chat-container" class="chat-feed">
         <div class="date-divider">היום</div>
     </main>
@@ -64,17 +72,14 @@
                     <label>שם איש קשר</label>
                     <input type="text" id="order-contact" placeholder="שם המזמין בשטח">
                 </div>
-                
                 <div class="form-group">
                     <label>כתובת / פרויקט</label>
                     <input type="text" id="order-address" placeholder="כתובת לאספקה">
                 </div>
-
                 <div class="form-group">
                     <label>פירוט הזמנה (מוצרים)</label>
                     <textarea id="order-item" rows="3" placeholder="למשל: 5 משטחי בלוקים 20, מלט..."></textarea>
                 </div>
-                
                 <div class="form-group">
                     <label>דחיפות</label>
                     <select id="order-time">
@@ -83,7 +88,6 @@
                         <option value="שוטף">אספקה רגילה 🚛</option>
                     </select>
                 </div>
-                
                 <button id="submit-order-btn" class="full-width-btn ripple">שלח הזמנה</button>
             </div>
         </div>
