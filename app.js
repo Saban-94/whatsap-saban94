@@ -33,12 +33,34 @@ let customerId = urlParams.get('cid');
 let staffId = urlParams.get('sid');
 
 // --- 3. OneSignal (התראות) ---
+// --- 4. OneSignal (התראות - התיקון) ---
 window.OneSignalDeferred = window.OneSignalDeferred || [];
 OneSignalDeferred.push(async function(OneSignal) {
     await OneSignal.init({
         appId: "546472ac-f9ab-4c6c-beb2-e41c72af9849",
         safari_web_id: "web.onesignal.auto.195e7e66-9dea-4e11-b56c-b4a654da5ab7",
-        notifyButton: { enable: true },
+        
+        // כאן התיקון: הזזת הפעמון שמאלה
+        notifyButton: { 
+            enable: true,
+            position: 'bottom-left', // מזיז את הפעמון לצד שמאל
+            offset: {
+                bottom: '20px',
+                left: '20px'
+            },
+            colors: { // בונוס: התאמת צבעים לאפליקציה שלך
+                'circle.background': '#008069', // ירוק כמו הוואטסאפ
+                'circle.foreground': 'white',
+                'badge.background': '#fbc02d',
+                'badge.foreground': 'black',
+                'badge.bordercolor': 'white',
+                'pulse.color': '#008069',
+                'dialog.button.background.hovering': '#008069',
+                'dialog.button.background.active': '#008069',
+                'dialog.button.background': '#008069',
+                'dialog.button.foreground': 'white'
+            }
+        },
     });
     
     if (customerId) OneSignal.User.addTag("role", "client");
