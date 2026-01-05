@@ -7,16 +7,17 @@
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 </head>
 <body>
 
     <header class="app-header">
         <div class="logo-area">
             <img src="https://cdn-icons-png.flaticon.com/512/1041/1041883.png" alt="logo" class="logo">
-            <span>ח.סבן חומרי בנין</span>
+            <span id="app-title">ח.סבן חומרי בנין</span>
         </div>
         <div class="actions">
-            <i class="material-icons">notifications</i>
+            <i class="material-icons" id="back-btn" style="display:none; cursor:pointer;">arrow_forward</i>
         </div>
     </header>
 
@@ -27,16 +28,22 @@
         </div>
     </div>
 
+    <div id="staff-dashboard" style="display:none; padding:10px;">
+        <h3>לקוחות פעילים</h3>
+        <div id="clients-list" class="chat-feed" style="background:none; padding:0;">
+            </div>
+    </div>
+
     <main id="chat-container" class="chat-feed">
         <div class="date-divider">היום</div>
     </main>
 
-    <footer class="input-area">
+    <footer class="input-area" id="input-area">
         <button id="add-order-btn" class="fab-btn">
             <i class="material-icons">add</i>
         </button>
         <div class="input-wrapper">
-            <input type="text" placeholder="הקלד הודעה או בקשה..." id="msg-input">
+            <input type="text" placeholder="הקלד הודעה..." id="msg-input">
             <button class="send-btn"><i class="material-icons">send</i></button>
         </div>
     </footer>
