@@ -1,9 +1,4 @@
-// ... (השאר את כל הקוד הקודם שלך אותו דבר, רק תוסיף את זה בסוף) ...
-
-// --- 9. לוגיקה לכפתור הפלוס (Modal Logic) ---
-
-const modal = document.getElementById('order-modal');
-const addBtn = document.getElementById('add-order-btn');// --- 1. הגדרות Firebase ---
+// --- 1. הגדרות Firebase ---
 const firebaseConfig = {
   apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60",
   authDomain: "app-saban94-57361.firebaseapp.com",
@@ -21,7 +16,7 @@ const db = firebase.firestore();
 // --- 2. הגדרת סאונד ---
 const notificationSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
 
-// משתנה עזר לטעינה ראשונית (למניעת צלצולים בהיסטוריה)
+// משתנה עזר לטעינה ראשונית
 let isInitialLoad = true;
 
 // כפתור השתקה
@@ -36,7 +31,7 @@ if(muteBtn) {
     });
 }
 
-// --- 3. זיהוי משתמש (גלובלי - חובה שיהיה כאן!) ---
+// --- 3. זיהוי משתמש ---
 const urlParams = new URLSearchParams(window.location.search);
 let customerId = urlParams.get('cid'); 
 let staffId = urlParams.get('sid');
@@ -121,7 +116,7 @@ function enterStaffChat(cid, name) {
     
     if(appTitle) appTitle.innerText = name;
     
-    customerId = cid; // עדכון הלקוח הנוכחי לשיחה
+    customerId = cid; 
     isInitialLoad = true;
     loadChat(cid);
     
@@ -174,7 +169,6 @@ function renderMessage(msg) {
     let time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '..';
     let senderName = (!me && msg.sender === 'staff') ? `<div style="font-size:0.7em; color:var(--primary-color); font-weight:bold;">נציג שירות</div>` : "";
     
-    // אם זו הזמנה מיוחדת (מהכפתור פלוס) נדגיש אותה
     let content = msg.text;
     if(msg.isOrder) {
         content = `<div style="font-weight:bold; white-space: pre-wrap;">${msg.text}</div>`;
@@ -209,6 +203,7 @@ function sendMessage() {
 }
 
 // --- 9. לוגיקה לכפתור הפלוס (Modal Logic) ---
+// וודא שמשתנים אלו מוגדרים כאן רק פעם אחת!
 const modal = document.getElementById('order-modal');
 const addBtn = document.getElementById('add-order-btn');
 const closeBtn = document.getElementById('close-modal-btn');
@@ -245,7 +240,6 @@ if(submitOrderBtn) {
 
         const orderText = `📦 *הזמנה חדשה*\n▫️ פריט: ${item}\n▫️ זמן: ${time}\n▫️ הערות: ${notes}`;
         
-        // כאן הייתה השגיאה שלך - עכשיו זה יעבוד כי הפונקציה קיימת למטה ו-customerId מוגדר למעלה
         sendCustomMessage(orderText);
 
         document.getElementById('order-item').value = '';
@@ -254,9 +248,7 @@ if(submitOrderBtn) {
     });
 }
 
-// פונקציית העזר החסרה שגרמה לשגיאה
 function sendCustomMessage(text) {
-    // בדיקה ש-customerId קיים
     if (!text || !customerId) {
         console.error("Missing customerId or text!"); 
         return;
@@ -273,79 +265,6 @@ function sendCustomMessage(text) {
         isOrder: true
     });
     
-    // השמעת סאונד קצרה לשחרור חסימות דפדפן
-    if(notificationSound) {
-        notificationSound.play().then(() => {
-            notificationSound.pause(); 
-            notificationSound.currentTime = 0;
-        }).catch(()=>{});
-    }
-}
-const closeBtn = document.getElementById('close-modal-btn');
-const submitOrderBtn = document.getElementById('submit-order-btn');
-
-// פתיחת המודל
-if(addBtn) {
-    addBtn.addEventListener('click', () => {
-        if(modal) modal.style.display = 'flex';
-    });
-}
-
-// סגירת המודל
-if(closeBtn) {
-    closeBtn.addEventListener('click', () => {
-        if(modal) modal.style.display = 'none';
-    });
-}
-
-// סגירה בלחיצה בחוץ
-if(modal) {
-    modal.addEventListener('click', (e) => {
-        if(e.target === modal) modal.style.display = 'none';
-    });
-}
-
-// שליחת ההזמנה
-if(submitOrderBtn) {
-    submitOrderBtn.addEventListener('click', () => {
-        const item = document.getElementById('order-item').value;
-        const notes = document.getElementById('order-notes').value;
-        const time = document.getElementById('order-time').value;
-
-        if(!item) {
-            alert("נא למלא מה להזמין");
-            return;
-        }
-
-        // עיצוב ההודעה שתשלח לצ'אט
-        const orderText = `📦 *הזמנה חדשה*\n▫️ פריט: ${item}\n▫️ זמן: ${time}\n▫️ הערות: ${notes}`;
-        
-        // שימוש בפונקציה הקיימת לשליחת הודעה
-        sendCustomMessage(orderText);
-
-        // איפוס וסגירה
-        document.getElementById('order-item').value = '';
-        document.getElementById('order-notes').value = '';
-        if(modal) modal.style.display = 'none';
-    });
-}
-
-// פונקציית עזר לשליחת הודעה מוכנה (לא מהאינפוט הרגיל)
-function sendCustomMessage(text) {
-    if (!text || !customerId) return;
-    
-    const senderType = staffId ? 'staff' : 'customer';
-
-    db.collection('orders').doc(customerId).collection('messages').add({
-        text: text,
-        sender: senderType,
-        staffId: staffId || null,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-        read: false,
-        isOrder: true // סימון שזו הזמנה (אפשר להשתמש בזה לעיצוב שונה בעתיד)
-    });
-    
-    // סאונד
     if(notificationSound) {
         notificationSound.play().then(() => {
             notificationSound.pause(); 
