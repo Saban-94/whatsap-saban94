@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ח.סבן - ממשק ניהול</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        /* תוספות עיצוב ספציפיות לאדמין */
+        body { background-color: #f0f2f5; align-items: center; justify-content: center; height: auto; min-height: 100vh; }
+        .admin-card {
+            background: white; width: 90%; max-width: 500px; padding: 30px;
+            border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin: 20px 0;
+        }
+        h2 { color: var(--primary-color); text-align: center; margin-bottom: 25px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+        input, select {
+            width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;
+            font-size: 1rem; box-sizing: border-box;
+        }
+        .btn-submit {
+            background: var(--primary-color); color: white; border: none;
+            width: 100%; padding: 12px; border-radius: 5px; font-size: 1.1rem;
+            cursor: pointer; margin-top: 10px; transition: background 0.3s;
+        }
+        .btn-submit:hover { background: #00695c; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #eee; }
+        .tab { padding: 10px 20px; cursor: pointer; color: #666; font-weight: bold; }
+        .tab.active { border-bottom: 3px solid var(--primary-color); color: var(--primary-color); }
+        .hidden { display: none; }
+        #status-msg { text-align: center; margin-top: 15px; font-weight: bold; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+
+    <div class="admin-card">
+        <div class="logo-area" style="justify-content: center; margin-bottom: 20px;">
+            <img src="https://cdn-icons-png.flaticon.com/512/1041/1041883.png" alt="logo" class="logo" style="width: 50px; height: 50px;">
+            <span style="font-size: 1.5rem; color: #333;">ח.סבן ניהול</span>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('client')">לקוח / פרויקט</div>
+            <div class="tab" onclick="switchTab('staff')">איש צוות</div>
+        </div>
+
+        <form id="client-form">
+            <div class="form-group">
+                <label>מספר לקוח / מזהה פרויקט (חובה)</label>
+                <input type="text" id="clientId" placeholder="למשל: 10050" required>
+                <small style="color:#666">זה יהיה ה-CID בקישור</small>
+            </div>
+            
+            <div class="form-group">
+                <label>שם הלקוח / הפרויקט</label>
+                <input type="text" id="clientName" placeholder="למשל: מגדלי הים התיכון" required>
+            </div>
+
+            <div class="form-group">
+                <label>כתובת הפרויקט</label>
+                <input type="text" id="clientAddress" placeholder="רחוב הרצל 1, תל אביב">
+            </div>
+
+            <div class="form-group" style="display: flex; gap: 10px;">
+                <div style="flex:1">
+                    <label>איש קשר</label>
+                    <input type="text" id="contactName" placeholder="שם מנהל עבודה">
+                </div>
+                <div style="flex:1">
+                    <label>נייד</label>
+                    <input type="tel" id="contactPhone" placeholder="050-0000000">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>שיוך לאיש צוות (ID)</label>
+                <input type="text" id="assignedStaffId" placeholder="למשל: driver_moshe">
+            </div>
+
+            <div class="form-group">
+                <label>אימייל (לגישה עתידית)</label>
+                <input type="email" id="clientEmail" placeholder="client@example.com">
+            </div>
+
+            <div class="form-group">
+                <label>סיסמה</label>
+                <input type="text" id="clientPassword" value="סידור" required>
+            </div>
+
+            <button type="submit" class="btn-submit">צור לקוח</button>
+        </form>
+
+        <form id="staff-form" class="hidden">
+            <div class="form-group">
+                <label>מזהה עובד (באנגלית)</label>
+                <input type="text" id="staffId" placeholder="driver_moshe" required>
+            </div>
+
+            <div class="form-group">
+                <label>שם מלא</label>
+                <input type="text" id="staffName" placeholder="משה כהן" required>
+            </div>
+
+            <div class="form-group">
+                <label>תפקיד</label>
+                <select id="staffRole">
+                    <option value="driver">נהג</option>
+                    <option value="warehouse">מחסנאי</option>
+                    <option value="admin">מנהל / משרד</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>אימייל</label>
+                <input type="email" id="staffEmail" placeholder="moshe@saban.co.il">
+            </div>
+
+            <div class="form-group">
+                <label>סיסמה</label>
+                <input type="text" id="staffPassword" value="סידור" required>
+            </div>
+
+            <button type="submit" class="btn-submit" style="background-color: #455a64;">צור איש צוות</button>
+        </form>
+
+        <div id="status-msg"></div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-analytics-compat.js"></script>
+    
+    <script>
+        // 1. הגדרות Firebase (אותו דבר כמו ב-app.js)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60",
+            authDomain: "app-saban94-57361.firebaseapp.com",
+            projectId: "app-saban94-57361",
+            storageBucket: "app-saban94-57361.firebasestorage.app",
+            messagingSenderId: "275366913167",
+            appId: "1:275366913167:web:f0c6f808e12f2aeb58fcfa",
+            measurementId: "G-E297QYKZKQ"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // 2. פונקציות טאבים
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('form').forEach(f => f.classList.add('hidden'));
+            
+            if (tab === 'client') {
+                document.querySelectorAll('.tab')[0].classList.add('active');
+                document.getElementById('client-form').classList.remove('hidden');
+            } else {
+                document.querySelectorAll('.tab')[1].classList.add('active');
+                document.getElementById('staff-form').classList.remove('hidden');
+            }
+            document.getElementById('status-msg').innerText = '';
+        }
+
+        // 3. יצירת לקוח
+        document.getElementById('client-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const cid = document.getElementById('clientId').value;
+            const data = {
+                type: 'client',
+                name: document.getElementById('clientName').value,
+                address: document.getElementById('clientAddress').value,
+                contact: document.getElementById('contactName').value,
+                phone: document.getElementById('contactPhone').value,
+                assignedStaff: document.getElementById('assignedStaffId').value,
+                email: document.getElementById('clientEmail').value,
+                password: document.getElementById('clientPassword').value, // סיסמה בסיסית לשמירה בדאטה
+                created: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            saveToFirebase('users', cid, data);
+        });
+
+        // 4. יצירת איש צוות
+        document.getElementById('staff-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const sid = document.getElementById('staffId').value;
+            const data = {
+                type: 'staff',
+                name: document.getElementById('staffName').value,
+                role: document.getElementById('staffRole').value,
+                email: document.getElementById('staffEmail').value,
+                password: document.getElementById('staffPassword').value,
+                created: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            saveToFirebase('users', sid, data);
+        });
+
+        // פונקציית שמירה כללית
+        function saveToFirebase(collection, docId, data) {
+            const statusDiv = document.getElementById('status-msg');
+            statusDiv.innerText = 'שומר נתונים...';
+            statusDiv.className = '';
+
+            db.collection(collection).doc(docId).set(data)
+            .then(() => {
+                statusDiv.innerText = '✅ נוצר בהצלחה! המזהה: ' + docId;
+                statusDiv.className = 'success';
+                // אופציונלי: יצירת רשומת צ'אט ראשונית
+                if (data.type === 'client') {
+                    createInitialChat(docId);
+                }
+            })
+            .catch((error) => {
+                console.error("Error:", error);
+                statusDiv.innerText = '❌ שגיאה: ' + error.message;
+                statusDiv.className = 'error';
+            });
+        }
+
+        function createInitialChat(cid) {
+            db.collection('orders').doc(cid).collection('messages').add({
+                text: "ברוכים הבאים למערכת ההזמנות של ח.סבן! איך אפשר לעזור?",
+                sender: "system",
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        }
+    </script>
+</body>
+</html>
