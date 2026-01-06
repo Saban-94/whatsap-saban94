@@ -1,4 +1,4 @@
-// --- 1. Firebase Init ---
+// --- 1. הגדרות Firebase ---
 const firebaseConfig = {
   apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60",
   authDomain: "app-saban94-57361.firebaseapp.com",
@@ -8,64 +8,112 @@ const firebaseConfig = {
   appId: "1:275366913167:web:f0c6f808e12f2aeb58fcfa",
   measurementId: "G-E297QYKZKQ"
 };
+
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// Globals
+// משתנים גלובליים
 const urlParams = new URLSearchParams(window.location.search);
 let customerId = urlParams.get('cid'); 
 let staffId = urlParams.get('sid');
 let allUsersData = [];
 let currentChatId = null;
-let messageToForward = null; // ההודעה שאנחנו רוצים להעביר
+let messageToForward = null;
 let isMenuOpen = false;
 let isInternalMode = false;
+let isMuted = false;
+let isInitialLoad = true;
+const notificationSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
 
-// --- 2. Start ---
+// שחרור סאונד בלחיצה ראשונה
+document.addEventListener('click', () => { if(isInitialLoad) isInitialLoad = false; }, { once: true });
+
+// --- 2. OneSignal ---
+window.OneSignalDeferred = window.OneSignalDeferred || [];
+OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+        appId: "546472ac-f9ab-4c6c-beb2-e41c72af9849",
+        safari_web_id: "web.onesignal.auto.195e7e66-9dea-4e11-b56c-b4a654da5ab7",
+        notifyButton: { enable: true, position: 'bottom-left', offset: { bottom: '90px', left: '15px' }, colors: { 'circle.background': 'rgba(0,128,105,0.4)', 'circle.foreground': 'white' } }
+    });
+    if (customerId) OneSignal.User.addTag("role", "client");
+    if (staffId) OneSignal.User.addTag("role", "staff");
+});
+
+// --- 3. אתחול (DOMContentLoaded) ---
 document.addEventListener("DOMContentLoaded", function() {
     initViews();
 });
 
 function initViews() {
-    // Buttons
+    // כפתורים גלובליים
+    safeOnClick('mute-btn', () => { 
+        isMuted = !isMuted; 
+        document.getElementById('mute-btn').innerText = isMuted ? 'volume_off' : 'volume_up'; 
+    });
     safeOnClick('refresh-btn', () => window.location.reload());
     safeOnClick('back-btn', goBack);
+    
+    // כפתור הפלוס הראשי - כאן הייתה השגיאה, עכשיו הפונקציה מוגדרת למטה
     safeOnClick('main-fab', handleFabClick);
+    
+    // שליחה
     safeOnClick('send-btn', sendMessage);
     const inp = document.getElementById('msg-input');
     if(inp) inp.onkeypress = (e) => { if(e.key==='Enter') sendMessage(); };
     
-    // Header click -> Edit Profile
-    document.getElementById('header-clickable').onclick = () => {
-        if(staffId && currentChatId) openProfileModal(currentChatId);
-    };
+    // כפתור מנעול (הודעה חסויה)
+    safeOnClick('internal-msg-btn', () => {
+        isInternalMode = !isInternalMode;
+        const btn = document.getElementById('internal-msg-btn');
+        btn.style.color = isInternalMode ? 'red' : '#fbc02d';
+        document.getElementById('msg-input').placeholder = isInternalMode ? "הערה חסויה..." : "הקלד הודעה...";
+    });
 
-    // Routing
+    // כותרת לחיצה (פרופיל)
+    const header = document.getElementById('header-clickable'); // שים לב שזה ה-ID בקובץ HTML ששלחתי קודם
+    if(header) {
+        header.onclick = () => {
+            if(staffId && currentChatId) openProfileModal(currentChatId);
+        };
+    } else {
+        // גיבוי למקרה שה-HTML לא מעודכן
+        safeOnClick('header-user-info', () => {
+            if(staffId && currentChatId) openProfileModal(currentChatId);
+        });
+    }
+
+    // ניתוב משתמשים
     if (staffId) {
         setupManager();
     } else if (customerId) {
         setupClient();
     } else {
-        const s = localStorage.getItem('saban_cid');
-        if(s && !window.location.search.includes('cid')) window.location.href=`?cid=${s}`;
+        const saved = localStorage.getItem('saban_cid');
+        if (saved && !window.location.search.includes('cid')) window.location.href=`?cid=${saved}`;
+        else document.body.innerHTML = '<h3 style="text-align:center; margin-top:50px;">נא להיכנס דרך קישור תקין</h3>';
     }
 }
 
+// --- 4. הגדרות תצוגה ---
 function setupManager() {
     safeSetText('app-title', "ניהול ח.סבן");
     safeSetText('header-subtitle', staffId);
     safeDisplay('staff-dashboard', 'flex');
-    loadAllUsers(); // טוען את כל הדאטה
+    safeDisplay('client-view', 'none');
+    safeDisplay('main-chat-feed', 'none');
+    loadAllUsers();
 }
 
 function setupClient() {
     localStorage.setItem('saban_cid', customerId);
     safeSetText('app-title', "ח.סבן חומרי בנין");
     safeSetText('header-subtitle', "הזמנה פעילה");
+    safeDisplay('staff-dashboard', 'none');
     safeDisplay('client-view', 'block');
     safeDisplay('input-area', 'flex');
     
-    // Load Client Data
+    // האזנה לנתוני הלקוח
     db.collection('users').doc(customerId).onSnapshot(doc => {
         if(doc.exists) {
             const d = doc.data();
@@ -74,68 +122,86 @@ function setupClient() {
         }
     });
     
-    // Default Chat
     loadChat(customerId, 'client-chat-container');
-    loadDepartments(); // טוען רשימת קבוצות ללקוח
+    loadDepartments();
 }
 
-// --- 3. Manager Dashboard ---
+// --- 5. לוגיקה למנהל ---
 function loadAllUsers() {
     db.collection('users').orderBy('lastUpdate', 'desc').onSnapshot(snapshot => {
         allUsersData = [];
-        let active=0, history=0;
+        let active = 0, history = 0;
+        
         snapshot.forEach(doc => {
             const d = doc.data(); d.id = doc.id;
             allUsersData.push(d);
-            if(d.type==='client') { if(d.status===4) history++; else active++; }
+            if(d.type === 'client' || !d.type) {
+                if (d.status === 4) history++; else active++;
+            }
         });
+        
         safeSetText('stat-active', active);
         safeSetText('stat-history', history);
         
-        // רינדור ראשוני (צ'אטים פעילים)
-        filterList('active');
+        // טעינה ראשונית (צ'אטים פעילים)
+        switchManagerTab('chats');
     });
 }
 
 window.switchManagerTab = function(tab) {
     document.querySelectorAll('.tab-item').forEach(e => e.classList.remove('active'));
-    document.getElementById('tab-'+tab).classList.add('active');
+    const activeTab = document.getElementById('tab-'+tab);
+    if(activeTab) activeTab.classList.add('active');
     
-    // פילטר של נתונים לפי טאב
+    const gates = document.getElementById('dashboard-gates');
+    if(gates) gates.style.display = (tab === 'chats') ? 'grid' : 'none';
+    
+    // סינון הרשימה
     const list = document.getElementById('clients-list');
     list.innerHTML = '';
     
     let filtered = [];
-    // אם לחצנו על צ'אטים, נראה רק לקוחות. אם קבוצות - רק קבוצות.
     if(tab === 'chats') filtered = allUsersData.filter(u => u.type === 'client' || !u.type);
     if(tab === 'groups') filtered = allUsersData.filter(u => u.type === 'group');
     if(tab === 'staff') filtered = allUsersData.filter(u => u.type === 'staff');
     
-    // הסתרת פילטרים אם לא בצ'אטים
-    document.getElementById('dashboard-gates').style.display = tab==='chats'?'grid':'none';
-
-    renderListItems(filtered, list);
+    // אם אנחנו בצ'אטים, נפעיל גם את פילטר הסטטוס (פעיל כברירת מחדל)
+    if(tab === 'chats') {
+        filterList('active'); 
+    } else {
+        renderListItems(filtered, list);
+    }
 };
 
 window.filterList = function(statusType) {
     const list = document.getElementById('clients-list');
     list.innerHTML = '';
     
-    // רק לקוחות
+    // ויזואליזציה לכרטיסים
+    const cards = document.querySelectorAll('.gate-card');
+    cards.forEach(c => c.classList.remove('active-filter'));
+    if(statusType === 'active' && cards[0]) cards[0].classList.add('active-filter');
+    if(statusType === 'history' && cards[1]) cards[1].classList.add('active-filter');
+
     let filtered = allUsersData.filter(u => u.type === 'client' || !u.type);
-    if(statusType==='active') filtered = filtered.filter(u => !u.status || u.status < 4);
-    if(statusType==='history') filtered = filtered.filter(u => u.status === 4);
+    if(statusType === 'active') filtered = filtered.filter(u => !u.status || u.status < 4);
+    if(statusType === 'history') filtered = filtered.filter(u => u.status === 4);
     
     renderListItems(filtered, list);
 };
 
 function renderListItems(data, container) {
-    if(data.length === 0) { container.innerHTML = '<div style="text-align:center; padding:20px; color:#999;">אין נתונים</div>'; return; }
+    if(data.length === 0) { 
+        container.innerHTML = '<div style="text-align:center; padding:20px; color:#999;">אין נתונים</div>'; 
+        return; 
+    }
     
     data.forEach(u => {
         const div = document.createElement('div');
         div.className = 'chat-list-item';
-        let sub = u.address || u.type || '';
+        // קביעת תיאור משני (כתובת או סוג)
+        let sub = u.address || (u.type === 'staff' ? 'איש צוות' : 'קבוצה');
+        
         div.innerHTML = `
             <img src="${u.imgUrl || 'https://ui-avatars.com/api/?name='+u.name+'&background=random'}" class="chat-avatar">
             <div class="chat-info">
@@ -154,34 +220,81 @@ function openChat(user) {
     safeDisplay('main-chat-feed', 'flex');
     safeDisplay('input-area', 'flex');
     safeDisplay('back-btn', 'block');
-    safeSetText('app-title', user.name || user.id);
-    safeSetText('header-subtitle', user.type==='group'?'קבוצה':'בשיחה');
+    safeDisplay('admin-controls', 'flex');
     
-    // אם זה מנהל - נראה לו כלי ניהול
-    if(staffId) {
-        document.getElementById('internal-msg-btn').style.display = 'block';
-    }
+    safeSetText('app-title', user.name || user.id);
+    safeSetText('header-subtitle', user.type === 'group' ? 'קבוצה' : 'בשיחה');
+    
+    // מציג את כפתור ההודעה החסויה למנהל
+    if(staffId) safeDisplay('internal-msg-btn', 'block');
     
     loadChat(user.id, 'main-chat-feed');
 }
 
-// --- 4. Client Tabs ---
+// --- 6. כפתור פלוס ותפריטים (FAB) ---
+// הפונקציה שחסרה לך קודם!
+function handleFabClick() {
+    // אם מנהל נמצא בדשבורד (לא בשיחה) -> פתח תפריט
+    if (staffId && !currentChatId) {
+        toggleFabMenu();
+    } else {
+        // לקוח או מנהל בתוך שיחה -> פתח הזמנה
+        safeDisplay('order-modal', 'flex');
+    }
+}
+
+function toggleFabMenu() {
+    isMenuOpen = !isMenuOpen;
+    const main = document.getElementById('main-fab');
+    if(main) main.classList.toggle('rotate');
+    
+    const items = document.querySelectorAll('.mini-fab');
+    items.forEach((item, i) => {
+        if(isMenuOpen) setTimeout(() => item.classList.add('show'), i * 50);
+        else item.classList.remove('show');
+    });
+}
+
+// ניהול משתמשים (מהתפריט)
+window.openUserModal = function(role) {
+    if(isMenuOpen) toggleFabMenu();
+    safeDisplay('user-modal', 'flex');
+    document.getElementById('new-user-role').value = role;
+    const titles = { 'client': 'לקוח חדש', 'staff': 'איש צוות חדש', 'group': 'קבוצה חדשה' };
+    safeSetText('user-modal-title', titles[role] || 'חדש');
+};
+
+safeOnClick('save-user-btn', () => {
+    const id = document.getElementById('new-user-id').value;
+    const name = document.getElementById('new-user-name').value;
+    const role = document.getElementById('new-user-role').value;
+    
+    if(!id || !name) { alert('חסר מידע'); return; }
+    
+    db.collection('users').doc(id).set({
+        name: name, type: role, lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
+    }, {merge: true}).then(() => {
+        closeModal('user-modal');
+        alert('נוצר בהצלחה');
+    });
+});
+
+// --- 7. לקוח (טאבים) ---
 window.switchClientTab = function(tab) {
     document.querySelectorAll('.c-tab').forEach(e => e.classList.remove('active'));
-    event.currentTarget.classList.add('active'); // מסמן את הנוכחי
+    event.currentTarget.classList.add('active');
     
     safeDisplay('tab-my-order', tab==='my-order'?'block':'none');
     safeDisplay('tab-departments', tab==='departments'?'block':'none');
-    
-    // החלפת הפוטר (האם להציג הקלדה או לא)
     safeDisplay('input-area', tab==='my-order'?'flex':'none');
 };
 
 function loadDepartments() {
-    // טעינת קבוצות עבור הלקוח
     db.collection('users').where('type', '==', 'group').get().then(snap => {
         const container = document.getElementById('dept-list');
+        if(!container) return;
         container.innerHTML = '';
+        
         snap.forEach(doc => {
             const d = doc.data();
             const div = document.createElement('div');
@@ -191,29 +304,26 @@ function loadDepartments() {
                 <div class="chat-info"><div class="chat-name">${d.name}</div><div class="chat-preview">לחץ לשליחת הודעה</div></div>
             `;
             div.onclick = () => {
-                // הלקוח נכנס לצ'אט של הקבוצה
+                // הלקוח עובר לצ'אט קבוצתי
                 openChat({id: doc.id, name: d.name, type: 'group'});
-                // צריך לוודא שהכותרת והחזרה עובדים
-                safeDisplay('client-view', 'none'); // מסתיר את הטאבים הראשיים
+                safeDisplay('client-view', 'none'); 
             };
             container.appendChild(div);
         });
     });
 }
 
-// --- 5. Chat & Forwarding ---
+// --- 8. צ'אט והודעות ---
 function loadChat(cid, containerId) {
     const container = document.getElementById(containerId);
-    container.innerHTML = '<div class="date-divider">טוען שיחה...</div>';
+    if(!container) return;
+    container.innerHTML = '<div class="date-divider">טוען...</div>';
     
-    // Unsubscribe previous
-    if(window.unsubChat) window.unsubChat();
+    if (window.unsubChat) window.unsubChat();
     
     window.unsubChat = db.collection('orders').doc(cid).collection('messages')
     .orderBy('timestamp', 'asc').onSnapshot(snap => {
-        container.innerHTML = ''; // Reset for cleaner rendering logic (or optimize later)
-        container.innerHTML = '<div class="date-divider">התחלת שיחה</div>';
-        
+        container.innerHTML = '<div class="date-divider">היום</div>';
         snap.forEach(doc => {
             renderMessage(doc.data(), container, doc.id);
         });
@@ -224,17 +334,20 @@ function loadChat(cid, containerId) {
 function renderMessage(msg, container, msgId) {
     const div = document.createElement('div');
     const isMe = (staffId && msg.sender==='staff') || (!staffId && msg.sender==='customer');
+    
+    if (!staffId && msg.type === 'internal') return; // הסתרת פנימי מלקוח
+
     let cls = 'message';
     if(msg.type==='internal') cls += ' internal';
     else cls += isMe ? ' sent' : ' received';
     
     div.className = cls;
     
-    // זיהוי לחיצה ארוכה (עבור מנהל בלבד) להעברה
+    // לחיצה ארוכה להעברה (רק מנהל)
     if(staffId) {
         div.oncontextmenu = (e) => {
             e.preventDefault();
-            messageToForward = msg.text; // שומר את הטקסט
+            messageToForward = msg.text;
             safeDisplay('msg-action-modal', 'flex');
         };
     }
@@ -246,14 +359,31 @@ function renderMessage(msg, container, msgId) {
     container.appendChild(div);
 }
 
-// --- לוגיקת העברה (הפיצ'ר החשוב) ---
+function sendMessage() {
+    const input = document.getElementById('msg-input');
+    const text = input.value.trim();
+    const target = currentChatId || customerId;
+    if (!text || !target) return;
+    
+    const type = (staffId && isInternalMode) ? 'internal' : 'regular';
+    db.collection('orders').doc(target).collection('messages').add({
+        text, sender: staffId?'staff':'customer', type: type, timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    input.value = '';
+    
+    if(isInternalMode) {
+        isInternalMode = false;
+        document.getElementById('internal-msg-btn').style.color = '#fbc02d';
+        input.placeholder = "הקלד הודעה...";
+    }
+}
+
+// לוגיקת העברה (Forward)
 window.forwardMessageToGroup = function() {
     closeModal('msg-action-modal');
     safeDisplay('forward-target-modal', 'flex');
-    
-    // טוען רשימת קבוצות/אנשי צוות להעברה
     const list = document.getElementById('groups-list-for-forward');
-    list.innerHTML = 'טוען יעדים...';
+    list.innerHTML = 'טוען...';
     
     db.collection('users').where('type', 'in', ['group', 'staff']).get().then(snap => {
         list.innerHTML = '';
@@ -261,11 +391,8 @@ window.forwardMessageToGroup = function() {
             const d = doc.data();
             const div = document.createElement('div');
             div.className = 'chat-list-item';
-            div.innerHTML = `<div class="chat-name">${d.name}</div><div class="chat-preview">${d.type==='group'?'קבוצה':'צוות'}</div>`;
-            div.onclick = () => {
-                // ביצוע ההעברה
-                doForward(doc.id, d.name);
-            };
+            div.innerHTML = `<div class="chat-name">${d.name}</div>`;
+            div.onclick = () => doForward(doc.id, d.name);
             list.appendChild(div);
         });
     });
@@ -273,22 +400,16 @@ window.forwardMessageToGroup = function() {
 
 function doForward(targetId, targetName) {
     const refText = `🚩 **העברה מ${document.getElementById('app-title').innerText}:**\n"${messageToForward}"`;
-    
     db.collection('orders').doc(targetId).collection('messages').add({
-        text: refText,
-        sender: 'staff',
-        type: 'regular',
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        text: refText, sender: 'staff', type: 'regular', timestamp: firebase.firestore.FieldValue.serverTimestamp()
     });
-    
-    alert(`הועבר ל${targetName} בהצלחה!`);
+    alert('הועבר ל' + targetName);
     closeModal('forward-target-modal');
 }
 
-// --- 6. עריכת פרופיל ---
+// עריכת פרופיל
 window.openProfileModal = function(uid) {
     safeDisplay('profile-modal', 'flex');
-    // טעינת נתונים
     db.collection('users').doc(uid).get().then(doc => {
         if(doc.exists) {
             const d = doc.data();
@@ -298,7 +419,6 @@ window.openProfileModal = function(uid) {
             document.getElementById('edit-img').value = d.imgUrl || '';
             document.getElementById('edit-img-preview').src = d.imgUrl || `https://ui-avatars.com/api/?name=${d.name}&background=random`;
             
-            // כפתור שמירה
             document.getElementById('save-profile-btn').onclick = () => {
                 db.collection('users').doc(uid).update({
                     name: document.getElementById('edit-name').value,
@@ -306,9 +426,8 @@ window.openProfileModal = function(uid) {
                     email: document.getElementById('edit-email').value,
                     imgUrl: document.getElementById('edit-img').value
                 }).then(() => {
-                    alert('נשמר!');
                     closeModal('profile-modal');
-                    // Update header if we are in that chat
+                    // עדכון מקומי מהיר
                     document.getElementById('app-title').innerText = document.getElementById('edit-name').value;
                 });
             };
@@ -324,79 +443,56 @@ window.performAction = function(action) {
     if(action === 'email' && email) window.open(`mailto:${email}`);
 };
 
-// --- Helpers ---
-function sendMessage() {
-    const inp = document.getElementById('msg-input');
-    const txt = inp.value.trim();
-    if(!txt || !currentChatId) return;
-    
-    const type = (staffId && isInternalMode) ? 'internal' : 'regular';
+// סטטוס
+window.updateStatus = function(val) {
+    if(!currentChatId) return;
+    db.collection('users').doc(currentChatId).update({ status: val, lastUpdate: firebase.firestore.FieldValue.serverTimestamp() });
+    const msgs = {1:'התקבל', 2:'בטיפול', 3:'בדרך', 4:'סופקה'};
     db.collection('orders').doc(currentChatId).collection('messages').add({
-        text: txt, sender: staffId?'staff':'customer', type: type, timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        text: 'סטטוס: ' + msgs[val], sender: 'system', timestamp: firebase.firestore.FieldValue.serverTimestamp()
     });
-    inp.value = '';
-    if(isInternalMode) document.getElementById('internal-msg-btn').click();
-}
+};
 
+// שליחת הזמנה (לקוח)
+safeOnClick('submit-order-btn', () => {
+    const contact = document.getElementById('order-contact').value;
+    const address = document.getElementById('order-address').value;
+    const item = document.getElementById('order-item').value;
+    const time = document.getElementById('order-time').value;
+    
+    if(!item) { alert('חסר פירוט'); return; }
+    const txt = `👤 ${contact}\n📍 ${address}\n📦 ${item}\n⏰ ${time}`;
+    
+    db.collection('orders').doc(customerId).collection('messages').add({
+        text: txt, title: "הזמנה חדשה", sender: 'customer', timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    db.collection('users').doc(customerId).set({
+        name: contact||"לקוח", address: address, status: 1, type: 'client', lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
+    }, {merge: true});
+    closeModal('order-modal');
+});
+
+// --- Utilities (Safe functions) ---
+function safeOnClick(id, fn) { const el=document.getElementById(id); if(el) el.onclick=fn; }
+function safeSetText(id, txt) { const el=document.getElementById(id); if(el) el.innerText=txt; }
+function safeSetSrc(id, src) { const el=document.getElementById(id); if(el) el.src=src; }
+function safeDisplay(id, val) { const el=document.getElementById(id); if(el) el.style.display=val; }
+window.closeModal = (id) => safeDisplay(id, 'none');
 function goBack() {
     if(staffId) {
         safeDisplay('main-chat-feed', 'none');
         safeDisplay('input-area', 'none');
         safeDisplay('back-btn', 'none');
-        safeDisplay('staff-dashboard', 'flex');
+        safeDisplay('staff-dashboard', 'block');
         safeSetText('app-title', "ניהול ח.סבן");
-        safeSetText('header-subtitle', staffId);
+        currentChatId = null;
     } else {
-        // לקוח חוזר לראשי שלו
         safeDisplay('client-view', 'block');
         safeDisplay('main-chat-feed', 'none');
         safeDisplay('back-btn', 'none');
-        safeSetText('app-title', "ח.סבן חומרי בנין");
     }
 }
-
-// FAB & Modals
-safeOnClick('main-fab', () => {
-    if(staffId && !currentChatId) toggleFabMenu();
-    else safeDisplay('order-modal', 'flex'); // לקוח
-});
-
-function toggleFabMenu() {
-    const menu = document.getElementById('fab-menu');
-    const fab = document.getElementById('main-fab');
-    isMenuOpen = !isMenuOpen;
-    fab.classList.toggle('rotate');
-    
-    // אנימציה פשוטה
-    const items = menu.querySelectorAll('.mini-fab');
-    items.forEach((item, i) => {
-        if(isMenuOpen) setTimeout(() => item.classList.add('show'), i*50);
-        else item.classList.remove('show');
-    });
+function renderProgress(s) { 
+    const fill = document.getElementById('progress-fill');
+    if(fill) fill.style.width = ((s-1)*33)+'%';
 }
-
-window.openUserModal = function(role) {
-    toggleFabMenu();
-    safeDisplay('user-modal', 'flex');
-    document.getElementById('new-user-role').value = role;
-    document.getElementById('user-modal-title').innerText = role==='group'?'קבוצה חדשה':(role==='staff'?'איש צוות':'לקוח חדש');
-};
-
-safeOnClick('save-user-btn', () => {
-    const id = document.getElementById('new-user-id').value;
-    const name = document.getElementById('new-user-name').value;
-    const role = document.getElementById('new-user-role').value;
-    if(id && name) {
-        db.collection('users').doc(id).set({
-            name: name, type: role, lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
-        }, {merge: true});
-        closeModal('user-modal');
-    }
-});
-
-// Utils
-function safeOnClick(id, fn) { const el=document.getElementById(id); if(el) el.onclick=fn; }
-function safeSetText(id, txt) { const el=document.getElementById(id); if(el) el.innerText=txt; }
-function safeDisplay(id, val) { const el=document.getElementById(id); if(el) el.style.display=val; }
-window.closeModal = (id) => safeDisplay(id, 'none');
-function renderProgress(s) { document.getElementById('progress-fill').style.width = ((s-1)*33)+'%'; }
