@@ -8,7 +8,10 @@
     <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/1041/1041883.png">
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
+    
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&display=swap" rel="stylesheet">
+    
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 </head>
 <body>
@@ -21,7 +24,7 @@
             </div>
             <div class="header-text">
                 <span id="app-title">ח.סבן חומרי בנין</span>
-                <span id="sub-title" class="status-text">טוען...</span>
+                <span id="sub-title" class="status-text">מתחבר...</span>
             </div>
         </div>
         <div class="actions">
@@ -30,7 +33,8 @@
         </div>
     </header>
 
-    <div id="stories-container" class="stories-bar"></div>
+    <div id="stories-container" class="stories-bar">
+        </div>
 
     <div id="staff-dashboard" style="display:none;">
         <div class="dashboard-header">
@@ -40,29 +44,33 @@
 
         <div class="dashboard-gates">
             <div class="gate-card live-active" onclick="filterDashboard('active')">
-                <div class="neon-border"></div> <div class="gate-icon"><i class="material-icons">local_shipping</i></div>
+                <div class="neon-snake"></div> <div class="gate-icon"><i class="material-icons">local_shipping</i></div>
                 <div class="gate-title">הזמנות חיות</div>
                 <div class="gate-stat" id="stat-active">0</div>
             </div>
 
             <div class="gate-card" onclick="filterDashboard('history')">
-                <div class="gate-icon"><i class="material-icons">history</i></div>
-                <div class="gate-title">ארכיון/היסטוריה</div>
+                <div class="gate-icon"><i class="material-icons">inventory</i></div>
+                <div class="gate-title">ארכיון שופקו</div>
                 <div class="gate-stat" id="stat-history">0</div>
             </div>
         </div>
 
-        <h3 id="list-title" style="margin-right: 10px; color: #555;">הזמנות לפעולה</h3>
+        <div class="list-header">
+            <h3 id="list-title">הזמנות לפעולה</h3>
+            <span class="refresh-icon" onclick="loadDashboardData()"><i class="material-icons">refresh</i></span>
+        </div>
+        
         <div id="clients-list">
             </div>
     </div>
 
-    <div id="admin-controls" style="display:none; background:#fff3e0; padding:10px; border-bottom:1px solid #ccc; overflow-x:auto;">
-        <div style="display:flex; gap:10px; min-width:max-content;">
-            <button onclick="updateStatus(1)" class="status-btn">📥 התקבל</button>
-            <button onclick="updateStatus(2)" class="status-btn">📦 בטיפול</button>
-            <button onclick="updateStatus(3)" class="status-btn">🚚 בדרך</button>
-            <button onclick="updateStatus(4)" class="status-btn">✅ סופקה</button>
+    <div id="admin-controls" style="display:none;">
+        <div class="status-scroll">
+            <button onclick="updateStatus(1)" class="status-btn"><i class="material-icons">receipt_long</i> התקבל</button>
+            <button onclick="updateStatus(2)" class="status-btn"><i class="material-icons">inventory_2</i> בטיפול</button>
+            <button onclick="updateStatus(3)" class="status-btn"><i class="material-icons">local_shipping</i> בדרך</button>
+            <button onclick="updateStatus(4)" class="status-btn success"><i class="material-icons">check_circle</i> סופקה</button>
         </div>
     </div>
 
@@ -71,10 +79,12 @@
     </main>
 
     <footer class="input-area" id="input-area">
-        <button id="add-order-btn" class="fab-btn ripple"><i class="material-icons">add</i></button>
+        <button id="add-order-btn" class="fab-btn ripple">
+            <i class="material-icons">add</i>
+        </button>
         <div class="input-wrapper">
             <input type="text" placeholder="הקלד הודעה..." id="msg-input">
-            <i class="material-icons" id="internal-msg-btn" style="display:none; color:#fbc02d; cursor:pointer; margin-left:5px;">lock</i>
+            <i class="material-icons" id="internal-msg-btn" style="display:none;" title="הערה פנימית">lock</i>
             <button class="send-btn ripple"><i class="material-icons">send</i></button>
         </div>
     </footer>
@@ -88,15 +98,15 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label>שם איש קשר</label>
-                    <input type="text" id="order-contact" placeholder="שם המזמין בשטח">
+                    <input type="text" id="order-contact" placeholder="למשל: יוסי קבלן">
                 </div>
                 <div class="form-group">
                     <label>כתובת / פרויקט</label>
-                    <input type="text" id="order-address" placeholder="כתובת לאספקה">
+                    <input type="text" id="order-address" placeholder="למשל: רחוב הירקון 10">
                 </div>
                 <div class="form-group">
                     <label>פירוט הזמנה (מוצרים)</label>
-                    <textarea id="order-item" rows="3" placeholder="למשל: 5 משטחי בלוקים 20, מלט..."></textarea>
+                    <textarea id="order-item" rows="3" placeholder="רשום כאן את המוצרים..."></textarea>
                 </div>
                 <div class="form-group">
                     <label>דחיפות</label>
