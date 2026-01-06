@@ -17,21 +17,19 @@ const notificationSound = new Audio('https://assets.mixkit.co/active_storage/sfx
 let isInitialLoad = true;
 let isMuted = false;
 
-const muteBtn = document.getElementById('mute-btn');
-if(muteBtn) {
-    muteBtn.addEventListener('click', function() {
-        isMuted = !isMuted;
-        this.innerText = isMuted ? 'volume_off' : 'volume_up';
-        if(!isMuted) notificationSound.play().then(() => notificationSound.pause()).catch(()=>{});
-    });
-}
+document.getElementById('mute-btn').addEventListener('click', function() {
+    isMuted = !isMuted;
+    this.innerText = isMuted ? 'volume_off' : 'volume_up';
+    if(!isMuted) notificationSound.play().then(() => notificationSound.pause()).catch(()=>{});
+});
 
-// --- 2. זיהוי משתמש ---
+// --- 2. זיהוי ---
 const urlParams = new URLSearchParams(window.location.search);
 let customerId = urlParams.get('cid'); 
 let staffId = urlParams.get('sid');
+let allClientsData = [];
 
-// --- 3. OneSignal ---
+// --- 3. OneSignal (מיקום מתוקן) ---
 window.OneSignalDeferred = window.OneSignalDeferred || [];
 OneSignalDeferred.push(async function(OneSignal) {
     await OneSignal.init({
@@ -46,7 +44,7 @@ OneSignalDeferred.push(async function(OneSignal) {
     if (staffId) OneSignal.User.addTag("role", "staff");
 });
 
-// --- 4. ניהול מצבים (לוגיקה ראשית) ---
+// --- 4. ניהול מסכים ---
 const chatContainer = document.getElementById('chat-container');
 const staffDashboard = document.getElementById('staff-dashboard');
 const storiesContainer = document.getElementById('stories-container');
@@ -57,120 +55,173 @@ const adminControls = document.getElementById('admin-controls');
 
 let isInternalMode = false;
 
-if (staffId) {
-    // === מצב צוות (ראמי) ===
-    if(appTitle) appTitle.innerText = "ניהול סידור";
-    if(subTitle) subTitle.innerText = staffId;
+if (staffId) { 
+    // === מצב מנהל ===
+    appTitle.innerText = "ניהול סידור";
+    subTitle.innerText = "מחובר כ: " + staffId;
     
-    // הסתרת אלמנטים של לקוח
-    if(storiesContainer) storiesContainer.style.display = 'none';
-    if(chatContainer) chatContainer.style.display = 'none';
-    if(document.querySelector('.input-area')) document.querySelector('.input-area').style.display = 'none';
-    if(staffDashboard) staffDashboard.style.display = 'block';
-    if(internalMsgBtn) internalMsgBtn.style.display = 'block';
+    storiesContainer.style.display = 'none';
+    chatContainer.style.display = 'none';
+    document.querySelector('.input-area').style.display = 'none';
+    staffDashboard.style.display = 'block';
+    internalMsgBtn.style.display = 'block';
     
-    loadAllClients();
-
-} else if (customerId) {
+    loadDashboardData();
+} else if (customerId) { 
     // === מצב לקוח ===
     localStorage.setItem('saban_cid', customerId);
-    if(appTitle) appTitle.innerText = "ח.סבן חומרי בנין";
-    if(subTitle) subTitle.innerText = "הזמנה #" + customerId;
+    appTitle.innerText = "ח.סבן חומרי בנין";
+    subTitle.innerText = "מספר הזמנה: " + customerId;
     
-    // וודא שהסטורי מוצג!
-    if(storiesContainer) storiesContainer.style.display = 'flex';
-    
+    storiesContainer.style.display = 'flex';
     loadFormCache();
-    listenToStatus(customerId); // חיבור לשינויים בזמן אמת
+    listenToStatus(customerId);
     loadChat(customerId);
-} else {
+} else { 
     // === אורח ===
     const savedCid = localStorage.getItem('saban_cid');
-    if (savedCid && !window.location.search.includes('cid')) {
-         window.location.href = `?cid=${savedCid}`;
-    } else {
-        if(chatContainer) chatContainer.innerHTML = '<div style="text-align:center; padding:20px;">נא להיכנס דרך הקישור שהתקבל.</div>';
-    }
+    if (savedCid && !window.location.search.includes('cid')) { window.location.href = `?cid=${savedCid}`; }
+    else if(chatContainer) { chatContainer.innerHTML = '<div style="text-align:center; padding:20px;">נא להיכנס דרך הקישור שהתקבל.</div>'; }
 }
 
-// --- 5. סטורי וסטטוס בזמן אמת ---
+// --- 5. דשבורד מנהל (הלוגיקה) ---
+function loadDashboardData() {
+    const listDiv = document.getElementById('clients-list');
+    listDiv.innerHTML = '<div style="text-align:center; padding:20px;">טוען נתונים...</div>';
+
+    db.collection('users').orderBy('lastUpdate', 'desc').onSnapshot(snapshot => {
+        allClientsData = [];
+        let activeCount = 0;
+        let historyCount = 0;
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            data.id = doc.id;
+            // 4 זה "סופקה" - נחשב היסטוריה
+            if (data.status === 4) historyCount++; else activeCount++;
+            allClientsData.push(data);
+        });
+
+        document.getElementById('stat-active').innerText = activeCount;
+        document.getElementById('stat-history').innerText = historyCount;
+        
+        // טעינה ראשונית של הפעילים
+        filterDashboard('active');
+    });
+}
+
+window.filterDashboard = function(type) {
+    const listDiv = document.getElementById('clients-list');
+    listDiv.innerHTML = '';
+    const listTitle = document.getElementById('list-title');
+
+    let filtered = [];
+    if (type === 'active') {
+        listTitle.innerText = "הזמנות חיות לטיפול";
+        filtered = allClientsData.filter(c => !c.status || c.status < 4);
+    } else {
+        listTitle.innerText = "ארכיון / סופקו";
+        filtered = allClientsData.filter(c => c.status === 4);
+    }
+
+    if (filtered.length === 0) {
+        listDiv.innerHTML = '<div style="text-align:center; color:#999; margin-top:20px;">אין נתונים להצגה</div>';
+        return;
+    }
+
+    filtered.forEach(client => {
+        let statusText = "התקבל"; let statusClass = "status-1";
+        if(client.status == 2) { statusText = "בטיפול"; statusClass = "status-2"; }
+        if(client.status == 3) { statusText = "בדרך"; statusClass = "status-3"; }
+        if(client.status == 4) { statusText = "סופקה"; statusClass = "status-4"; }
+
+        const div = document.createElement('div');
+        div.className = `client-card ${statusClass}`;
+        div.innerHTML = `
+            <div><strong>${client.name || client.id}</strong><br><small>${client.address || ''}</small></div>
+            <div style="text-align:left"><small>${statusText}</small></div>
+        `;
+        div.onclick = () => openStaffChat(client);
+        listDiv.appendChild(div);
+    });
+};
+
+function openStaffChat(client) {
+    customerId = client.id;
+    staffDashboard.style.display = 'none';
+    chatContainer.style.display = 'block';
+    document.querySelector('.input-area').style.display = 'flex';
+    document.getElementById('back-btn').style.display = 'block';
+    adminControls.style.display = 'block';
+    
+    subTitle.innerText = client.name || client.id;
+    loadChat(client.id);
+}
+
+document.getElementById('back-btn').onclick = () => {
+    // חזרה לדשבורד
+    chatContainer.style.display = 'none';
+    document.querySelector('.input-area').style.display = 'none';
+    adminControls.style.display = 'none';
+    document.getElementById('back-btn').style.display = 'none';
+    staffDashboard.style.display = 'block';
+    subTitle.innerText = "שלום " + staffId;
+    if (window.unsubscribeChat) window.unsubscribeChat();
+};
+
+// --- 6. סטורי ועדכוני סטטוס ---
 function listenToStatus(cid) {
-    // האזנה למסמך המשתמש - ברגע שמשתנה משהו, זה ירוץ
     db.collection('users').doc(cid).onSnapshot(doc => {
         if(doc.exists) {
             const data = doc.data();
-            // עדכון הסטורי (עיגולים)
             renderProgressStories(data.status || 1);
-            // עדכון השם בכותרת (אם קיים)
-            if(data.name && subTitle) {
-                subTitle.innerText = "שלום, " + data.name;
-            }
-        } else {
-            // אם אין דף משתמש, ניצור אחד בסיסי
-            renderProgressStories(1);
-        }
+            if(data.name) subTitle.innerText = "שלום, " + data.name;
+        } else { renderProgressStories(1); }
     });
 }
 
 function renderProgressStories(statusIndex) {
-    const steps = [
-        { icon: 'receipt_long', text: 'התקבלה' },
-        { icon: 'inventory_2', text: 'בטיפול' },
-        { icon: 'local_shipping', text: 'בדרך' },
-        { icon: 'check_circle', text: 'סופקה' }
-    ];
-
     if(!storiesContainer) return;
     storiesContainer.innerHTML = '';
-    
+    // השתמשנו באייקונים מגניבים
+    const steps = [{icon:'receipt_long',text:'התקבלה'},{icon:'inventory_2',text:'בטיפול'},{icon:'local_shipping',text:'בדרך'},{icon:'check_circle',text:'סופקה'}];
     steps.forEach((step, index) => {
-        const isActive = index + 1 <= statusIndex ? 'active' : '';
         const div = document.createElement('div');
-        div.className = `status-step ${isActive}`;
-        div.innerHTML = `
-            <div class="status-icon"><i class="material-icons">${step.icon}</i></div>
-            <span style="font-size:0.75rem; font-weight:bold;">${step.text}</span>
-        `;
+        div.className = `status-step ${index + 1 <= statusIndex ? 'active' : ''}`;
+        div.innerHTML = `<div class="status-icon"><i class="material-icons">${step.icon}</i></div><span class="status-text">${step.text}</span>`;
         storiesContainer.appendChild(div);
     });
 }
 
-// פונקציה למנהל לעדכון סטטוס
 window.updateStatus = function(newStatus) {
     if(!customerId) return;
+    // עדכון ב-DB
+    db.collection('users').doc(customerId).set({ status: newStatus, lastUpdate: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
     
-    db.collection('users').doc(customerId).set({
-        status: newStatus,
-        lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
-
-    let statusText = "";
-    if(newStatus == 2) statusText = "ההזמנה בטיפול במחסן 📦";
-    if(newStatus == 3) statusText = "ההזמנה יצאה אליך! 🚚";
-    if(newStatus == 4) statusText = "ההזמנה נמסרה בהצלחה ✅";
-
-    if(statusText) {
+    // הודעה אוטומטית
+    let txt = "";
+    if(newStatus==2) txt="ההזמנה בטיפול במחסן 📦";
+    if(newStatus==3) txt="ההזמנה יצאה אליך! 🚚";
+    if(newStatus==4) txt="ההזמנה נמסרה בהצלחה ✅";
+    
+    if(txt) {
         db.collection('orders').doc(customerId).collection('messages').add({
-            text: statusText, sender: 'system', type: 'regular',
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            text: txt, sender: 'system', type: 'regular', timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
     }
-    alert("סטטוס עודכן ל-" + newStatus);
 };
 
-// --- 6. צ'אט ---
+// --- 7. צ'אט ---
 function loadChat(cid) {
     if(!chatContainer) return;
     if (window.unsubscribeChat) window.unsubscribeChat();
-
     window.unsubscribeChat = db.collection('orders').doc(cid).collection('messages')
-    .orderBy('timestamp', 'asc')
-    .onSnapshot(snapshot => {
+    .orderBy('timestamp', 'asc').onSnapshot(snapshot => {
         snapshot.docChanges().forEach(change => {
             if (change.type === "added") {
                 const msg = change.doc.data();
                 renderMessage(msg);
-                if (!isInitialLoad && !isMe(msg.sender)) playIncomingSound();
+                if (!isInitialLoad && !isMe(msg.sender) && !isMuted) playIncomingSound();
             }
         });
         isInitialLoad = false;
@@ -184,174 +235,70 @@ function renderMessage(msg) {
 
     const div = document.createElement('div');
     const me = isMe(msg.sender);
-    const isInternal = msg.type === 'internal';
-    const isSystem = msg.sender === 'system';
+    let cls = 'message';
+    if (msg.type === 'internal') cls += ' internal';
+    else if (msg.sender === 'system') cls += ' received system-msg';
+    else if (me) cls += ' sent'; else cls += ' received';
 
-    let className = 'message';
-    if (isInternal) className += ' internal';
-    else if (isSystem) className += ' received system-msg'; // קלאס מיוחד להודעות מערכת
-    else if (me) className += ' sent';
-    else className += ' received';
+    div.className = cls;
+    if(msg.sender==='system') { div.style.background="#fff8e1"; div.style.textAlign="center"; div.style.width="90%"; }
 
-    div.className = className;
-    
-    if(isSystem) {
-        div.style.background = "#fff8e1";
-        div.style.width = "90%";
-        div.style.textAlign = "center";
-        div.style.fontSize = "0.85rem";
-        div.style.alignSelf = "center";
-        div.style.border = "1px solid #ffe082";
-    }
-
-    let time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '..';
     let content = msg.text;
-    
-    if (isInternal) {
-        content = `<div style="display:flex; align-items:center; gap:5px; font-weight:bold; color:#f57f17;"><i class="material-icons" style="font-size:1rem">lock</i> הערה פנימית</div>` + content;
-    } else if (msg.isOrder) {
-        content = `<div style="font-weight:bold; border-bottom:1px solid #ddd; margin-bottom:5px;">${msg.title || 'הזמנה'}</div>` + msg.text.replace(/\n/g, '<br>');
-    }
+    if (msg.type === 'internal') content = `🔒 <b>הערה פנימית:</b> ${content}`;
+    else if (msg.isOrder) content = `<b>${msg.title||'הזמנה'}</b><br>${msg.text.replace(/\n/g, '<br>')}`;
 
-    div.innerHTML = `${content}<div class="msg-meta"><span>${time}</span></div>`;
+    let time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '';
+    div.innerHTML = `${content}<div class="msg-meta">${time}</div>`;
     chatContainer.appendChild(div);
 }
 
-function isMe(senderRole) {
-    if (staffId && senderRole === 'staff') return true;
-    if (!staffId && senderRole === 'customer') return true;
-    return false;
-}
+function isMe(role) { return (staffId && role === 'staff') || (!staffId && role === 'customer'); }
+function playIncomingSound() { if(!isMuted) notificationSound.play().catch(()=>{}); }
 
-function playIncomingSound() {
-    if (isMuted) return;
-    notificationSound.currentTime = 0;
-    notificationSound.play().catch(()=>{});
-}
-
-// --- 7. שליחה ---
-if (internalMsgBtn) {
-    internalMsgBtn.addEventListener('click', () => {
-        isInternalMode = !isInternalMode;
-        internalMsgBtn.style.color = isInternalMode ? 'red' : '#fbc02d';
-        document.getElementById('msg-input').placeholder = isInternalMode ? "הערה חסויה..." : "הקלד הודעה...";
-    });
-}
-
-const sendBtn = document.querySelector('.send-btn');
-if(sendBtn) sendBtn.addEventListener('click', sendMessage);
-const msgInput = document.getElementById('msg-input');
-if(msgInput) msgInput.addEventListener('keypress', (e) => { if(e.key==='Enter') sendMessage() });
+// --- 8. שליחה ומודל ---
+if(internalMsgBtn) internalMsgBtn.onclick = () => { isInternalMode = !isInternalMode; internalMsgBtn.style.color = isInternalMode ? 'red' : '#fbc02d'; document.getElementById('msg-input').placeholder = isInternalMode ? "הערה חסויה..." : "הקלד הודעה..."; };
+document.querySelector('.send-btn').onclick = sendMessage;
+document.getElementById('msg-input').onkeypress = (e) => { if(e.key==='Enter') sendMessage(); };
 
 function sendMessage() {
     const input = document.getElementById('msg-input');
-    if(!input) return;
     const text = input.value.trim();
     if (!text || !customerId) return;
-
-    const senderType = staffId ? 'staff' : 'customer';
-    const msgType = (staffId && isInternalMode) ? 'internal' : 'regular';
-
-    db.collection('orders').doc(customerId).collection('messages').add({
-        text: text, sender: senderType, type: msgType, 
-        staffId: staffId || null, timestamp: firebase.firestore.FieldValue.serverTimestamp(), read: false
-    });
-    
+    const type = (staffId && isInternalMode) ? 'internal' : 'regular';
+    db.collection('orders').doc(customerId).collection('messages').add({ text, sender: staffId?'staff':'customer', type, staffId: staffId||null, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
     input.value = '';
-    if (isInternalMode) {
-        isInternalMode = false;
-        internalMsgBtn.style.color = '#fbc02d';
-        input.placeholder = "הקלד הודעה...";
-    }
+    if(isInternalMode) internalMsgBtn.click();
 }
 
-// --- 8. מודל הזמנה ---
 const modal = document.getElementById('order-modal');
-const addOrderBtn = document.getElementById('add-order-btn');
-const closeModalBtn = document.getElementById('close-modal-btn');
-const submitOrderBtn = document.getElementById('submit-order-btn');
-
-if(addOrderBtn) addOrderBtn.addEventListener('click', () => modal.style.display = 'flex');
-if(closeModalBtn) closeModalBtn.addEventListener('click', () => modal.style.display = 'none');
-if(modal) modal.addEventListener('click', (e) => { if(e.target === modal) modal.style.display = 'none'; });
-
-if(submitOrderBtn) {
-    submitOrderBtn.addEventListener('click', () => {
-        const contact = document.getElementById('order-contact') ? document.getElementById('order-contact').value : '';
-        const address = document.getElementById('order-address') ? document.getElementById('order-address').value : '';
-        const item = document.getElementById('order-item') ? document.getElementById('order-item').value : '';
-        const time = document.getElementById('order-time') ? document.getElementById('order-time').value : '';
-
-        if(!item) { alert("יש למלא פירוט הזמנה"); return; }
-        saveFormCache(contact, address);
-
-        const orderText = `👤 ${contact}\n📍 ${address}\n📦 פריטים:\n${item}\n⏰ ${time}`;
-        
-        db.collection('orders').doc(customerId).collection('messages').add({
-            text: orderText, title: "📦 הזמנה חדשה", sender: staffId ? 'staff' : 'customer',
-            type: 'regular', isOrder: true, timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        
-        // יצירת/עדכון פרטי הלקוח במסד הנתונים
-        db.collection('users').doc(customerId).set({ 
-            status: 1, 
-            name: contact || "לקוח " + customerId, 
-            address: address,
-            lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
-
-        document.getElementById('order-item').value = '';
-        modal.style.display = 'none';
-    });
-}
-
-function saveFormCache(contact, address) {
-    if(contact) localStorage.setItem('last_contact', contact);
-    if(address) localStorage.setItem('last_address', address);
-}
-
-function loadFormCache() {
-    const contactInput = document.getElementById('order-contact');
-    const addressInput = document.getElementById('order-address');
-    if(contactInput) contactInput.value = localStorage.getItem('last_contact') || '';
-    if(addressInput) addressInput.value = localStorage.getItem('last_address') || '';
-}
-
-// --- 9. דשבורד מנהל ---
-function loadAllClients() {
-    const listDiv = document.getElementById('clients-list');
-    if(!listDiv) return;
+document.getElementById('add-order-btn').onclick = () => modal.style.display = 'flex';
+document.getElementById('close-modal-btn').onclick = () => modal.style.display = 'none';
+document.getElementById('submit-order-btn').onclick = () => {
+    const contact = document.getElementById('order-contact').value;
+    const address = document.getElementById('order-address').value;
+    const item = document.getElementById('order-item').value;
+    const time = document.getElementById('order-time').value;
     
-    // שליפה פשוטה (בלי orderBy כדי למנוע שגיאות אינדקס)
-    db.collection('users').get().then(snapshot => {
-        listDiv.innerHTML = '';
-        if (snapshot.empty) {
-            listDiv.innerHTML = '<div style="text-align:center">אין הזמנות פעילות</div>';
-            return;
-        }
-        snapshot.forEach(doc => {
-            const client = doc.data();
-            const div = document.createElement('div');
-            div.style.cssText = "background:white; padding:15px; margin-bottom:10px; border-radius:10px; cursor:pointer; display:flex; justify-content:space-between; border-bottom:1px solid #eee;";
-            div.innerHTML = `
-                <div><strong>${client.name || doc.id}</strong><br><small>${client.address || 'ללא כתובת'}</small></div>
-                <i class="material-icons" style="color:var(--primary-color)">chat</i>
-            `;
-            div.onclick = () => {
-                customerId = doc.id;
-                document.getElementById('staff-dashboard').style.display = 'none';
-                document.getElementById('chat-container').style.display = 'block';
-                if(document.querySelector('.input-area')) document.querySelector('.input-area').style.display = 'flex';
-                document.getElementById('back-btn').style.display = 'block';
-                if(adminControls) adminControls.style.display = 'block';
-                if(subTitle) subTitle.innerText = "משוחח עם: " + (client.name || doc.id);
-                if(storiesContainer) storiesContainer.style.display = 'none';
-                loadChat(doc.id);
-            };
-            listDiv.appendChild(div);
-        });
-    });
+    if(!item) { alert("חסר פירוט"); return; }
+    saveFormCache(contact, address);
     
-    const backBtn = document.getElementById('back-btn');
-    if(backBtn) backBtn.onclick = () => window.location.reload();
+    const txt = `👤 ${contact}\n📍 ${address}\n📦 ${item}\n⏰ ${time}`;
+    db.collection('orders').doc(customerId).collection('messages').add({ text: txt, title: "📦 הזמנה חדשה", sender: staffId?'staff':'customer', isOrder: true, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+    
+    // שמירת הנתונים האמיתיים למנהל!
+    db.collection('users').doc(customerId).set({ 
+        status: 1, 
+        name: contact || "לקוח " + customerId, 
+        address: address, 
+        lastUpdate: firebase.firestore.FieldValue.serverTimestamp() 
+    }, { merge: true });
+
+    document.getElementById('order-item').value = '';
+    modal.style.display = 'none';
+};
+
+function saveFormCache(c, a) { if(c) localStorage.setItem('lc', c); if(a) localStorage.setItem('la', a); }
+function loadFormCache() { 
+    if(document.getElementById('order-contact')) document.getElementById('order-contact').value = localStorage.getItem('lc') || '';
+    if(document.getElementById('order-address')) document.getElementById('order-address').value = localStorage.getItem('la') || '';
 }
