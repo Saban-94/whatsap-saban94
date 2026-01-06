@@ -2,212 +2,136 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Saban Command Center V2 - Nerve Center</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Saban Command Center - Ultra Pro</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --win-blue: #0078d4;
-            --win-glass: rgba(255, 255, 255, 0.9);
-            --neon-snake: #00ffc3;
-            --bg-gradient: radial-gradient(circle at center, #ffffff, #e6e6e6);
+            --neon-blue: #00f2ff;
+            --neon-green: #00ff88;
+            --win-accent: #0078d4;
+            --glass: rgba(255, 255, 255, 0.1);
         }
 
         body { 
-            background: var(--bg-gradient); color: #1c1c1c; font-family: 'Segoe UI', 'Heebo', sans-serif;
-            margin: 0; overflow: hidden; height: 100vh;
+            background: #0a0a0a radial-gradient(circle at 50% 50%, #1a1a2e 0%, #0a0a0a 100%);
+            color: #fff; font-family: 'Heebo', sans-serif; margin: 0; overflow: hidden;
         }
 
-        /* סרגל עליון מקצועי עם מדדי 05:00-17:00 */
-        .nerve-header {
-            display: grid; grid-template-columns: 280px 1fr 300px;
-            padding: 15px 40px; background: var(--win-blue); color: white;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 1000;
+        /* סרגל ממדים בראש הדף - כפתורי זכוכית ניאון */
+        .metrics-bar {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; padding: 20px;
+            background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); border-bottom: 1px solid var(--glass);
         }
 
-        /* אפקט נחש רחב להזמנות חדשות */
-        .snake-border {
-            position: relative; padding: 2px; border-radius: 15px; overflow: hidden;
-        }
-        .snake-border::before {
-            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
-            background: conic-gradient(transparent, var(--neon-snake), transparent 40%);
-            animation: rotate-snake 3s linear infinite;
-        }
-        @keyframes rotate-snake { 100% { transform: rotate(360deg); } }
-
-        /* כרטיס הזמנה בולט וקריא */
-        .order-card-v2 {
-            background: white; border-radius: 12px; margin: 15px; padding: 20px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.08); display: grid;
-            grid-template-columns: 1fr 1.5fr 1fr; gap: 20px; align-items: center;
-            border-right: 10px solid var(--win-blue); transition: 0.3s;
-        }
-        .order-card-v2.urgent { border-right-color: #d13438; }
-
-        /* טופס יצירה בסגנון Windows 11 */
-        .win-modal {
-            background: var(--win-glass); backdrop-filter: blur(25px);
-            border-radius: 15px; padding: 30px; width: 500px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        .metric-btn {
+            background: var(--glass); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 15px; padding: 15px; text-align: center; position: relative;
+            overflow: hidden; transition: 0.3s;
         }
 
-        .fab-pro {
-            position: fixed; bottom: 40px; left: 40px; width: 75px; height: 75px;
-            background: var(--win-blue); color: white; border: none; border-radius: 50%;
-            font-size: 40px; cursor: pointer; box-shadow: 0 10px 30px rgba(0,120,212,0.4);
+        .metric-btn.active-snake::after {
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--neon-blue), transparent);
+            animation: snake-run 2s linear infinite;
+        }
+        @keyframes snake-run { 0% { left: -100%; } 100% { left: 100%; } }
+
+        /* טיימר ונתוני הזמנה קרובה */
+        .next-order-glow {
+            background: linear-gradient(135deg, rgba(0,120,212,0.4), rgba(0,242,255,0.1));
+            border: 2px solid var(--neon-blue); border-radius: 20px;
+            margin: 20px; padding: 25px; display: flex; justify-content: space-between;
+            align-items: center; box-shadow: 0 0 30px rgba(0,242,255,0.2);
+        }
+
+        .timer-display { font-size: 3.5rem; font-weight: 900; text-shadow: 0 0 20px var(--neon-blue); }
+
+        /* כרטיס הזמנה - אשר לוי */
+        .order-card-pro {
+            background: rgba(255,255,255,0.05); border-radius: 15px;
+            margin: 15px 20px; padding: 25px; border-right: 8px solid var(--neon-blue);
+            display: grid; grid-template-columns: 2fr 1fr 1fr; align-items: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .order-card-pro.active { animation: neon-pulse 2s infinite alternate; }
+        @keyframes neon-pulse { from { box-shadow: 0 0 5px var(--neon-blue); } to { box-shadow: 0 0 25px var(--neon-blue); } }
+
+        .btn-status {
+            padding: 10px 20px; border-radius: 8px; border: none; font-weight: bold;
+            cursor: pointer; text-transform: uppercase;
         }
     </style>
 </head>
 <body>
 
-    <audio id="sound-new" src="https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3"></audio>
-    <audio id="sound-update" src="https://assets.mixkit.co/active_storage/sfx/1003/1003-preview.mp3"></audio>
+<div class="metrics-bar">
+    <div class="metric-btn active-snake">
+        <span style="font-size: 2rem; font-weight: 900; color: var(--neon-blue);" id="count-new">1</span>
+        <div style="font-size: 0.8rem; color: #ccc;">הזמנות חדשות</div>
+    </div>
+    <div class="metric-btn">
+        <span style="font-size: 2rem; font-weight: 900; color: #ffb900;" id="count-process">0</span>
+        <div style="font-size: 0.8rem; color: #ccc;">בטיפול מערכת</div>
+    </div>
+    <div class="metric-btn">
+        <span style="font-size: 2rem; font-weight: 900; color: var(--neon-green);" id="count-delivered">12</span>
+        <div style="font-size: 0.8rem; color: #ccc;">סופקו היום</div>
+    </div>
+    <div class="metric-btn">
+        <div id="digital-clock" style="font-size: 1.5rem; font-weight: 900;">00:00:00</div>
+        <div style="font-size: 0.8rem; color: #ccc;">שעון מערכת</div>
+    </div>
+</div>
 
-    <header class="nerve-header">
-        <div style="display:flex; align-items:center; gap:15px;">
-            <img src="icon-192.png" width="50" style="filter: brightness(1.2);">
-            <h2 style="margin:0; letter-spacing:1px;">ח.סבן | לוגיסטיקה</h2>
-        </div>
-        <div style="display:flex; justify-content:center; gap:40px; align-items:center;">
-            <div style="text-align:center;"><span id="count-daily" style="font-size:2rem; font-weight:900;">0</span><br><small>הזמנות היום</small></div>
-            <div style="text-align:center;"><span id="count-pending" style="font-size:2rem; font-weight:900;">0</span><br><small>ממתין להפצה</small></div>
-        </div>
-        <div id="clock" style="font-size:2.2rem; font-weight:bold; text-align:left;">00:00:00</div>
-    </header>
+<div class="next-order-glow">
+    <div>
+        <div style="color: var(--neon-blue); font-weight: bold; font-size: 1.1rem;">🚚 אספקה קרובה: אשר לוי</div>
+        <div style="font-size: 1.4rem;">📍 הסתדרות 28, רעננה | #601921</div>
+    </div>
+    <div class="timer-display" id="main-timer">12:30</div>
+</div>
 
-    <div style="display: grid; grid-template-columns: 1fr 380px; height: calc(100vh - 90px); padding: 10px; gap: 15px;">
+<div id="orders-container">
+    <div class="order-card-pro active">
+        <div>
+            <h2 style="margin:0; font-size: 2.2rem; letter-spacing: 1px;">אשר לוי</h2>
+            <div style="color: var(--neon-blue); font-weight: bold; margin-top: 5px;">
+                🏗️ מנוף 10 מטר | ⏰ שעת אספקה: 12:30
+            </div>
+        </div>
+        <div style="text-align: center;">
+            <div style="font-size: 0.9rem; color: #aaa;">נהג מבצע:</div>
+            <input type="text" placeholder="הקלד שם נהג..." style="background: transparent; border: none; border-bottom: 2px solid var(--neon-blue); color: #fff; text-align: center; font-size: 1.1rem; outline: none; width: 150px;">
+        </div>
+        <div style="text-align: left;">
+            <button class="btn-status" style="background: var(--neon-green); color: #000;">סופק ✅</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // עדכון שעון וטיימר בזמן אמת
+    function updateClocks() {
+        const now = new Date();
+        document.getElementById('digital-clock').innerText = now.toLocaleTimeString('he-IL');
         
-        <div id="main-order-feed" style="overflow-y:auto; padding-right:10px;">
-            <h3 style="margin:10px 20px;">🚀 ניהול הפצה חי</h3>
-            <div id="live-list"></div>
-        </div>
-
-        <div style="background:var(--win-glass); border-radius:15px; padding:20px; display:flex; flex-direction:column; gap:20px;">
-            <h3>📦 ניהול מחסן ודוחות</h3>
-            <div id="warehouse-stats" style="background:white; padding:15px; border-radius:10px;">
-                <strong>הזמנה קרובה בצפי:</strong>
-                <div id="next-order-info" style="font-size:1.5rem; color:var(--win-blue); font-weight:bold; margin-top:10px;">טוען...</div>
-            </div>
-            <div style="flex:1; overflow-y:auto;">
-                <h4>📜 היסטוריית היום</h4>
-                <div id="history-list" style="font-size:0.85rem; color:#666;"></div>
-            </div>
-            <button class="btn-primary" onclick="generateDailyReport()" style="background:#107c10;">הפק דוח יומי</button>
-        </div>
-    </div>
-
-    <button class="fab-pro" onclick="document.getElementById('modal-form').style.display='flex'">+</button>
-
-    <div id="modal-form" class="modal-overlay" style="display:none; align-items:center;">
-        <div class="win-modal">
-            <div class="modal-header"><h2>טופס הזמנה חדשה</h2><i class="material-icons" style="cursor:pointer;" onclick="document.getElementById('modal-form').style.display='none'">close</i></div>
-            <input type="text" id="f-num" class="input-field" placeholder="מספר הזמנה (ERP)">
-            <input type="text" id="f-cust" class="input-field" placeholder="שם לקוח">
-            <input type="text" id="f-addr" class="input-field" placeholder="כתובת ליעד">
-            <select id="f-delivery" class="input-field">
-                <option value="משאית">משאית 🚚</option>
-                <option value="מנוף 10 מטר">מנוף 10 מטר 🏗️</option>
-                <option value="מנוף 15 מטר">מנוף 15 מטר 🏗️</option>
-                <option value="עבודת מנוף">עבודת מנוף 🛠️</option>
-            </select>
-            <input type="date" id="f-date" class="input-field">
-            <button class="btn-primary" onclick="saveOrder()">שמור וסנכרן בזמן אמת</button>
-        </div>
-    </div>
-
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60",
-            projectId: "app-saban94-57361",
-            appId: "1:275366913167:web:f0c6f808e12f2aeb58fcfa"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-
-        let lastCount = 0;
-
-        // האזנה חיה לניהול היסטוריה וסטטוסים
-        db.collection('users').orderBy('lastUpdate', 'desc').onSnapshot(snap => {
-            if (snap.size > lastCount && lastCount !== 0) {
-                document.getElementById('sound-new').play(); // צלצול בהזמנה חדשה
-            }
-            lastCount = snap.size;
-
-            const list = document.getElementById('live-list');
-            const history = document.getElementById('history-list');
-            list.innerHTML = ''; history.innerHTML = '';
-            
-            let dailyCount = 0;
-            let orders = [];
-
-            snap.forEach(doc => {
-                const d = doc.data(); d.id = doc.id;
-                const updateDate = d.lastUpdate ? d.lastUpdate.toDate() : new Date();
-                
-                if (d.status === 4) { // היסטוריה
-                    history.innerHTML += `<div>✅ ${d.name} | ${d.orgId || ''}</div>`;
-                    return;
-                }
-
-                dailyCount++;
-                orders.push(d);
-                renderOrderCard(d, list);
-            });
-
-            document.getElementById('count-daily').innerText = dailyCount;
-            if(orders.length > 0) document.getElementById('next-order-info').innerText = orders[orders.length-1].name;
-        });
-
-        function renderOrderCard(d, container) {
-            const div = document.createElement('div');
-            div.className = 'order-card-v2';
-            div.innerHTML = `
-                <div>
-                    <strong style="font-size:1.4rem;">${d.name}</strong><br>
-                    <span style="color:var(--win-blue); font-weight:bold;">#${d.orgId || '---'}</span>
-                </div>
-                <div>
-                    <div style="font-size:1.1rem;">📍 ${d.address || ''}</div>
-                    <div style="color:#666; font-size:0.9rem;">🏗️ ${d.deliveryType || 'משאית'} | 📅 ${d.deliveryDate || ''}</div>
-                </div>
-                <div style="text-align:left;">
-                    <input type="text" placeholder="שם נהג..." value="${d.driverName || ''}" onchange="updateDriver('${d.id}', this.value)" style="width:100px; padding:5px; margin-bottom:10px; border:1px solid #ddd; border-radius:4px;"><br>
-                    <button onclick="updateStatus('${d.id}', 4)" style="background:#107c10; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer;">סופק ✅</button>
-                </div>
-            `;
-            container.appendChild(div);
+        // חישוב טיימר להזמנה של 12:30 (דוגמה)
+        const target = new Date();
+        target.setHours(12, 30, 0);
+        const diff = target - now;
+        if (diff > 0) {
+            const mins = Math.floor(diff / 1000 / 60);
+            const secs = Math.floor((diff / 1000) % 60);
+            document.getElementById('main-timer').innerText = `${mins}:${secs.toString().padStart(2, '0')}`;
+        } else {
+            document.getElementById('main-timer').innerText = "00:00";
+            document.getElementById('main-timer').style.color = "#ff3b30";
         }
+    }
+    setInterval(updateClocks, 1000);
+</script>
 
-        function saveOrder() {
-            db.collection('users').add({
-                orgId: document.getElementById('f-num').value,
-                name: document.getElementById('f-cust').value,
-                address: document.getElementById('f-addr').value,
-                deliveryType: document.getElementById('f-delivery').value,
-                deliveryDate: document.getElementById('f-date').value,
-                status: 1,
-                lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            document.getElementById('modal-form').style.display = 'none';
-        }
-
-        function updateDriver(id, name) {
-            db.collection('users').doc(id).update({ driverName: name });
-            document.getElementById('sound-update').play();
-        }
-
-        function updateStatus(id, status) {
-            db.collection('users').doc(id).update({ 
-                status: status,
-                lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            document.getElementById('sound-update').play();
-        }
-
-        setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
-    </script>
 </body>
 </html>
