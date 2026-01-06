@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>Saban Nerve Center - Cockpit Mode</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        :root {
+            --win-bg: #f3f3f3;
+            --win-accent: #0078d4;
+            --glass: rgba(255, 255, 255, 0.85);
+            --danger: #d13438;
+            --success: #107c10;
+        }
+
+        body { 
+            background: #e2e2e2 url('https://img.freepik.com/free-vector/white-abstract-background_23-2148810353.jpg') no-repeat center center fixed;
+            background-size: cover; color: #201f1e; font-family: 'Segoe UI', 'Heebo', sans-serif; margin: 0; overflow: hidden;
+        }
+
+        /* סרגל עליון - מדדים מ-05:00 עד 17:00 */
+        .nerve-header {
+            display: grid; grid-template-columns: 250px 1fr 300px;
+            padding: 20px 40px; background: var(--win-accent); color: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 100;
+        }
+
+        .metrics-hub { display: flex; gap: 20px; align-items: center; justify-content: center; }
+        .metric-btn { 
+            background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 8px; padding: 10px 20px; text-align: center; cursor: pointer; transition: 0.3s;
+        }
+        .metric-btn:hover { background: rgba(255,255,255,0.3); }
+        .metric-val { font-size: 1.8rem; font-weight: 800; display: block; }
+
+        /* פריסת תא טייס */
+        .cockpit-layout { display: grid; grid-template-columns: 350px 1fr; height: calc(100vh - 100px); gap: 15px; padding: 15px; }
+
+        .sidebar-future { background: var(--glass); border-radius: 12px; padding: 15px; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .main-feed { background: var(--glass); border-radius: 12px; padding: 15px; overflow-y: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+
+        /* כרטיס הזמנה מקצועי */
+        .order-card-pro {
+            background: white; border-radius: 10px; padding: 15px; margin-bottom: 12px;
+            border-right: 8px solid var(--win-accent); box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            display: flex; flex-direction: column; gap: 8px; position: relative;
+        }
+
+        /* אפקט נחש רחב על הזמנה דחופה */
+        .urgent-snake { position: relative; border-right: none; }
+        .urgent-snake::before {
+            content: ''; position: absolute; top: 0; right: 0; width: 8px; height: 100%;
+            background: linear-gradient(to bottom, #ff3b30, #ff9500);
+            animation: snake-glow 1.5s linear infinite;
+        }
+        @keyframes snake-glow { 0% { filter: brightness(1); } 50% { filter: brightness(1.8); } 100% { filter: brightness(1); } }
+
+        .btn-status { padding: 6px 12px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; margin-left: 5px; font-size: 0.8rem; }
+        
+        /* כפתור + בולט */
+        .fab-pro {
+            position: fixed; bottom: 40px; left: 40px; width: 70px; height: 70px;
+            background: var(--win-accent); color: white; border: none; border-radius: 50%;
+            font-size: 35px; cursor: pointer; box-shadow: 0 10px 25px rgba(0,120,212,0.4); z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+
+    <audio id="new-order-chime" src="https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3"></audio>
+
+    <header class="nerve-header">
+        <div style="display:flex; align-items:center; gap:15px;">
+            <img src="icon-192.png" width="45">
+            <h2 style="margin:0;">ח.סבן | NERVE CENTER</h2>
+        </div>
+        <div class="metrics-hub">
+            <div class="metric-btn"><span class="metric-val" id="count-0517">0</span><small>הזמנות (05:00-17:00)</small></div>
+            <div class="metric-btn"><span class="metric-val" id="count-total">0</span><small>סה"כ יומי</small></div>
+        </div>
+        <div style="text-align:left;">
+            <div id="clock" style="font-size:1.8rem; font-weight:bold;">00:00:00</div>
+            <small>מערכת הפצה פעילה</small>
+        </div>
+    </header>
+
+    <div class="cockpit-layout">
+        <div class="sidebar-future">
+            <h3 style="border-bottom:2px solid var(--win-accent); padding-bottom:10px;">🕒 צפי עתידי</h3>
+            <div id="future-list" style="overflow-y:auto; flex:1;"></div>
+        </div>
+
+        <div class="main-feed">
+            <h3 style="margin-top:0;">🚀 הזמנות לביצוע (היום)</h3>
+            <div id="active-feed"></div>
+        </div>
+    </div>
+
+    <button class="fab-pro" onclick="document.getElementById('modal-create').style.display='flex'">+</button>
+
+    <div id="modal-create" class="modal-overlay" style="display:none; align-items:center;">
+        <div class="modal-content" style="max-width:500px; border-radius:15px;">
+            <div class="modal-header"><h2>יצירת הזמנה חדשה</h2><i class="material-icons" onclick="this.closest('.modal-overlay').style.display='none'">close</i></div>
+            <input type="text" id="cust-name" class="input-field" placeholder="שם לקוח (גדול ובולט)">
+            <input type="text" id="cust-addr" class="input-field" placeholder="כתובת / יעד אספקה">
+            <input type="text" id="cust-driver" class="input-field" placeholder="שם נהג (דינאמי)">
+            <input type="text" id="cust-org-id" class="input-field" placeholder="מספר הזמנה ארגוני (ERP)">
+            <button class="btn-primary" onclick="createNewOrder()">שלח למרכז העצבים</button>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60",
+            projectId: "app-saban94-57361",
+            appId: "1:275366913167:web:f0c6f808e12f2aeb58fcfa"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let lastSize = 0;
+
+        db.collection('users').orderBy('lastUpdate', 'desc').onSnapshot(snap => {
+            if (snap.size > lastSize && lastSize !== 0) document.getElementById('new-order-chime').play();
+            lastSize = snap.size;
+
+            const activeFeed = document.getElementById('active-feed');
+            const futureList = document.getElementById('future-list');
+            activeFeed.innerHTML = ''; futureList.innerHTML = '';
+
+            let count0517 = 0;
+            const now = new Date();
+
+            snap.forEach(doc => {
+                const d = doc.data(); d.id = doc.id;
+                const updateDate = d.lastUpdate ? d.lastUpdate.toDate() : new Date();
+                const hour = updateDate.getHours();
+
+                // חישוב מדד 05:00-17:00
+                if (hour >= 5 && hour <= 17 && updateDate.toDateString() === now.toDateString()) count0517++;
+
+                if (d.status === 4) return; // הסתרה להיסטוריה
+
+                const isFuture = d.isFuture || false;
+                renderCard(d, isFuture ? futureList : activeFeed);
+            });
+
+            document.getElementById('count-0517').innerText = count0517;
+            document.getElementById('count-total').innerText = snap.size;
+        });
+
+        function renderCard(d, container) {
+            const card = document.createElement('div');
+            card.className = `order-card-pro ${d.urgent ? 'urgent-snake' : ''}`;
+            card.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <div>
+                        <span style="font-size:1.4rem; font-weight:bold; color:var(--win-accent);">${d.name}</span><br>
+                        <small>📍 ${d.address || 'לא צוין כתובת'}</small>
+                    </div>
+                    <div style="text-align:left;">
+                        <span style="background:#eee; padding:2px 8px; border-radius:4px; font-weight:bold;">#${d.orgId || '---'}</span>
+                    </div>
+                </div>
+                <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
+                    <div style="font-size:0.85rem; color:#666;">🚜 נהג: <b>${d.driverName || 'טרם שובץ'}</b></div>
+                    <div>
+                        <button class="btn-status" style="background:#fbc02d;" onclick="updateOrder('${d.id}', 2)">במערכת</button>
+                        <button class="btn-status" style="background:#0078d4; color:white;" onclick="updateOrder('${d.id}', 3)">הפצה</button>
+                        <button class="btn-status" style="background:#107c10; color:white;" onclick="updateOrder('${d.id}', 4)">סופק</button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        }
+
+        function createNewOrder() {
+            const name = document.getElementById('cust-name').value;
+            db.collection('users').add({
+                name,
+                address: document.getElementById('cust-addr').value,
+                driverName: document.getElementById('cust-driver').value,
+                orgId: document.getElementById('cust-org-id').value,
+                status: 1,
+                lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            document.getElementById('modal-create').style.display = 'none';
+        }
+
+        function updateOrder(id, status) {
+            db.collection('users').doc(id).update({
+                status: status,
+                lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        }
+
+        setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
+    </script>
+</body>
+</html>
