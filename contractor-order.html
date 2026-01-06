@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>סידור עבודה - ח.סבן</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        .urgent-alert { background: #ff4d4d; color: white; padding: 10px; text-align: center; font-weight: bold; display: none; }
+        .order-box { background: white; border-radius: 10px; margin: 10px; padding: 15px; border-right: 5px solid #008069; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .input-group { margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px; }
+        .time-range { display: flex; gap: 10px; margin-bottom: 10px; }
+        .status-badge { float: left; padding: 4px 8px; border-radius: 5px; font-size: 0.8rem; }
+        .pending { background: #fff3cd; color: #856404; }
+        .confirmed { background: #d4edda; color: #155724; }
+    </style>
+</head>
+<body style="background: #e5ddd5;">
+
+    <div id="deadline-notice" class="urgent-alert">
+        ⚠️ שים לב: חובה לאשר את כל ההזמנות למחר עד השעה 17:00!
+    </div>
+
+    <header class="app-header">
+        <div class="user-info">
+            <img src="icon-192.png" class="avatar-header">
+            <div class="header-text">
+                <span id="app-title">סידור עבודה - קבלן מכולות</span>
+                <span class="status-text">ממתין לעדכון נהגים</span>
+            </div>
+        </div>
+    </header>
+
+    <div id="orders-list" style="padding-bottom: 80px;">
+        </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+    <script>
+        // קונפיגורציה מהקוד הקיים שלך
+        const firebaseConfig = {
+            apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60",
+            projectId: "app-saban94-57361"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // בדיקת שעת דד-ליין (17:00)
+        function checkDeadline() {
+            const now = new Date();
+            if (now.getHours() >= 17) {
+                document.getElementById('deadline-notice').style.display = 'block';
+                document.getElementById('deadline-notice').innerText = "🚫 עבר זמן הדיווח (17:00) - נא ליצור קשר טלפוני עם המשרד!";
+            }
+        }
+
+        // טעינת הזמנות שטרם שויכו
+        db.collection('users').where('type', '==', 'client').onSnapshot(snap => {
+            const list = document.getElementById('orders-list');
+            list.innerHTML = '';
+            
+            snap.forEach(doc => {
+                const data = doc.data();
+                if (data.status === 4) return; // הזמנה סגורה
+
+                const div = document.createElement('div');
+                div.className = 'order-box';
+                div.innerHTML = `
+                    <div class="status-badge ${data.driverName ? 'confirmed' : 'pending'}">
+                        ${data.driverName ? '✅ שובץ' : '⏳ ממתין לנהג'}
+                    </div>
+                    <strong>${data.name}</strong><br>
+                    <small>📍 ${data.address || 'כתובת חסרה'}</small>
+                    
+                    <div class="input-group">
+                        <label>שם נהג ומספר משאית:</label>
+                        <input type="text" id="driver-${doc.id}" class="input-field" value="${data.driverName || ''}" placeholder="למשל: מוחמד - 12-345-67">
+                        
+                        <label>חלון זמן (שעתיים):</label>
+                        <div class="time-range">
+                            <input type="time" id="start-${doc.id}" class="input-field" value="${data.deliveryStart || '07:00'}">
+                            <span>עד</span>
+                            <input type="time" id="end-${doc.id}" class="input-field" value="${data.deliveryEnd || '09:00'}">
+                        </div>
+                        
+                        <button onclick="confirmOrder('${doc.id}')" class="btn-primary" style="background:#008069">
+                            אישור ושיווך הזמנה
+                        </button>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        });
+
+        function confirmOrder(id) {
+            const driver = document.getElementById(`driver-${id}`).value;
+            const start = document.getElementById(`start-${id}`).value;
+            const end = document.getElementById(`end-${id}`).value;
+
+            if (!driver) {
+                alert("אחי, לא הזנת שם נהג. הקבלן חייב לתת שם נהג לאישור!");
+                return;
+            }
+
+            db.collection('users').doc(id).update({
+                driverName: driver,
+                deliveryStart: start,
+                deliveryEnd: end,
+                status: 2, // מעבר לסטטוס "בטיפול/שובץ"
+                lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(() => alert("הזמנה שויכה בהצלחה!"));
+        }
+
+        setInterval(checkDeadline, 60000);
+        checkDeadline();
+    </script>
+</body>
+</html>
