@@ -13,106 +13,124 @@
 </head>
 <body>
 
-    <header class="app-header" id="main-header">
+    <header class="app-header">
         <div class="user-info" id="header-user-info">
-            <img src="https://ui-avatars.com/api/?name=S&background=random" id="header-avatar" class="avatar-large">
+            <img src="https://ui-avatars.com/api/?name=Saban&background=008069&color=fff" id="header-avatar" class="avatar-header" alt="avatar">
             <div class="header-text">
-                <span id="app-title">ח.סבן חומרי בנין</span>
-                <div id="sub-title">
-                    <span id="status-text">טוען...</span>
-                    <div id="participants-bar" class="participants-bar"></div>
-                </div>
+                <span id="app-title">ח.סבן ניהול</span>
+                <span id="status-text" class="status-text">מחובר</span>
             </div>
         </div>
         <div class="actions">
-            <i class="material-icons" id="refresh-btn">refresh</i>
-            <i class="material-icons" id="back-btn" style="display:none;">arrow_forward</i>
+            <i class="material-icons ripple" id="mute-btn">volume_up</i>
+            <i class="material-icons ripple" id="back-btn" style="display:none;">arrow_forward</i>
         </div>
     </header>
 
-    <div id="stories-container">
+    <div id="stories-container" class="stories-bar" style="display:none;">
         <div class="progress-track"></div>
         <div class="progress-fill" id="progress-fill"></div>
-        </div>
+    </div>
 
     <div id="staff-dashboard" style="display:none;">
-        <div class="dashboard-gates">
-            <div class="gate-card active-filter" onclick="filterDashboard('active')">
-                <div class="gate-icon"><i class="material-icons">local_shipping</i></div>
-                <div class="gate-stat" id="stat-active">0</div>
-                <div class="gate-title">הזמנות חיות</div>
+        <div class="tabs-header">
+            <div class="tab-item active" onclick="switchTab('chats')">צ'אטים</div>
+            <div class="tab-item" onclick="switchTab('groups')">קבוצות</div>
+            <div class="tab-item" onclick="switchTab('staff')">צוות</div>
+        </div>
+
+        <div class="dashboard-stats">
+            <div class="stat-card" onclick="filterList('active')">
+                <i class="material-icons" style="color:#fbc02d">local_shipping</i>
+                <span id="count-active">0</span> פעילים
             </div>
-            <div class="gate-card" onclick="filterDashboard('history')">
-                <div class="gate-icon"><i class="material-icons">inventory</i></div>
-                <div class="gate-stat" id="stat-history">0</div>
-                <div class="gate-title">ארכיון</div>
+            <div class="stat-card" onclick="filterList('history')">
+                <i class="material-icons" style="color:#4caf50">check_circle</i>
+                <span id="count-history">0</span> סופקו
             </div>
         </div>
 
-        <div id="clients-list">
-            </div>
+        <div id="clients-list"></div>
 
         <div class="fab-menu-container" id="fab-menu">
             <div class="mini-fab" onclick="openUserModal('client')">
                 <i class="material-icons">person_add</i>
-                <span class="fab-label">לקוח חדש</span>
+                <span class="fab-tooltip">לקוח חדש</span>
+            </div>
+            <div class="mini-fab" onclick="openUserModal('group')">
+                <i class="material-icons">group_add</i>
+                <span class="fab-tooltip">קבוצה חדשה</span>
             </div>
             <div class="mini-fab" onclick="openUserModal('staff')">
                 <i class="material-icons">badge</i>
-                <span class="fab-label">איש צוות</span>
+                <span class="fab-tooltip">איש צוות</span>
             </div>
         </div>
     </div>
 
-    <div id="admin-controls" class="admin-controls" style="display:none;">
-        <button onclick="updateStatus(1)" class="control-btn"><i class="material-icons">receipt</i> התקבל</button>
-        <button onclick="updateStatus(2)" class="control-btn"><i class="material-icons">handyman</i> בטיפול</button>
-        <button onclick="updateStatus(3)" class="control-btn"><i class="material-icons">local_shipping</i> בדרך</button>
-        <button onclick="updateStatus(4)" class="control-btn"><i class="material-icons">check_circle</i> סופקה</button>
-        <button onclick="toggleTag('urgent')" class="control-btn" style="color:red"><i class="material-icons">error</i> דחוף</button>
-    </div>
-
-    <main id="chat-container" class="chat-feed">
+    <main id="chat-container" class="chat-feed" style="display:none;">
         <div class="date-divider">היום</div>
     </main>
 
-    <footer class="input-area" id="input-area">
-        <button id="main-fab" class="fab-main"><i class="material-icons">add</i></button>
+    <footer class="input-area" id="input-area" style="display:none;">
+        <button id="main-fab" class="fab-main ripple"><i class="material-icons">add</i></button>
         
         <div class="input-wrapper">
             <input type="text" placeholder="הקלד הודעה..." id="msg-input">
             <i class="material-icons" id="internal-msg-btn" style="display:none; color:#fbc02d;" title="הערה חסויה">lock</i>
-            <i class="material-icons" style="color:var(--primary-color); cursor:pointer;" id="send-btn">send</i>
+            <i class="material-icons" id="send-btn" style="color:var(--primary-color); cursor:pointer;">send</i>
         </div>
     </footer>
 
+    <div id="admin-controls" class="admin-controls" style="display:none;">
+        <button onclick="updateStatus(1)" class="chip">📥 התקבל</button>
+        <button onclick="updateStatus(2)" class="chip">📦 בטיפול</button>
+        <button onclick="updateStatus(3)" class="chip">🚚 בדרך</button>
+        <button onclick="updateStatus(4)" class="chip success">✅ סופקה</button>
+    </div>
+
     <div id="order-modal" class="modal-overlay" style="display:none;">
         <div class="modal-content">
-            <div class="modal-header"><h3>הזמנה חדשה 📦</h3><i class="material-icons" onclick="closeModal('order-modal')">close</i></div>
-            <div class="form-group"><label>שם איש קשר</label><input type="text" id="order-contact"></div>
-            <div class="form-group"><label>כתובת</label><input type="text" id="order-address"></div>
-            <div class="form-group"><label>מה להזמין?</label><textarea id="order-item" rows="3"></textarea></div>
-            <div class="form-group"><label>דחיפות</label>
-                <select id="order-time"><option>דחוף להיום 🔥</option><option>מחר בבוקר ☀️</option><option>רגיל 🚛</option></select>
-            </div>
-            <button id="submit-order-btn" class="full-width-btn">שלח הזמנה</button>
+            <div class="modal-header"><h3>הזמנה חדשה</h3><i class="material-icons" onclick="closeModal('order-modal')">close</i></div>
+            <input type="text" id="order-contact" class="input-field" placeholder="שם איש קשר">
+            <input type="text" id="order-address" class="input-field" placeholder="כתובת / אתר">
+            <textarea id="order-item" class="input-field" rows="3" placeholder="פירוט הציוד..."></textarea>
+            <select id="order-time" class="input-field">
+                <option>דחוף להיום 🔥</option>
+                <option>מחר בבוקר ☀️</option>
+                <option>רגיל 🚛</option>
+            </select>
+            <button id="submit-order-btn" class="btn-primary full-width">שלח הזמנה</button>
         </div>
     </div>
 
     <div id="user-modal" class="modal-overlay" style="display:none;">
         <div class="modal-content">
-            <div class="modal-header"><h3 id="user-modal-title">הוספת משתמש</h3><i class="material-icons" onclick="closeModal('user-modal')">close</i></div>
-            <div class="form-group"><label>מזהה (ID)</label><input type="text" id="new-user-id" placeholder="למשל: 60123 או driver_moshe"></div>
-            <div class="form-group"><label>שם תצוגה</label><input type="text" id="new-user-name" placeholder="שם מלא"></div>
-            <div class="form-group"><label>סוג</label>
-                <select id="new-user-role">
-                    <option value="client">לקוח</option>
-                    <option value="staff">איש צוות (נהג/מחסנאי)</option>
-                    <option value="admin">מנהל</option>
-                </select>
+            <div class="modal-header"><h3 id="user-modal-title">הוספה</h3><i class="material-icons" onclick="closeModal('user-modal')">close</i></div>
+            <input type="text" id="new-user-id" class="input-field" placeholder="מזהה (ID) ייחודי">
+            <input type="text" id="new-user-name" class="input-field" placeholder="שם תצוגה">
+            <input type="text" id="new-user-phone" class="input-field" placeholder="טלפון">
+            <input type="hidden" id="new-user-role">
+            <button id="save-user-btn" class="btn-primary full-width">שמור</button>
+        </div>
+    </div>
+
+    <div id="profile-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <div class="modal-header"><h3>כרטיס לקוח</h3><i class="material-icons" onclick="closeModal('profile-modal')">close</i></div>
+            <div style="text-align:center; margin-bottom:15px;">
+                <img id="edit-profile-img" src="" style="width:80px; height:80px; border-radius:50%; border:3px solid #ddd;">
             </div>
-            <button id="save-user-btn" class="full-width-btn">שמור משתמש</button>
-            <button id="delete-user-btn" class="full-width-btn" style="background:#d32f2f; margin-top:10px; display:none;">מחק משתמש</button>
+            <input type="text" id="edit-profile-name" class="input-field" placeholder="שם הלקוח">
+            <input type="text" id="edit-profile-address" class="input-field" placeholder="כתובת קבועה">
+            <input type="text" id="edit-profile-phone" class="input-field" placeholder="טלפון">
+            <input type="text" id="edit-profile-img-url" class="input-field" placeholder="קישור לתמונה (URL)">
+            
+            <button id="save-profile-btn" class="btn-primary full-width">עדכן פרטים</button>
+            <div style="margin-top:10px; display:flex; gap:10px;">
+                <button class="btn-secondary" style="flex:1; color:red;" onclick="alert('לא מיושם כרגע')">מחק לקוח</button>
+                <button class="btn-secondary" style="flex:1;" onclick="window.open('tel:'+document.getElementById('edit-profile-phone').value)">חייג 📞</button>
+            </div>
         </div>
     </div>
 
