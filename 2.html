@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>ח.סבן - Windows 11 Logistics Hub</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        :root {
+            --win-bg: #f3f3f3;
+            --win-glass: rgba(255, 255, 255, 0.7);
+            --win-accent: #0078d4;
+            --status-new: #0078d4;
+            --status-process: #ffb900;
+            --status-done: #107c10;
+        }
+
+        body { 
+            background: url('https://img.freepik.com/free-vector/abstract-background-design-with-blue-wavy-lines_1017-31843.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: #1c1c1c;
+            font-family: 'Segoe UI Variable Display', 'Heebo', sans-serif;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        /* אפקט נחש רחב וממותג */
+        .snake-container {
+            position: relative; padding: 4px; border-radius: 12px; overflow: hidden;
+        }
+        .snake-container::before {
+            content: ''; position: absolute; width: 200%; height: 200%;
+            background: conic-gradient(transparent, var(--win-accent), transparent 30%);
+            animation: rotate-snake 4s linear infinite; top: -50%; left: -50%;
+        }
+        @keyframes rotate-snake { 100% { transform: rotate(360deg); } }
+
+        /* חלונות וינדוס 11 */
+        .win-card {
+            background: var(--win-glass);
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255,255,255,0.4);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+
+        /* הזמנה קרובה בולטת (Header) */
+        .priority-order {
+            grid-column: span 2; background: linear-gradient(90deg, #0078d4, #00bcf2);
+            color: white; padding: 25px; border-radius: 12px; margin-bottom: 20px;
+            box-shadow: 0 10px 20px rgba(0,120,212,0.3);
+        }
+
+        /* רשימת הזמנות עם מדד זמן (SLA) */
+        .order-list-item {
+            display: grid; grid-template-columns: 2fr 1fr 1fr 1fr;
+            align-items: center; padding: 15px; border-bottom: 1px solid rgba(0,0,0,0.05);
+            background: rgba(255,255,255,0.4); margin-bottom: 5px; border-radius: 8px;
+        }
+
+        .sla-tag { font-size: 0.8rem; padding: 4px 8px; border-radius: 20px; background: #eee; color: #555; }
+
+        .fab-plus {
+            position: fixed; bottom: 30px; left: 30px; width: 64px; height: 64px;
+            background: var(--win-accent); color: white; border: none; border-radius: 50%;
+            font-size: 32px; cursor: pointer; box-shadow: 0 8px 15px rgba(0,0,0,0.2); z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+
+    <audio id="order-sound" src="https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3"></audio>
+
+    <div style="padding: 30px; height: 100vh; display: flex; flex-direction: column;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <img src="icon-192.png" width="50" style="border-radius: 10px;">
+                <h1 style="margin:0; font-weight: 600;">מערכת הפצה - ח.סבן</h1>
+            </div>
+            <div class="win-card" style="padding: 10px 20px;">
+                <span id="digital-clock" style="font-size: 1.5rem; font-weight: bold;">00:00</span>
+            </div>
+        </div>
+
+        <div id="next-delivery" class="priority-order" style="display: none;">
+            <div style="font-size: 0.9rem; opacity: 0.9;">🚚 האספקה הקרובה ביותר:</div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h2 id="next-cust" style="margin:5px 0; font-size: 2.2rem;">טוען...</h2>
+                <div id="next-time" style="font-size: 1.8rem; font-weight: bold;">--:--</div>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; flex: 1; overflow: hidden;">
+            
+            <div class="win-card" style="display: flex; flex-direction: column;">
+                <h3>📋 הזמנות פעילות (היום ואתמול)</h3>
+                <div id="order-feed" style="flex: 1; overflow-y: auto;"></div>
+            </div>
+
+            <div class="win-card">
+                <h3>🛠️ ניהול מהיר</h3>
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <input type="text" id="manual-driver" class="input-field" placeholder="שם נהג (דינאמי)">
+                    <input type="text" id="manual-ord-num" class="input-field" placeholder="מספר הזמנה ארגוני">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <button class="btn-primary" style="background:#0078d4;" onclick="quickUpdate()">עדכן מערכת</button>
+                        <button class="btn-primary" style="background:#107c10;" onclick="markDelivered()">דווח מסירה</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button class="fab-plus" onclick="openCreateModal()">+</button>
+
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60",
+            projectId: "app-saban94-57361",
+            appId: "1:275366913167:web:f0c6f808e12f2aeb58fcfa"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let lastCount = 0;
+
+        // האזנה חיה
+        db.collection('users').orderBy('lastUpdate', 'desc').onSnapshot(snap => {
+            const feed = document.getElementById('order-feed');
+            feed.innerHTML = '';
+            let currentOrders = [];
+            
+            if(snap.size > lastCount && lastCount !== 0) {
+                document.getElementById('order-sound').play(); // צלצול בהזמנה חדשה
+            }
+            lastCount = snap.size;
+
+            snap.forEach(doc => {
+                const data = doc.data(); data.id = doc.id;
+                // סינון להיום ואתמול בלבד
+                const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+                if (data.lastUpdate && data.lastUpdate.toDate() > yesterday) {
+                    currentOrders.push(data);
+                    renderOrderRow(data, feed);
+                }
+            });
+
+            // הצגת ההזמנה הקרובה ביותר בראש הדף
+            if(currentOrders.length > 0) {
+                const active = currentOrders.filter(o => o.status < 4);
+                if(active.length > 0) {
+                    const next = active[active.length - 1];
+                    document.getElementById('next-delivery').style.display = 'block';
+                    document.getElementById('next-cust').innerText = next.name;
+                    document.getElementById('next-time').innerText = next.lastUpdate ? new Date(next.lastUpdate.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+                }
+            }
+        });
+
+        function renderOrderRow(o, container) {
+            const start = o.lastUpdate ? o.lastUpdate.toDate() : new Date();
+            const diff = Math.floor((new Date() - start) / 1000 / 60); // דקות מתחילת סטטוס
+            
+            const div = document.createElement('div');
+            div.className = 'order-list-item';
+            div.innerHTML = `
+                <div><strong style="font-size:1.1rem;">${o.name}</strong><br><small>${o.address || ''}</small></div>
+                <div class="sla-tag">⏳ ${diff} דק'</div>
+                <div style="font-weight:bold; color:var(--win-accent);">${o.orgId || '---'}</div>
+                <select onchange="updateStatus('${o.id}', this.value)" style="border-radius:4px; padding:4px;">
+                    <option value="1" ${o.status==1?'selected':''}>חדש</option>
+                    <option value="2" ${o.status==2?'selected':''}>במערכת</option>
+                    <option value="3" ${o.status==3?'selected':''}>בהובלה</option>
+                    <option value="4" ${o.status==4?'selected':''}>בוצע</option>
+                </select>
+            `;
+            container.appendChild(div);
+        }
+
+        function updateStatus(id, val) {
+            db.collection('users').doc(id).update({
+                status: parseInt(val),
+                lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        }
+
+        setInterval(() => { document.getElementById('digital-clock').innerText = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); }, 1000);
+    </script>
+</body>
+</html>
