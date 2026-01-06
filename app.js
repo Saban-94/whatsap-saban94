@@ -16,6 +16,7 @@ let customerId = urlParams.get('cid');
 let staffId = urlParams.get('sid');
 let allUsersData = [];
 let currentChatId = null;
+let currentChatData = null; // שמירת נתוני הקבוצה הנוכחית
 let messageToForward = null;
 let isMenuOpen = false;
 let isInternalMode = false;
@@ -38,6 +39,7 @@ function initViews() {
     const inp = document.getElementById('msg-input');
     if(inp) inp.onkeypress = (e) => { if(e.key==='Enter') sendMessage(); };
     
+    // Header Click -> Edit Profile / Manage Group
     document.getElementById('header-clickable').onclick = () => {
         if(staffId && currentChatId) openProfileModal(currentChatId);
     };
@@ -88,8 +90,6 @@ function loadAllUsers() {
         });
         safeSetText('stat-active', active);
         safeSetText('stat-history', history);
-        
-        // טעינה ראשונית - צ'אטים
         switchManagerTab('chats');
     });
 }
@@ -97,7 +97,6 @@ function loadAllUsers() {
 window.switchManagerTab = function(tab) {
     document.querySelectorAll('.tab-item').forEach(e => e.classList.remove('active'));
     document.getElementById('tab-'+tab).classList.add('active');
-    
     const list = document.getElementById('clients-list');
     list.innerHTML = '';
     
@@ -107,7 +106,6 @@ window.switchManagerTab = function(tab) {
     if(tab === 'staff') filtered = allUsersData.filter(u => u.type === 'staff');
     
     document.getElementById('dashboard-gates').style.display = tab==='chats'?'grid':'none';
-    
     if(tab === 'chats') filterList('active'); 
     else renderListItems(filtered, list);
 };
@@ -115,7 +113,6 @@ window.switchManagerTab = function(tab) {
 window.filterList = function(statusType) {
     const list = document.getElementById('clients-list');
     list.innerHTML = '';
-    
     const cards = document.querySelectorAll('.gate-card');
     cards.forEach(c => c.classList.remove('active-filter'));
     if(statusType === 'active' && cards[0]) cards[0].classList.add('active-filter');
@@ -124,23 +121,18 @@ window.filterList = function(statusType) {
     let filtered = allUsersData.filter(u => u.type === 'client' || !u.type);
     if(statusType==='active') filtered = filtered.filter(u => !u.status || u.status < 4);
     if(statusType==='history') filtered = filtered.filter(u => u.status === 4);
-    
     renderListItems(filtered, list);
 };
 
 function renderListItems(data, container) {
     if(data.length === 0) { container.innerHTML = '<div style="text-align:center; padding:20px; color:#999;">אין נתונים</div>'; return; }
-    
     data.forEach(u => {
         const div = document.createElement('div');
         div.className = 'chat-list-item';
         let sub = u.address || (u.type==='staff'?'איש צוות':'קבוצה');
         div.innerHTML = `
             <img src="${u.imgUrl || 'https://ui-avatars.com/api/?name='+u.name+'&background=random'}" class="chat-avatar">
-            <div class="chat-info">
-                <div class="chat-name">${u.name || u.id}</div>
-                <div class="chat-preview">${sub}</div>
-            </div>
+            <div class="chat-info"><div class="chat-name">${u.name || u.id}</div><div class="chat-preview">${sub}</div></div>
         `;
         div.onclick = () => openChat(u);
         container.appendChild(div);
@@ -149,23 +141,52 @@ function renderListItems(data, container) {
 
 function openChat(user) {
     currentChatId = user.id;
+    currentChatData = user; // שמירת מידע לשימוש בהרשאות
+    
     safeDisplay('staff-dashboard', 'none');
     safeDisplay('main-chat-feed', 'flex');
-    safeDisplay('input-area', 'flex');
     safeDisplay('back-btn', 'block');
     safeSetText('app-title', user.name || user.id);
     safeSetText('header-subtitle', user.type==='group'?'קבוצה':'בשיחה');
     
-    if(staffId) document.getElementById('internal-msg-btn').style.display = 'block';
+    if(staffId) {
+        safeDisplay('admin-controls', 'flex');
+        safeDisplay('internal-msg-btn', 'block');
+    }
+    
+    // בדיקת הרשאות (חסימת הקלדה למי שלא מורשה)
+    checkPermissions();
     
     loadChat(user.id, 'main-chat-feed');
 }
 
-// --- 4. Client Logic ---
+function checkPermissions() {
+    // ברירת מחדל: מותר לכתוב
+    let canWrite = true;
+    
+    // אם זו קבוצה ויש לה מערכת חברים
+    if (currentChatData && currentChatData.members && !staffId) { 
+        // אנחנו בודקים כלקוח (customerId)
+        const myRole = currentChatData.members[customerId];
+        if (myRole === 'viewer') canWrite = false;
+    }
+    
+    if (canWrite) {
+        safeDisplay('input-area', 'flex');
+        safeDisplay('read-only-msg', 'none');
+    } else {
+        safeDisplay('input-area', 'none'); // הסתרת כל הפוטר
+        document.getElementById('input-area').style.display = 'flex'; // החזרת פוטר כדי להראות הודעה
+        document.querySelector('.input-wrapper').style.display = 'none';
+        document.getElementById('main-fab').style.display = 'none';
+        safeDisplay('read-only-msg', 'block');
+    }
+}
+
+// --- 4. Client Tabs ---
 window.switchClientTab = function(tab) {
     document.querySelectorAll('.c-tab').forEach(e => e.classList.remove('active'));
     event.currentTarget.classList.add('active');
-    
     safeDisplay('tab-my-order', tab==='my-order'?'block':'none');
     safeDisplay('tab-departments', tab==='departments'?'block':'none');
 };
@@ -176,6 +197,7 @@ function loadDepartments() {
         container.innerHTML = '';
         snap.forEach(doc => {
             const d = doc.data();
+            d.id = doc.id; // חשוב!
             const div = document.createElement('div');
             div.className = 'chat-list-item';
             div.innerHTML = `
@@ -183,7 +205,9 @@ function loadDepartments() {
                 <div class="chat-info"><div class="chat-name">${d.name}</div><div class="chat-preview">לחץ לשליחת הודעה</div></div>
             `;
             div.onclick = () => {
-                openChat({id: doc.id, name: d.name, type: 'group'});
+                // המעבר לשיחה שומר את נתוני הקבוצה כדי לבדוק הרשאות
+                currentChatData = d;
+                openChat(d);
                 safeDisplay('client-view', 'none'); 
             };
             container.appendChild(div);
@@ -191,19 +215,16 @@ function loadDepartments() {
     });
 }
 
-// --- 5. Chat ---
+// --- 5. Chat Engine ---
 function loadChat(cid, containerId) {
     const container = document.getElementById(containerId);
     if(!container) return;
     container.innerHTML = '<div class="date-divider">טוען...</div>';
-    
     if (window.unsubChat) window.unsubChat();
     window.unsubChat = db.collection('orders').doc(cid).collection('messages')
     .orderBy('timestamp', 'asc').onSnapshot(snap => {
         container.innerHTML = '<div class="date-divider">היום</div>';
-        snap.forEach(doc => {
-            renderMessage(doc.data(), container);
-        });
+        snap.forEach(doc => { renderMessage(doc.data(), container); });
         container.scrollTop = container.scrollHeight;
     });
 }
@@ -215,22 +236,16 @@ function renderMessage(msg, container) {
     let cls = 'message';
     if(msg.type==='internal') cls += ' internal';
     else cls += me ? ' sent' : ' received';
-    
     div.className = cls;
     
     if(staffId) {
-        div.oncontextmenu = (e) => {
-            e.preventDefault();
-            messageToForward = msg.text;
-            safeDisplay('msg-action-modal', 'flex');
-        };
+        div.oncontextmenu = (e) => { e.preventDefault(); messageToForward = msg.text; safeDisplay('msg-action-modal', 'flex'); };
     }
-
-    let content = msg.text;
+    let content = msg.text || '';
     if(msg.type==='internal') content = `🔒 <b>פנימי:</b> ${content}`;
+    
     div.innerHTML = `${content}<div class="msg-meta">${msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : ''}</div>`;
     container.appendChild(div);
-    if(!isInitialLoad && !me && !isMuted) notificationSound.play().catch(()=>{});
 }
 
 function sendMessage() {
@@ -247,60 +262,98 @@ function sendMessage() {
     if(isInternalMode) document.getElementById('internal-msg-btn').click();
 }
 
-// --- 6. Forwarding ---
-window.forwardMessageToGroup = function() {
-    closeModal('msg-action-modal');
-    safeDisplay('forward-target-modal', 'flex');
-    const list = document.getElementById('groups-list-for-forward');
-    list.innerHTML = 'טוען...';
+// --- 6. ניהול פרופיל וחברי קבוצה (הפיצ'ר החדש!) ---
+window.openProfileModal = function(uid) {
+    safeDisplay('profile-modal', 'flex');
+    const groupArea = document.getElementById('group-management-area');
+    const contactActions = document.getElementById('contact-actions');
     
-    db.collection('users').where('type', 'in', ['group', 'staff']).get().then(snap => {
-        list.innerHTML = '';
-        snap.forEach(doc => {
+    db.collection('users').doc(uid).get().then(doc => {
+        if(doc.exists) {
             const d = doc.data();
-            const div = document.createElement('div');
-            div.className = 'chat-list-item';
-            div.innerHTML = `<div class="chat-name">${d.name}</div>`;
-            div.onclick = () => doForward(doc.id, d.name);
-            list.appendChild(div);
-        });
+            document.getElementById('edit-name').value = d.name || '';
+            document.getElementById('edit-img').value = d.imgUrl || '';
+            document.getElementById('edit-img-preview').src = d.imgUrl || `https://ui-avatars.com/api/?name=${d.name}&background=random`;
+            
+            // התאמה אם זו קבוצה או אדם
+            if (d.type === 'group') {
+                groupArea.style.display = 'block';
+                contactActions.style.display = 'none';
+                renderGroupMembers(d.members || {});
+                
+                // הוספת חבר
+                document.getElementById('add-member-btn').onclick = () => {
+                    const newId = document.getElementById('new-member-id').value;
+                    const canWrite = document.getElementById('can-write-toggle').checked;
+                    if(!newId) return;
+                    
+                    const role = canWrite ? 'writer' : 'viewer';
+                    // עדכון מקומי של אובייקט החברים
+                    const members = d.members || {};
+                    members[newId] = role;
+                    
+                    db.collection('users').doc(uid).update({ members: members }).then(() => {
+                        alert('חבר נוסף!');
+                        openProfileModal(uid); // רענון
+                    });
+                };
+            } else {
+                groupArea.style.display = 'none';
+                contactActions.style.display = 'flex';
+                document.getElementById('edit-phone').value = d.phone || '';
+                document.getElementById('edit-email').value = d.email || '';
+            }
+
+            // שמירה כללית
+            document.getElementById('save-profile-btn').onclick = () => {
+                db.collection('users').doc(uid).update({
+                    name: document.getElementById('edit-name').value,
+                    phone: document.getElementById('edit-phone').value || '',
+                    email: document.getElementById('edit-email').value || '',
+                    imgUrl: document.getElementById('edit-img').value
+                }).then(() => { closeModal('profile-modal'); });
+            };
+        }
     });
 };
 
-function doForward(targetId, targetName) {
-    const refText = `🚩 **העברה מ${document.getElementById('app-title').innerText}:**\n"${messageToForward}"`;
-    db.collection('orders').doc(targetId).collection('messages').add({
-        text: refText, sender: 'staff', type: 'regular', timestamp: firebase.firestore.FieldValue.serverTimestamp()
+function renderGroupMembers(members) {
+    const list = document.getElementById('group-members-list');
+    list.innerHTML = '';
+    Object.keys(members).forEach(uid => {
+        const role = members[uid];
+        const badgeColor = role === 'viewer' ? '#9e9e9e' : '#4caf50';
+        const badgeText = role === 'viewer' ? 'צופה' : 'כותב';
+        
+        list.innerHTML += `
+            <div class="member-item">
+                <span>${uid}</span>
+                <span class="badge-role" style="background:${badgeColor}">${badgeText}</span>
+            </div>
+        `;
     });
-    alert('הועבר ל' + targetName);
-    closeModal('forward-target-modal');
 }
 
-// --- 7. FAB & User Management ---
+// --- 7. FAB & Modals ---
 function handleFabClick() {
     if(staffId && !currentChatId) toggleFabMenu();
     else safeDisplay('order-modal', 'flex');
 }
-
 function toggleFabMenu() {
     isMenuOpen = !isMenuOpen;
     const main = document.getElementById('main-fab');
     if(main) main.classList.toggle('rotate');
-    
     const items = document.querySelectorAll('.mini-fab');
     items.forEach((item, i) => {
         if(isMenuOpen) setTimeout(() => item.classList.add('show'), i * 50);
         else item.classList.remove('show');
     });
 }
-
 window.openUserModal = function(role) {
-    if(isMenuOpen) toggleFabMenu();
+    toggleFabMenu();
     safeDisplay('user-modal', 'flex');
     document.getElementById('new-user-role').value = role;
-    document.getElementById('user-modal-title').innerText = role==='group'?'קבוצה חדשה':'משתמש חדש';
 };
-
 safeOnClick('save-user-btn', () => {
     const id = document.getElementById('new-user-id').value;
     const name = document.getElementById('new-user-name').value;
@@ -313,38 +366,7 @@ safeOnClick('save-user-btn', () => {
     }
 });
 
-// Profile Editing
-window.openProfileModal = function(uid) {
-    safeDisplay('profile-modal', 'flex');
-    db.collection('users').doc(uid).get().then(doc => {
-        if(doc.exists) {
-            const d = doc.data();
-            document.getElementById('edit-name').value = d.name || '';
-            document.getElementById('edit-phone').value = d.phone || '';
-            document.getElementById('edit-email').value = d.email || '';
-            document.getElementById('edit-img').value = d.imgUrl || '';
-            
-            document.getElementById('save-profile-btn').onclick = () => {
-                db.collection('users').doc(uid).update({
-                    name: document.getElementById('edit-name').value,
-                    phone: document.getElementById('edit-phone').value,
-                    email: document.getElementById('edit-email').value,
-                    imgUrl: document.getElementById('edit-img').value
-                }).then(() => closeModal('profile-modal'));
-            };
-        }
-    });
-};
-
-window.performAction = function(action) {
-    const p = document.getElementById('edit-phone').value;
-    const e = document.getElementById('edit-email').value;
-    if(action==='call') window.open('tel:'+p);
-    if(action==='sms') window.open('sms:'+p);
-    if(action==='email') window.open('mailto:'+e);
-};
-
-// Utils
+// --- Utils ---
 function safeOnClick(id, fn) { const el=document.getElementById(id); if(el) el.onclick=fn; }
 function safeSetText(id, txt) { const el=document.getElementById(id); if(el) el.innerText=txt; }
 function safeSetSrc(id, src) { const el=document.getElementById(id); if(el) el.src=src; }
@@ -355,7 +377,10 @@ function goBack() {
         safeDisplay('main-chat-feed', 'none');
         safeDisplay('input-area', 'none');
         safeDisplay('back-btn', 'none');
+        safeDisplay('admin-controls', 'none');
+        safeDisplay('internal-msg-btn', 'none');
         safeDisplay('staff-dashboard', 'flex');
+        safeSetText('app-title', "ניהול ח.סבן");
         currentChatId = null;
     } else {
         safeDisplay('client-view', 'block');
@@ -366,3 +391,29 @@ function renderProgress(s) {
     const fill = document.getElementById('progress-fill');
     if(fill) fill.style.width = ((s-1)*33)+'%';
 }
+window.updateStatus = function(val) {
+    if(!currentChatId) return;
+    db.collection('users').doc(currentChatId).update({ status: val, lastUpdate: firebase.firestore.FieldValue.serverTimestamp() });
+};
+window.forwardMessageToGroup = function() {
+    closeModal('msg-action-modal');
+    safeDisplay('forward-target-modal', 'flex');
+    const list = document.getElementById('groups-list-for-forward');
+    list.innerHTML = 'טוען...';
+    db.collection('users').where('type', 'in', ['group', 'staff']).get().then(snap => {
+        list.innerHTML = '';
+        snap.forEach(doc => {
+            const d = doc.data();
+            const div = document.createElement('div');
+            div.className = 'chat-list-item';
+            div.innerHTML = `<div class="chat-name">${d.name}</div>`;
+            div.onclick = () => {
+                db.collection('orders').doc(doc.id).collection('messages').add({
+                    text: `🚩 **העברה:**\n"${messageToForward}"`, sender: 'staff', type: 'regular', timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                alert('הועבר!'); closeModal('forward-target-modal');
+            };
+            list.appendChild(div);
+        });
+    });
+};
