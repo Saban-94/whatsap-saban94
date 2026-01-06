@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>ח.סבן - מרכז שליטה למסכים</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        body { background: #111b21; color: white; overflow: hidden; } /* רקע כהה מקצועי */
+        .screen-container { display: grid; grid-template-columns: 350px 1fr; height: 100vh; gap: 10px; padding: 10px; }
+        .stats-panel { background: #202c33; border-radius: 15px; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+        .live-feed { background: #0b141a; border-radius: 15px; overflow-y: auto; position: relative; }
+        .order-card-live { background: #202c33; margin: 10px; padding: 15px; border-radius: 10px; border-right: 5px solid #00a884; animation: fadeIn 0.5s; }
+        .urgent { border-right-color: #ff3b30; animation: pulse-red 2s infinite; }
+        .stat-box { background: #008069; padding: 20px; border-radius: 12px; text-align: center; }
+        .stat-number { font-size: 3rem; font-weight: bold; }
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(255, 59, 48, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0); } }
+    </style>
+</head>
+<body>
+    <div class="screen-container">
+        <div class="stats-panel">
+            <img src="icon-192.png" style="width: 100px; align-self: center;">
+            <div class="stat-box">
+                <div class="stat-title">הזמנות פעילות</div>
+                <div id="active-count" class="stat-number">0</div>
+            </div>
+            <div class="stat-box" style="background: #fbc02d; color: black;">
+                <div class="stat-title">בטיפול דחוף</div>
+                <div id="urgent-count" class="stat-number">0</div>
+            </div>
+            <div id="clock" style="font-size: 2rem; text-align: center; margin-top: auto;">00:00:00</div>
+        </div>
+
+        <div class="live-feed" id="screen-feed">
+            <div style="padding: 20px; text-align: center; color: #8696a0;">מתחבר למסד הנתונים של ח.סבן...</div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+    <script>
+        // שימוש בקונפיגורציה מה-app.js המקורי
+        const firebaseConfig = {
+            apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60",
+            projectId: "app-saban94-57361",
+            appId: "1:275366913167:web:f0c6f808e12f2aeb58fcfa"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        function initScreen() {
+            // עדכון שעון
+            setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
+
+            // האזנה להזמנות ומשתמשים
+            db.collection('users').orderBy('lastUpdate', 'desc').onSnapshot(snap => {
+                const feed = document.getElementById('screen-feed');
+                feed.innerHTML = '';
+                let active = 0, urgent = 0;
+
+                snap.forEach(doc => {
+                    const u = doc.data();
+                    if (u.status && u.status < 4) { // רק פעילים
+                        active++;
+                        const isUrgent = u.address && u.address.includes('דחוף'); // לוגיקת זיהוי דחיפות
+                        if (isUrgent) urgent++;
+
+                        const card = document.createElement('div');
+                        card.className = `order-card-live ${isUrgent ? 'urgent' : ''}`;
+                        card.innerHTML = `
+                            <div style="display:flex; justify-content:space-between;">
+                                <b style="font-size:1.2rem;">${u.name}</b>
+                                <span style="color:#8696a0;">${u.lastUpdate ? new Date(u.lastUpdate.toDate()).toLocaleTimeString() : ''}</span>
+                            </div>
+                            <div style="margin-top:10px; color:#d1d7db;">📍 ${u.address || 'לא צוינה כתובת'}</div>
+                            <div style="margin-top:5px; font-weight:bold; color:#00a884;">📦 סטטוס: ${getStatusText(u.status)}</div>
+                        `;
+                        feed.appendChild(card);
+                    }
+                });
+                document.getElementById('active-count').innerText = active;
+                document.getElementById('urgent-count').innerText = urgent;
+            });
+        }
+
+        function getStatusText(s) {
+            const statusMap = { 1: "התקבל", 2: "בטיפול", 3: "בדרך" };
+            return statusMap[s] || "חדש";
+        }
+
+        initScreen();
+    </script>
+</body>
+</html>
