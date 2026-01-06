@@ -2,94 +2,115 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>ח.סבן - מרכז שליטה למסכים</title>
+    <title>ח.סבן - ניהול הפצה חי</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
-        body { background: #111b21; color: white; overflow: hidden; } /* רקע כהה מקצועי */
-        .screen-container { display: grid; grid-template-columns: 350px 1fr; height: 100vh; gap: 10px; padding: 10px; }
-        .stats-panel { background: #202c33; border-radius: 15px; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
-        .live-feed { background: #0b141a; border-radius: 15px; overflow-y: auto; position: relative; }
-        .order-card-live { background: #202c33; margin: 10px; padding: 15px; border-radius: 10px; border-right: 5px solid #00a884; animation: fadeIn 0.5s; }
-        .urgent { border-right-color: #ff3b30; animation: pulse-red 2s infinite; }
-        .stat-box { background: #008069; padding: 20px; border-radius: 12px; text-align: center; }
-        .stat-number { font-size: 3rem; font-weight: bold; }
-        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(255, 59, 48, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0); } }
+        body { background: #0b141a; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; overflow: hidden; }
+        .dispatch-grid { display: grid; grid-template-columns: 1fr 1fr; height: 100vh; gap: 2px; background: #202c33; }
+        .driver-column { background: #0b141a; display: flex; flex-direction: column; padding: 15px; }
+        
+        /* ראש העמוד - פרטי נהג */
+        .driver-header { background: #202c33; padding: 20px; border-radius: 10px; display: flex; align-items: center; gap: 20px; margin-bottom: 20px; border-bottom: 4px solid #00a884; }
+        .driver-img { width: 100px; height: 100px; border-radius: 50%; border: 3px solid #00a884; object-fit: cover; }
+        .driver-info input { background: transparent; border: none; border-bottom: 1px dashed #8696a0; color: #00a884; font-size: 1.5rem; font-weight: bold; width: 200px; outline: none; }
+        
+        /* ציר זמן והזמנות */
+        .timeline { flex-grow: 1; overflow-y: auto; padding-right: 10px; }
+        .order-card { background: #202c33; margin-bottom: 15px; padding: 15px; border-radius: 8px; position: relative; border-right: 4px solid #34b7f1; animation: slideIn 0.3s ease-out; }
+        .order-time { position: absolute; left: 15px; top: 15px; background: #005c4b; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; }
+        .order-address { color: #8696a0; margin-top: 5px; font-size: 0.9rem; }
+        
+        @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
     </style>
 </head>
 <body>
-    <div class="screen-container">
-        <div class="stats-panel">
-            <img src="icon-192.png" style="width: 100px; align-self: center;">
-            <div class="stat-box">
-                <div class="stat-title">הזמנות פעילות</div>
-                <div id="active-count" class="stat-number">0</div>
-            </div>
-            <div class="stat-box" style="background: #fbc02d; color: black;">
-                <div class="stat-title">בטיפול דחוף</div>
-                <div id="urgent-count" class="stat-number">0</div>
-            </div>
-            <div id="clock" style="font-size: 2rem; text-align: center; margin-top: auto;">00:00:00</div>
-        </div>
 
-        <div class="live-feed" id="screen-feed">
-            <div style="padding: 20px; text-align: center; color: #8696a0;">מתחבר למסד הנתונים של ח.סבן...</div>
+<div class="dispatch-grid">
+    <div class="driver-column" id="truck-column">
+        <div class="driver-header">
+            <img src="https://cdn-icons-png.flaticon.com/512/2555/2555013.png" class="driver-img" alt="משאית">
+            <div class="driver-info">
+                <div style="font-size: 0.9rem; color: #8696a0;">נהג משאית</div>
+                <input type="text" id="driver1-name" placeholder="הקלד שם נהג..." onchange="saveDriverName(1, this.value)">
+            </div>
         </div>
+        <div class="timeline" id="orders-driver1">
+            </div>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
-    <script>
-        // שימוש בקונפיגורציה מה-app.js המקורי
-        const firebaseConfig = {
-            apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60",
-            projectId: "app-saban94-57361",
-            appId: "1:275366913167:web:f0c6f808e12f2aeb58fcfa"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+    <div class="driver-column" id="crane-column">
+        <div class="driver-header">
+            <img src="https://cdn-icons-png.flaticon.com/512/2329/2329113.png" class="driver-img" alt="מנוף">
+            <div class="driver-info">
+                <div style="font-size: 0.9rem; color: #8696a0;">נהג מנוף</div>
+                <input type="text" id="driver2-name" placeholder="הקלד שם נהג..." onchange="saveDriverName(2, this.value)">
+            </div>
+        </div>
+        <div class="timeline" id="orders-driver2">
+            </div>
+    </div>
+</div>
 
-        function initScreen() {
-            // עדכון שעון
-            setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
+<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
 
-            // האזנה להזמנות ומשתמשים
-            db.collection('users').orderBy('lastUpdate', 'desc').onSnapshot(snap => {
-                const feed = document.getElementById('screen-feed');
-                feed.innerHTML = '';
-                let active = 0, urgent = 0;
+<script>
+    // הגדרות Firebase מהמאגר שלך
+    const firebaseConfig = {
+        apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60",
+        projectId: "app-saban94-57361",
+        appId: "1:275366913167:web:f0c6f808e12f2aeb58fcfa"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-                snap.forEach(doc => {
-                    const u = doc.data();
-                    if (u.status && u.status < 4) { // רק פעילים
-                        active++;
-                        const isUrgent = u.address && u.address.includes('דחוף'); // לוגיקת זיהוי דחיפות
-                        if (isUrgent) urgent++;
+    // שמירת שם נהג בבסיס הנתונים (מסונכרן לכל המסכים)
+    function saveDriverName(id, name) {
+        db.collection('settings').doc('drivers').set({
+            [`driver${id}`]: name
+        }, { merge: true });
+    }
 
-                        const card = document.createElement('div');
-                        card.className = `order-card-live ${isUrgent ? 'urgent' : ''}`;
-                        card.innerHTML = `
-                            <div style="display:flex; justify-content:space-between;">
-                                <b style="font-size:1.2rem;">${u.name}</b>
-                                <span style="color:#8696a0;">${u.lastUpdate ? new Date(u.lastUpdate.toDate()).toLocaleTimeString() : ''}</span>
-                            </div>
-                            <div style="margin-top:10px; color:#d1d7db;">📍 ${u.address || 'לא צוינה כתובת'}</div>
-                            <div style="margin-top:5px; font-weight:bold; color:#00a884;">📦 סטטוס: ${getStatusText(u.status)}</div>
-                        `;
-                        feed.appendChild(card);
-                    }
-                });
-                document.getElementById('active-count').innerText = active;
-                document.getElementById('urgent-count').innerText = urgent;
-            });
+    // טעינת שמות נהגים בלייב
+    db.collection('settings').doc('drivers').onSnapshot(doc => {
+        if (doc.exists) {
+            const data = doc.data();
+            if (data.driver1) document.getElementById('driver1-name').value = data.driver1;
+            if (data.driver2) document.getElementById('driver2-name').value = data.driver2;
         }
+    });
 
-        function getStatusText(s) {
-            const statusMap = { 1: "התקבל", 2: "בטיפול", 3: "בדרך" };
-            return statusMap[s] || "חדש";
-        }
+    // המנגנון שהופך את הדף לחי: האזנה להזמנות
+    db.collection('users').orderBy('lastUpdate', 'desc').onSnapshot(snap => {
+        const list1 = document.getElementById('orders-driver1');
+        const list2 = document.getElementById('orders-driver2');
+        list1.innerHTML = ''; list2.innerHTML = '';
 
-        initScreen();
-    </script>
+        snap.forEach(doc => {
+            const order = doc.data();
+            // לוגיקה: סינון הזמנות בטיפול (סטטוס 2)
+            if (order.status === 2 || order.status === 3) {
+                const card = document.createElement('div');
+                card.className = 'order-card';
+                const time = order.lastUpdate ? new Date(order.lastUpdate.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--:--';
+                
+                card.innerHTML = `
+                    <div class="order-time">${time}</div>
+                    <div style="font-weight: bold; font-size: 1.1rem;">${order.name}</div>
+                    <div class="order-address">📍 ${order.address || 'איסוף עצמי'}</div>
+                    <div style="margin-top: 10px; color: #00a884; font-size: 0.8rem;">📦 סטטוס: בדרך</div>
+                `;
+
+                // פיצול אוטומטי לפי סוג הזמנה (מנוף/משאית) או חלוקה שווה
+                if (order.address && (order.address.includes('מנוף') || order.address.includes('קומה'))) {
+                    list2.appendChild(card);
+                } else {
+                    list1.appendChild(card);
+                }
+            }
+        });
+    });
+</script>
+
 </body>
 </html>
