@@ -1,13 +1,5 @@
-:root {
-    --primary-color: #008069;
-    --bg-color: #e5ddd5;
-    --chat-outgoing: #dcf8c6;
-    --chat-incoming: #ffffff;
-    --blue-tick: #34B7F1; /* צבע הוי הכחול המקורי של ווצאף */
-    --gray-tick: #999999;
-}
-
-body { margin: 0; font-family: 'Heebo', sans-serif; background: var(--bg-color); display: flex; flex-direction: column; height: 100vh; overflow: hidden; -webkit-tap-highlight-color: transparent; }
+:root { --primary-color: #008069; --bg-color: #e5ddd5; --chat-out: #dcf8c6; --chat-in: #fff; --blue-tick: #34B7F1; --gray-tick: #999; }
+body { margin: 0; font-family: 'Heebo', sans-serif; background: var(--bg-color); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
 /* Header */
 .app-header { background: var(--primary-color); color: white; padding: 0 10px; height: 60px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 50; }
@@ -19,78 +11,73 @@ body { margin: 0; font-family: 'Heebo', sans-serif; background: var(--bg-color);
 .actions i { padding: 8px; cursor: pointer; }
 
 /* Tabs */
-.client-tabs, .tabs-header { display: flex; background: white; border-bottom: 1px solid #ddd; }
+.tabs-header, .client-tabs { display: flex; background: white; border-bottom: 1px solid #ddd; }
 .tabs-header { background: var(--primary-color); color: rgba(255,255,255,0.7); }
-.c-tab, .tab-item { flex: 1; text-align: center; padding: 12px 0; cursor: pointer; font-weight: 500; border-bottom: 3px solid transparent; font-size: 0.9rem; }
-.c-tab.active { color: var(--primary-color); border-bottom-color: var(--primary-color); background: #f9f9f9; }
+.tab-item, .c-tab { flex: 1; text-align: center; padding: 12px 0; cursor: pointer; border-bottom: 3px solid transparent; font-weight: 500; font-size: 0.9rem; }
 .tab-item.active { color: white; border-bottom-color: white; }
+.c-tab.active { color: var(--primary-color); border-bottom-color: var(--primary-color); }
 
 /* Dashboard */
-#staff-dashboard { background: #f0f2f5; flex: 1; overflow-y: auto; display: flex; flex-direction: column; padding-bottom: 80px; }
+#staff-dashboard { background: #f0f2f5; flex: 1; overflow-y: auto; padding-bottom: 80px; }
 .dashboard-gates { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px; }
 .gate-card { background: white; padding: 15px; border-radius: 10px; text-align: center; cursor: pointer; border: 2px solid transparent; }
 .gate-card.active-filter { border-color: var(--primary-color); background: #e0f2f1; }
 .gate-stat { font-size: 1.4rem; font-weight: bold; color: #333; }
-.gate-title { font-size: 0.8rem; color: #666; }
 
-/* Lists */
-.chat-list-item { display: flex; align-items: center; padding: 12px 15px; background: white; border-bottom: 1px solid #f0f0f0; cursor: pointer; }
-.chat-list-item:hover { background: #f9f9f9; }
-.chat-avatar { width: 48px; height: 48px; border-radius: 50%; margin-left: 15px; background: #ddd; object-fit: cover; }
-.chat-info { flex: 1; min-width: 0; }
-.chat-name { font-weight: bold; font-size: 1rem; color: #111; }
-.chat-preview { font-size: 0.85rem; color: #666; }
-
-/* --- Chat Feed (החלק המשודרג) --- */
+/* Chat Feed */
 .chat-feed { flex: 1; background: #e5ddd5 url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-size: 400px; overflow-y: auto; padding: 15px 10px; display: flex; flex-direction: column; gap: 8px; }
-
-/* שורה של הודעה (כולל תמונה) */
 .msg-row { display: flex; align-items: flex-end; gap: 8px; margin-bottom: 5px; }
 .msg-row.sent { flex-direction: row-reverse; }
-
-/* תמונת פרופיל בתוך הצ'אט */
 .msg-profile-pic { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #ccc; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
 
-/* בועת ההודעה */
-.message { 
-    max-width: 75%; padding: 6px 10px 20px 10px; /* ריפוד תחתון למטא-דאטה */
-    border-radius: 8px; font-size: 0.95rem; position: relative; 
-    box-shadow: 0 1px 1px rgba(0,0,0,0.1); line-height: 1.4; word-wrap: break-word; 
-    min-width: 80px;
-}
-.message.sent { background: var(--chat-outgoing); border-top-left-radius: 8px; border-top-right-radius: 0; }
-.message.received { background: var(--chat-incoming); border-top-left-radius: 0; border-top-right-radius: 8px; }
-.message.internal { align-self: center; background: #fff9c4; border: 1px dashed orange; width: 90%; text-align: center; margin: 0 auto; border-radius: 8px; padding-bottom: 6px; }
+.message { max-width: 75%; padding: 6px 10px 20px 10px; border-radius: 8px; font-size: 0.95rem; position: relative; box-shadow: 0 1px 1px rgba(0,0,0,0.1); line-height: 1.4; word-wrap: break-word; min-width: 80px; }
+.message.sent { background: var(--chat-out); border-top-right-radius: 0; }
+.message.received { background: var(--chat-in); border-top-left-radius: 0; }
+.message.internal { align-self: center; background: #fff9c4; border: 1px dashed orange; width: 90%; text-align: center; padding-bottom: 6px; }
 
-/* שם השולח בתוך הבועה */
+/* חץ אפשרויות להודעה (למחשב) */
+.msg-opt-btn { position: absolute; top: 5px; right: 5px; background: rgba(255,255,255,0.8); border-radius: 50%; width: 20px; height: 20px; display: none; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.1); z-index: 10; }
+.message:hover .msg-opt-btn { display: flex; }
+.msg-opt-btn i { font-size: 16px; color: #555; }
+
 .msg-sender-name { font-size: 0.75rem; font-weight: bold; color: var(--primary-color); margin-bottom: 2px; }
+.msg-meta { position: absolute; bottom: 4px; left: 6px; font-size: 0.65rem; color: #999; display: flex; gap: 3px; align-items: center; }
+.tick-blue { color: var(--blue-tick); } .tick-gray { color: var(--gray-tick); }
+.date-divider { text-align: center; background: rgba(255,255,255,0.7); padding: 5px 10px; border-radius: 10px; font-size: 0.8rem; align-self: center; margin: 10px; }
 
-/* נתוני זמן ו-וי (Meta) */
-.msg-meta { 
-    position: absolute; bottom: 4px; left: 6px; /* מיקום בפינה */
-    font-size: 0.65rem; color: #999; display: flex; align-items: center; gap: 3px; 
-}
-
-/* הוי הכחול */
-.tick-icon { font-size: 14px; }
-.tick-blue { color: var(--blue-tick); }
-.tick-gray { color: var(--gray-tick); }
-
-.date-divider { text-align: center; background: rgba(255,255,255,0.7); padding: 5px 10px; border-radius: 10px; font-size: 0.8rem; align-self: center; margin: 10px; box-shadow: 0 1px 1px rgba(0,0,0,0.1); }
-
-/* Footer */
+/* Input */
 .input-area { background: #f0f0f0; padding: 5px 10px; display: flex; align-items: center; gap: 8px; position: sticky; bottom: 0; min-height: 60px; z-index: 20; padding-left: 80px; }
 .input-wrapper { flex: 1; background: white; border-radius: 24px; padding: 8px 15px; display: flex; align-items: center; gap: 10px; }
-#msg-input { border: none; outline: none; width: 100%; font-size: 1rem; background: transparent; }
+#msg-input { border: none; outline: none; width: 100%; background: transparent; }
 
 /* FAB */
-.fab-main { position: fixed; bottom: 20px; left: 20px; width: 56px; height: 56px; border-radius: 50%; background: var(--primary-color); color: white; border: none; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: transform 0.2s; cursor: pointer; z-index: 100; font-size: 24px; }
+.fab-main { position: fixed; bottom: 20px; left: 20px; width: 56px; height: 56px; border-radius: 50%; background: var(--primary-color); color: white; border: none; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: transform 0.2s; cursor: pointer; z-index: 100; }
 .fab-main.rotate { transform: rotate(45deg); background: #555; }
 .fab-menu-container { position: fixed; bottom: 90px; left: 28px; display: flex; flex-direction: column; gap: 15px; z-index: 99; pointer-events: none; }
 .mini-fab { width: 42px; height: 42px; border-radius: 50%; background: white; color: #555; box-shadow: 0 2px 5px rgba(0,0,0,0.3); display: flex; justify-content: center; align-items: center; cursor: pointer; transform: scale(0); transition: 0.2s; pointer-events: auto; position: relative; }
 .mini-fab.show { transform: scale(1); }
 .fab-tooltip { position: absolute; left: 52px; background: rgba(0,0,0,0.8); color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; opacity: 0; transition: 0.2s; white-space: nowrap; }
 .mini-fab:hover .fab-tooltip { opacity: 1; }
+
+/* Lists & Chips */
+.chat-list-item { display: flex; align-items: center; padding: 12px 15px; background: white; border-bottom: 1px solid #f0f0f0; cursor: pointer; }
+.chat-list-item:hover { background: #f9f9f9; }
+.chat-avatar { width: 48px; height: 48px; border-radius: 50%; margin-left: 15px; background: #ddd; object-fit: cover; }
+.chat-info { flex: 1; }
+.chat-name { font-weight: bold; }
+.chat-preview { font-size: 0.85rem; color: #666; }
+.admin-controls { display: flex; gap: 8px; padding: 10px; background: #fff8e1; overflow-x: auto; }
+.chip { background: white; border: 1px solid #ddd; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; white-space: nowrap; }
+.chip.success { color: green; border-color: #a5d6a7; background: #e8f5e9; }
+
+/* Stories */
+.stories-bar { background: white; padding: 15px; position: relative; display: flex; justify-content: space-between; border-bottom: 1px solid #e0e0e0; }
+.progress-track { position: absolute; top: 28px; left: 40px; right: 40px; height: 3px; background: #e0e0e0; z-index: 0; }
+.progress-fill { position: absolute; top: 28px; right: 40px; height: 3px; background: var(--primary-color); z-index: 0; width: 0%; }
+.status-step { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; width: 60px; }
+.status-circle { width: 30px; height: 30px; border-radius: 50%; background: white; border: 2px solid #e0e0e0; display: flex; justify-content: center; align-items: center; margin-bottom: 5px; font-size: 14px; color: #bbb; }
+.status-step.active .status-circle { border-color: var(--primary-color); background: var(--primary-color); color: white; }
+.status-label { font-size: 0.7rem; color: #888; }
 
 /* Modals */
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: flex-end; z-index: 3000; }
@@ -102,16 +89,5 @@ body { margin: 0; font-family: 'Heebo', sans-serif; background: var(--bg-color);
 .action-btn { flex: 1; border: none; border-radius: 8px; padding: 10px; color: white; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 0.9rem; }
 .green { background: #4caf50; } .blue { background: #2196f3; } .orange { background: #ff9800; }
 .action-item { padding: 15px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 15px; cursor: pointer; font-size: 1rem; }
-
-/* Chips & Progress */
-.admin-controls { display: flex; gap: 8px; padding: 10px; background: #fff8e1; overflow-x: auto; border-bottom: 1px solid #ffe0b2; }
-.chip { background: white; border: 1px solid #ddd; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; white-space: nowrap; }
-.chip.success { color: green; border-color: #a5d6a7; background: #e8f5e9; }
-.stories-bar { background: white; padding: 15px; position: relative; display: flex; justify-content: space-between; border-bottom: 1px solid #e0e0e0; }
-.progress-track { position: absolute; top: 28px; left: 40px; right: 40px; height: 3px; background: #e0e0e0; z-index: 0; }
-.progress-fill { position: absolute; top: 28px; right: 40px; height: 3px; background: var(--primary-color); z-index: 0; width: 0%; }
-.status-step { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; width: 60px; }
-.status-circle { width: 30px; height: 30px; border-radius: 50%; background: white; border: 2px solid #e0e0e0; display: flex; justify-content: center; align-items: center; margin-bottom: 5px; font-size: 14px; color: #bbb; }
-.status-step.active .status-circle { border-color: var(--primary-color); background: var(--primary-color); color: white; }
-.status-label { font-size: 0.7rem; color: #888; }
+.simple-list .member-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; }
 .ripple:active { transform: scale(0.95); transition: 0.1s; }
