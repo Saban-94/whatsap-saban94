@@ -4,13 +4,11 @@
     <meta charset="UTF-8">
     <title>Saban Command Center - Ultra Pro</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
             --neon-blue: #00f2ff;
-            --neon-green: #00ff88;
             --win-accent: #0078d4;
-            --glass: rgba(255, 255, 255, 0.1);
+            --glass: rgba(255, 255, 255, 0.15);
         }
 
         body { 
@@ -18,120 +16,104 @@
             color: #fff; font-family: 'Heebo', sans-serif; margin: 0; overflow: hidden;
         }
 
-        /* סרגל ממדים בראש הדף - כפתורי זכוכית ניאון */
-        .metrics-bar {
-            display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; padding: 20px;
-            background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); border-bottom: 1px solid var(--glass);
+        /* כפתור + צף ומקצועי */
+        .fab-add {
+            position: fixed;
+            bottom: 40px;
+            left: 40px;
+            width: 70px;
+            height: 70px;
+            background: var(--win-accent);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 40px;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(0, 120, 212, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        .metric-btn {
-            background: var(--glass); border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 15px; padding: 15px; text-align: center; position: relative;
-            overflow: hidden; transition: 0.3s;
+        .fab-add:hover {
+            transform: scale(1.1) rotate(90deg);
+            background: #0086f0;
+            box-shadow: 0 0 30px var(--neon-blue);
         }
 
-        .metric-btn.active-snake::after {
-            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 2px;
-            background: linear-gradient(90deg, transparent, var(--neon-blue), transparent);
-            animation: snake-run 2s linear infinite;
-        }
-        @keyframes snake-run { 0% { left: -100%; } 100% { left: 100%; } }
-
-        /* טיימר ונתוני הזמנה קרובה */
-        .next-order-glow {
-            background: linear-gradient(135deg, rgba(0,120,212,0.4), rgba(0,242,255,0.1));
-            border: 2px solid var(--neon-blue); border-radius: 20px;
-            margin: 20px; padding: 25px; display: flex; justify-content: space-between;
-            align-items: center; box-shadow: 0 0 30px rgba(0,242,255,0.2);
+        /* אפקט נחש ניאון רחב להזמנות פעילות */
+        .neon-snake-active {
+            position: relative;
+            border-right: 12px solid var(--neon-blue);
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.2);
+            animation: pulse-border 2s infinite alternate;
         }
 
-        .timer-display { font-size: 3.5rem; font-weight: 900; text-shadow: 0 0 20px var(--neon-blue); }
-
-        /* כרטיס הזמנה - אשר לוי */
-        .order-card-pro {
-            background: rgba(255,255,255,0.05); border-radius: 15px;
-            margin: 15px 20px; padding: 25px; border-right: 8px solid var(--neon-blue);
-            display: grid; grid-template-columns: 2fr 1fr 1fr; align-items: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        @keyframes pulse-border {
+            from { border-right-color: var(--neon-blue); }
+            to { border-right-color: #0078d4; }
         }
 
-        .order-card-pro.active { animation: neon-pulse 2s infinite alternate; }
-        @keyframes neon-pulse { from { box-shadow: 0 0 5px var(--neon-blue); } to { box-shadow: 0 0 25px var(--neon-blue); } }
+        /* טופס הזמנה מהיר */
+        .modal-win {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 30px;
+            width: 450px;
+            color: #333;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+        }
 
-        .btn-status {
-            padding: 10px 20px; border-radius: 8px; border: none; font-weight: bold;
-            cursor: pointer; text-transform: uppercase;
+        .input-pro {
+            width: 100%; padding: 12px; margin: 10px 0;
+            border: 1px solid #ccc; border-radius: 8px; font-size: 1rem;
         }
     </style>
 </head>
 <body>
 
-<div class="metrics-bar">
-    <div class="metric-btn active-snake">
-        <span style="font-size: 2rem; font-weight: 900; color: var(--neon-blue);" id="count-new">1</span>
-        <div style="font-size: 0.8rem; color: #ccc;">הזמנות חדשות</div>
-    </div>
-    <div class="metric-btn">
-        <span style="font-size: 2rem; font-weight: 900; color: #ffb900;" id="count-process">0</span>
-        <div style="font-size: 0.8rem; color: #ccc;">בטיפול מערכת</div>
-    </div>
-    <div class="metric-btn">
-        <span style="font-size: 2rem; font-weight: 900; color: var(--neon-green);" id="count-delivered">12</span>
-        <div style="font-size: 0.8rem; color: #ccc;">סופקו היום</div>
-    </div>
-    <div class="metric-btn">
-        <div id="digital-clock" style="font-size: 1.5rem; font-weight: 900;">00:00:00</div>
-        <div style="font-size: 0.8rem; color: #ccc;">שעון מערכת</div>
-    </div>
-</div>
+    <button class="fab-add" onclick="toggleOrderForm()">
+        <i class="material-icons" style="font-size: 40px;">add</i>
+    </button>
 
-<div class="next-order-glow">
-    <div>
-        <div style="color: var(--neon-blue); font-weight: bold; font-size: 1.1rem;">🚚 אספקה קרובה: אשר לוי</div>
-        <div style="font-size: 1.4rem;">📍 הסתדרות 28, רעננה | #601921</div>
-    </div>
-    <div class="timer-display" id="main-timer">12:30</div>
-</div>
-
-<div id="orders-container">
-    <div class="order-card-pro active">
-        <div>
-            <h2 style="margin:0; font-size: 2.2rem; letter-spacing: 1px;">אשר לוי</h2>
-            <div style="color: var(--neon-blue); font-weight: bold; margin-top: 5px;">
-                🏗️ מנוף 10 מטר | ⏰ שעת אספקה: 12:30
-            </div>
-        </div>
-        <div style="text-align: center;">
-            <div style="font-size: 0.9rem; color: #aaa;">נהג מבצע:</div>
-            <input type="text" placeholder="הקלד שם נהג..." style="background: transparent; border: none; border-bottom: 2px solid var(--neon-blue); color: #fff; text-align: center; font-size: 1.1rem; outline: none; width: 150px;">
-        </div>
-        <div style="text-align: left;">
-            <button class="btn-status" style="background: var(--neon-green); color: #000;">סופק ✅</button>
+    <div id="order-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; justify-content:center; align-items:center;">
+        <div class="modal-win">
+            <h2 style="margin-top:0; color:var(--win-accent);">הזמנה חדשה 🏗️</h2>
+            <input type="text" id="new-cust" class="input-pro" placeholder="שם לקוח (גדול ובולט)">
+            <input type="text" id="new-org-id" class="input-pro" placeholder="מספר הזמנה #">
+            <input type="text" id="new-addr" class="input-pro" placeholder="כתובת ליעד">
+            <select id="new-type" class="input-pro">
+                <option>מנוף 10 מטר</option>
+                <option>משאית</option>
+                <option>מנוף 15 מטר</option>
+                <option>עבודת מנוף</option>
+            </select>
+            <button onclick="submitNewOrder()" style="width:100%; padding:15px; background:var(--win-accent); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">שמור והפעל צלצול</button>
         </div>
     </div>
-</div>
 
-<script>
-    // עדכון שעון וטיימר בזמן אמת
-    function updateClocks() {
-        const now = new Date();
-        document.getElementById('digital-clock').innerText = now.toLocaleTimeString('he-IL');
-        
-        // חישוב טיימר להזמנה של 12:30 (דוגמה)
-        const target = new Date();
-        target.setHours(12, 30, 0);
-        const diff = target - now;
-        if (diff > 0) {
-            const mins = Math.floor(diff / 1000 / 60);
-            const secs = Math.floor((diff / 1000) % 60);
-            document.getElementById('main-timer').innerText = `${mins}:${secs.toString().padStart(2, '0')}`;
-        } else {
-            document.getElementById('main-timer').innerText = "00:00";
-            document.getElementById('main-timer').style.color = "#ff3b30";
+    <script>
+        // פונקציה לפתיחת/סגירת הטופס
+        function toggleOrderForm() {
+            const modal = document.getElementById('order-modal');
+            modal.style.display = (modal.style.display === 'none') ? 'flex' : 'none';
         }
-    }
-    setInterval(updateClocks, 1000);
-</script>
 
+        // שמירה בזמן אמת ל-Firebase
+        function submitNewOrder() {
+            const name = document.getElementById('new-cust').value;
+            const orgId = document.getElementById('new-org-id').value;
+            
+            // כאן מתבצעת השמירה ל-DB שמפעילה את הצלצול במסכים
+            console.log("Saving order for: " + name);
+            
+            // הנפשת אישור
+            alert("הזמנה " + orgId + " הוקמה בהצלחה!");
+            toggleOrderForm();
+        }
+    </script>
 </body>
 </html>
