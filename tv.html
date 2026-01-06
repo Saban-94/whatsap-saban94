@@ -2,111 +2,117 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Saban Nerve Center - Cockpit Mode</title>
+    <title>Saban Command Center V2 - Nerve Center</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
         :root {
-            --win-bg: #f3f3f3;
-            --win-accent: #0078d4;
-            --glass: rgba(255, 255, 255, 0.85);
-            --danger: #d13438;
-            --success: #107c10;
+            --win-blue: #0078d4;
+            --win-glass: rgba(255, 255, 255, 0.9);
+            --neon-snake: #00ffc3;
+            --bg-gradient: radial-gradient(circle at center, #ffffff, #e6e6e6);
         }
 
         body { 
-            background: #e2e2e2 url('https://img.freepik.com/free-vector/white-abstract-background_23-2148810353.jpg') no-repeat center center fixed;
-            background-size: cover; color: #201f1e; font-family: 'Segoe UI', 'Heebo', sans-serif; margin: 0; overflow: hidden;
+            background: var(--bg-gradient); color: #1c1c1c; font-family: 'Segoe UI', 'Heebo', sans-serif;
+            margin: 0; overflow: hidden; height: 100vh;
         }
 
-        /* סרגל עליון - מדדים מ-05:00 עד 17:00 */
+        /* סרגל עליון מקצועי עם מדדי 05:00-17:00 */
         .nerve-header {
-            display: grid; grid-template-columns: 250px 1fr 300px;
-            padding: 20px 40px; background: var(--win-accent); color: white;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 100;
+            display: grid; grid-template-columns: 280px 1fr 300px;
+            padding: 15px 40px; background: var(--win-blue); color: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 1000;
         }
 
-        .metrics-hub { display: flex; gap: 20px; align-items: center; justify-content: center; }
-        .metric-btn { 
-            background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
-            border-radius: 8px; padding: 10px 20px; text-align: center; cursor: pointer; transition: 0.3s;
+        /* אפקט נחש רחב להזמנות חדשות */
+        .snake-border {
+            position: relative; padding: 2px; border-radius: 15px; overflow: hidden;
         }
-        .metric-btn:hover { background: rgba(255,255,255,0.3); }
-        .metric-val { font-size: 1.8rem; font-weight: 800; display: block; }
+        .snake-border::before {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: conic-gradient(transparent, var(--neon-snake), transparent 40%);
+            animation: rotate-snake 3s linear infinite;
+        }
+        @keyframes rotate-snake { 100% { transform: rotate(360deg); } }
 
-        /* פריסת תא טייס */
-        .cockpit-layout { display: grid; grid-template-columns: 350px 1fr; height: calc(100vh - 100px); gap: 15px; padding: 15px; }
+        /* כרטיס הזמנה בולט וקריא */
+        .order-card-v2 {
+            background: white; border-radius: 12px; margin: 15px; padding: 20px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08); display: grid;
+            grid-template-columns: 1fr 1.5fr 1fr; gap: 20px; align-items: center;
+            border-right: 10px solid var(--win-blue); transition: 0.3s;
+        }
+        .order-card-v2.urgent { border-right-color: #d13438; }
 
-        .sidebar-future { background: var(--glass); border-radius: 12px; padding: 15px; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .main-feed { background: var(--glass); border-radius: 12px; padding: 15px; overflow-y: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-
-        /* כרטיס הזמנה מקצועי */
-        .order-card-pro {
-            background: white; border-radius: 10px; padding: 15px; margin-bottom: 12px;
-            border-right: 8px solid var(--win-accent); box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            display: flex; flex-direction: column; gap: 8px; position: relative;
+        /* טופס יצירה בסגנון Windows 11 */
+        .win-modal {
+            background: var(--win-glass); backdrop-filter: blur(25px);
+            border-radius: 15px; padding: 30px; width: 500px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
         }
 
-        /* אפקט נחש רחב על הזמנה דחופה */
-        .urgent-snake { position: relative; border-right: none; }
-        .urgent-snake::before {
-            content: ''; position: absolute; top: 0; right: 0; width: 8px; height: 100%;
-            background: linear-gradient(to bottom, #ff3b30, #ff9500);
-            animation: snake-glow 1.5s linear infinite;
-        }
-        @keyframes snake-glow { 0% { filter: brightness(1); } 50% { filter: brightness(1.8); } 100% { filter: brightness(1); } }
-
-        .btn-status { padding: 6px 12px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; margin-left: 5px; font-size: 0.8rem; }
-        
-        /* כפתור + בולט */
         .fab-pro {
-            position: fixed; bottom: 40px; left: 40px; width: 70px; height: 70px;
-            background: var(--win-accent); color: white; border: none; border-radius: 50%;
-            font-size: 35px; cursor: pointer; box-shadow: 0 10px 25px rgba(0,120,212,0.4); z-index: 1000;
+            position: fixed; bottom: 40px; left: 40px; width: 75px; height: 75px;
+            background: var(--win-blue); color: white; border: none; border-radius: 50%;
+            font-size: 40px; cursor: pointer; box-shadow: 0 10px 30px rgba(0,120,212,0.4);
         }
     </style>
 </head>
 <body>
 
-    <audio id="new-order-chime" src="https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3"></audio>
+    <audio id="sound-new" src="https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3"></audio>
+    <audio id="sound-update" src="https://assets.mixkit.co/active_storage/sfx/1003/1003-preview.mp3"></audio>
 
     <header class="nerve-header">
         <div style="display:flex; align-items:center; gap:15px;">
-            <img src="icon-192.png" width="45">
-            <h2 style="margin:0;">ח.סבן | NERVE CENTER</h2>
+            <img src="icon-192.png" width="50" style="filter: brightness(1.2);">
+            <h2 style="margin:0; letter-spacing:1px;">ח.סבן | לוגיסטיקה</h2>
         </div>
-        <div class="metrics-hub">
-            <div class="metric-btn"><span class="metric-val" id="count-0517">0</span><small>הזמנות (05:00-17:00)</small></div>
-            <div class="metric-btn"><span class="metric-val" id="count-total">0</span><small>סה"כ יומי</small></div>
+        <div style="display:flex; justify-content:center; gap:40px; align-items:center;">
+            <div style="text-align:center;"><span id="count-daily" style="font-size:2rem; font-weight:900;">0</span><br><small>הזמנות היום</small></div>
+            <div style="text-align:center;"><span id="count-pending" style="font-size:2rem; font-weight:900;">0</span><br><small>ממתין להפצה</small></div>
         </div>
-        <div style="text-align:left;">
-            <div id="clock" style="font-size:1.8rem; font-weight:bold;">00:00:00</div>
-            <small>מערכת הפצה פעילה</small>
-        </div>
+        <div id="clock" style="font-size:2.2rem; font-weight:bold; text-align:left;">00:00:00</div>
     </header>
 
-    <div class="cockpit-layout">
-        <div class="sidebar-future">
-            <h3 style="border-bottom:2px solid var(--win-accent); padding-bottom:10px;">🕒 צפי עתידי</h3>
-            <div id="future-list" style="overflow-y:auto; flex:1;"></div>
+    <div style="display: grid; grid-template-columns: 1fr 380px; height: calc(100vh - 90px); padding: 10px; gap: 15px;">
+        
+        <div id="main-order-feed" style="overflow-y:auto; padding-right:10px;">
+            <h3 style="margin:10px 20px;">🚀 ניהול הפצה חי</h3>
+            <div id="live-list"></div>
         </div>
 
-        <div class="main-feed">
-            <h3 style="margin-top:0;">🚀 הזמנות לביצוע (היום)</h3>
-            <div id="active-feed"></div>
+        <div style="background:var(--win-glass); border-radius:15px; padding:20px; display:flex; flex-direction:column; gap:20px;">
+            <h3>📦 ניהול מחסן ודוחות</h3>
+            <div id="warehouse-stats" style="background:white; padding:15px; border-radius:10px;">
+                <strong>הזמנה קרובה בצפי:</strong>
+                <div id="next-order-info" style="font-size:1.5rem; color:var(--win-blue); font-weight:bold; margin-top:10px;">טוען...</div>
+            </div>
+            <div style="flex:1; overflow-y:auto;">
+                <h4>📜 היסטוריית היום</h4>
+                <div id="history-list" style="font-size:0.85rem; color:#666;"></div>
+            </div>
+            <button class="btn-primary" onclick="generateDailyReport()" style="background:#107c10;">הפק דוח יומי</button>
         </div>
     </div>
 
-    <button class="fab-pro" onclick="document.getElementById('modal-create').style.display='flex'">+</button>
+    <button class="fab-pro" onclick="document.getElementById('modal-form').style.display='flex'">+</button>
 
-    <div id="modal-create" class="modal-overlay" style="display:none; align-items:center;">
-        <div class="modal-content" style="max-width:500px; border-radius:15px;">
-            <div class="modal-header"><h2>יצירת הזמנה חדשה</h2><i class="material-icons" onclick="this.closest('.modal-overlay').style.display='none'">close</i></div>
-            <input type="text" id="cust-name" class="input-field" placeholder="שם לקוח (גדול ובולט)">
-            <input type="text" id="cust-addr" class="input-field" placeholder="כתובת / יעד אספקה">
-            <input type="text" id="cust-driver" class="input-field" placeholder="שם נהג (דינאמי)">
-            <input type="text" id="cust-org-id" class="input-field" placeholder="מספר הזמנה ארגוני (ERP)">
-            <button class="btn-primary" onclick="createNewOrder()">שלח למרכז העצבים</button>
+    <div id="modal-form" class="modal-overlay" style="display:none; align-items:center;">
+        <div class="win-modal">
+            <div class="modal-header"><h2>טופס הזמנה חדשה</h2><i class="material-icons" style="cursor:pointer;" onclick="document.getElementById('modal-form').style.display='none'">close</i></div>
+            <input type="text" id="f-num" class="input-field" placeholder="מספר הזמנה (ERP)">
+            <input type="text" id="f-cust" class="input-field" placeholder="שם לקוח">
+            <input type="text" id="f-addr" class="input-field" placeholder="כתובת ליעד">
+            <select id="f-delivery" class="input-field">
+                <option value="משאית">משאית 🚚</option>
+                <option value="מנוף 10 מטר">מנוף 10 מטר 🏗️</option>
+                <option value="מנוף 15 מטר">מנוף 15 מטר 🏗️</option>
+                <option value="עבודת מנוף">עבודת מנוף 🛠️</option>
+            </select>
+            <input type="date" id="f-date" class="input-field">
+            <button class="btn-primary" onclick="saveOrder()">שמור וסנכרן בזמן אמת</button>
         </div>
     </div>
 
@@ -121,80 +127,84 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        let lastSize = 0;
+        let lastCount = 0;
 
+        // האזנה חיה לניהול היסטוריה וסטטוסים
         db.collection('users').orderBy('lastUpdate', 'desc').onSnapshot(snap => {
-            if (snap.size > lastSize && lastSize !== 0) document.getElementById('new-order-chime').play();
-            lastSize = snap.size;
+            if (snap.size > lastCount && lastCount !== 0) {
+                document.getElementById('sound-new').play(); // צלצול בהזמנה חדשה
+            }
+            lastCount = snap.size;
 
-            const activeFeed = document.getElementById('active-feed');
-            const futureList = document.getElementById('future-list');
-            activeFeed.innerHTML = ''; futureList.innerHTML = '';
-
-            let count0517 = 0;
-            const now = new Date();
+            const list = document.getElementById('live-list');
+            const history = document.getElementById('history-list');
+            list.innerHTML = ''; history.innerHTML = '';
+            
+            let dailyCount = 0;
+            let orders = [];
 
             snap.forEach(doc => {
                 const d = doc.data(); d.id = doc.id;
                 const updateDate = d.lastUpdate ? d.lastUpdate.toDate() : new Date();
-                const hour = updateDate.getHours();
+                
+                if (d.status === 4) { // היסטוריה
+                    history.innerHTML += `<div>✅ ${d.name} | ${d.orgId || ''}</div>`;
+                    return;
+                }
 
-                // חישוב מדד 05:00-17:00
-                if (hour >= 5 && hour <= 17 && updateDate.toDateString() === now.toDateString()) count0517++;
-
-                if (d.status === 4) return; // הסתרה להיסטוריה
-
-                const isFuture = d.isFuture || false;
-                renderCard(d, isFuture ? futureList : activeFeed);
+                dailyCount++;
+                orders.push(d);
+                renderOrderCard(d, list);
             });
 
-            document.getElementById('count-0517').innerText = count0517;
-            document.getElementById('count-total').innerText = snap.size;
+            document.getElementById('count-daily').innerText = dailyCount;
+            if(orders.length > 0) document.getElementById('next-order-info').innerText = orders[orders.length-1].name;
         });
 
-        function renderCard(d, container) {
-            const card = document.createElement('div');
-            card.className = `order-card-pro ${d.urgent ? 'urgent-snake' : ''}`;
-            card.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                    <div>
-                        <span style="font-size:1.4rem; font-weight:bold; color:var(--win-accent);">${d.name}</span><br>
-                        <small>📍 ${d.address || 'לא צוין כתובת'}</small>
-                    </div>
-                    <div style="text-align:left;">
-                        <span style="background:#eee; padding:2px 8px; border-radius:4px; font-weight:bold;">#${d.orgId || '---'}</span>
-                    </div>
+        function renderOrderCard(d, container) {
+            const div = document.createElement('div');
+            div.className = 'order-card-v2';
+            div.innerHTML = `
+                <div>
+                    <strong style="font-size:1.4rem;">${d.name}</strong><br>
+                    <span style="color:var(--win-blue); font-weight:bold;">#${d.orgId || '---'}</span>
                 </div>
-                <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
-                    <div style="font-size:0.85rem; color:#666;">🚜 נהג: <b>${d.driverName || 'טרם שובץ'}</b></div>
-                    <div>
-                        <button class="btn-status" style="background:#fbc02d;" onclick="updateOrder('${d.id}', 2)">במערכת</button>
-                        <button class="btn-status" style="background:#0078d4; color:white;" onclick="updateOrder('${d.id}', 3)">הפצה</button>
-                        <button class="btn-status" style="background:#107c10; color:white;" onclick="updateOrder('${d.id}', 4)">סופק</button>
-                    </div>
+                <div>
+                    <div style="font-size:1.1rem;">📍 ${d.address || ''}</div>
+                    <div style="color:#666; font-size:0.9rem;">🏗️ ${d.deliveryType || 'משאית'} | 📅 ${d.deliveryDate || ''}</div>
+                </div>
+                <div style="text-align:left;">
+                    <input type="text" placeholder="שם נהג..." value="${d.driverName || ''}" onchange="updateDriver('${d.id}', this.value)" style="width:100px; padding:5px; margin-bottom:10px; border:1px solid #ddd; border-radius:4px;"><br>
+                    <button onclick="updateStatus('${d.id}', 4)" style="background:#107c10; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer;">סופק ✅</button>
                 </div>
             `;
-            container.appendChild(card);
+            container.appendChild(div);
         }
 
-        function createNewOrder() {
-            const name = document.getElementById('cust-name').value;
+        function saveOrder() {
             db.collection('users').add({
-                name,
-                address: document.getElementById('cust-addr').value,
-                driverName: document.getElementById('cust-driver').value,
-                orgId: document.getElementById('cust-org-id').value,
+                orgId: document.getElementById('f-num').value,
+                name: document.getElementById('f-cust').value,
+                address: document.getElementById('f-addr').value,
+                deliveryType: document.getElementById('f-delivery').value,
+                deliveryDate: document.getElementById('f-date').value,
                 status: 1,
                 lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
             });
-            document.getElementById('modal-create').style.display = 'none';
+            document.getElementById('modal-form').style.display = 'none';
         }
 
-        function updateOrder(id, status) {
-            db.collection('users').doc(id).update({
+        function updateDriver(id, name) {
+            db.collection('users').doc(id).update({ driverName: name });
+            document.getElementById('sound-update').play();
+        }
+
+        function updateStatus(id, status) {
+            db.collection('users').doc(id).update({ 
                 status: status,
                 lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
             });
+            document.getElementById('sound-update').play();
         }
 
         setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
