@@ -2,176 +2,175 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>ח.סבן - Neon Control Center</title>
+    <title>ח.סבן - Command Center Pro</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
         :root {
-            --neon-blue: #00d2ff;
-            --neon-green: #00ff41;
-            --neon-yellow: #fbc02d;
-            --whatsapp-dark: #0b141a;
+            --glass-bg: rgba(255, 255, 255, 0.07);
+            --neon-border: #00ffc3;
+            --text-main: #ffffff;
+            --text-sub: #b3b3b3;
+            --accent-glow: 0 0 15px rgba(0, 255, 195, 0.5);
         }
-        body { background: #010409; color: white; margin: 0; font-family: 'Heebo', sans-serif; overflow: hidden; }
 
-        /* מדדי ראש דף - אפקט ניאון ונחש */
-        .metrics-bar {
-            display: flex; justify-content: space-around; padding: 20px;
-            background: rgba(255,255,255,0.02); border-bottom: 1px solid #333;
+        body { 
+            background: radial-gradient(circle at top right, #1a1a1a, #050505); 
+            color: var(--text-main);
+            font-family: 'Heebo', sans-serif;
+            margin: 0;
+            overflow: hidden;
         }
-        .metric-card {
-            position: relative; background: #161b22; padding: 15px 30px;
-            border-radius: 10px; text-align: center; cursor: pointer;
-            min-width: 150px; overflow: hidden; transition: 0.3s;
+
+        /* כותרת עליונה משולבת עם MonitorsAnywhere */
+        .pro-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 25px 40px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            border-bottom: 2px solid var(--neon-border);
+            box-shadow: var(--accent-glow);
         }
-        .metric-card:hover { transform: translateY(-5px); background: #21262d; }
-        
-        /* אפקט נחש (Snake Border) */
-        .metric-card::before {
-            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
-            background: linear-gradient(90deg, transparent, var(--status-color));
-            animation: snake 2s linear infinite;
+
+        /* כרטיסי מדדים בולטים */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            padding: 25px;
         }
-        @keyframes snake { 0% { left: -100%; } 100% { left: 100%; } }
 
-        .metric-num { font-size: 2.5rem; font-weight: bold; text-shadow: 0 0 10px var(--status-color); }
-        .metric-label { font-size: 0.9rem; color: #8696a0; margin-top: 5px; }
-
-        /* צבעי סטטוס ניאון */
-        .status-1 { --status-color: var(--neon-blue); }
-        .status-2 { --status-color: var(--neon-yellow); }
-        .status-3 { --status-color: var(--neon-green); }
-
-        /* פריסה ראשית */
-        .main-grid { display: grid; grid-template-columns: 1fr 1fr; height: calc(100vh - 150px); }
-        .driver-col { border-left: 1px solid #333; overflow-y: auto; padding: 15px; }
-
-        /* פופאפ רשימה */
-        .popup-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); display: none; justify-content: center;
-            align-items: center; z-index: 1000; backdrop-filter: blur(5px);
+        .metric-card-pro {
+            background: var(--glass-bg);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.4s ease;
+            position: relative;
         }
-        .popup-content {
-            background: #161b22; width: 80%; max-width: 600px; max-height: 80vh;
-            border-radius: 15px; padding: 20px; border: 1px solid #333; overflow-y: auto;
+
+        .metric-card-pro:hover {
+            border-color: var(--neon-border);
+            transform: scale(1.02);
+        }
+
+        .big-num {
+            font-size: 4.5rem;
+            font-weight: 900;
+            display: block;
+            margin-bottom: 5px;
+            color: #fff;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+        }
+
+        /* הבלטת טקסט - צלליות ומשקל */
+        .order-row {
+            background: rgba(255,255,255,0.03);
+            margin: 10px 0;
+            padding: 20px;
+            border-radius: 12px;
+            border-right: 6px solid var(--neon-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .order-row b { font-size: 1.4rem; letter-spacing: 0.5px; }
+        .order-row span { color: var(--neon-border); font-weight: bold; }
+
+        /* אפקט הילה לשעון */
+        #clock {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--neon-border);
+            text-shadow: var(--accent-glow);
         }
     </style>
 </head>
 <body>
 
-<div class="metrics-bar">
-    <div class="metric-card status-1" onclick="openStatusPopup(1)">
-        <div id="count-1" class="metric-num">0</div>
-        <div class="metric-label">הזמנות חדשות 📥</div>
-    </div>
-    <div class="metric-card status-2" onclick="openStatusPopup(2)">
-        <div id="count-2" class="metric-num">0</div>
-        <div class="metric-label">עלו למערכת 💻</div>
-    </div>
-    <div class="metric-card status-3" onclick="openStatusPopup(3)">
-        <div id="count-3" class="metric-num">0</div>
-        <div class="metric-label">בדרך לאספקה 🚚</div>
-    </div>
-</div>
-
-<div class="main-grid">
-    <div class="driver-col" id="col-truck">
-        <h3 style="color:var(--neon-blue); border-bottom:1px solid #333; padding-bottom:10px;">נהג משאית 🚛</h3>
-        <div id="orders-truck"></div>
-    </div>
-    <div class="driver-col" id="col-crane">
-        <h3 style="color:var(--neon-green); border-bottom:1px solid #333; padding-bottom:10px;">נהג מנוף 🏗️</h3>
-        <div id="orders-crane"></div>
-    </div>
-</div>
-
-<div id="status-popup" class="popup-overlay" onclick="closePopup()">
-    <div class="popup-content" onclick="event.stopPropagation()">
-        <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
-            <h2 id="popup-title">רשימת הזמנות</h2>
-            <i class="material-icons" style="cursor:pointer;" onclick="closePopup()">close</i>
-        </div>
-        <div id="popup-list"></div>
-    </div>
-</div>
-
-<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
-<script>
-    // שימוש בקונפיגורציה מהמאגר
-    const firebaseConfig = {
-        apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60",
-        projectId: "app-saban94-57361",
-        appId: "1:275366913167:web:f0c6f808e12f2aeb58fcfa"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-
-    let allOrders = [];
-
-    // האזנה חיה לנתונים
-    db.collection('users').onSnapshot(snap => {
-        allOrders = [];
-        let counts = { 1: 0, 2: 0, 3: 0 };
-        const truckList = document.getElementById('orders-truck');
-        const craneList = document.getElementById('orders-crane');
-        truckList.innerHTML = ''; craneList.innerHTML = '';
-
-        snap.forEach(doc => {
-            const d = doc.data(); d.id = doc.id;
-            if (d.status && d.status < 4) {
-                allOrders.push(d);
-                counts[d.status]++;
-                renderToColumn(d, d.address && d.address.includes('מנוף') ? craneList : truckList);
-            }
-        });
-
-        // עדכון המדדים בראש הדף
-        document.getElementById('count-1').innerText = counts[1];
-        document.getElementById('count-2').innerText = counts[2];
-        document.getElementById('count-3').innerText = counts[3];
-    });
-
-    function renderToColumn(d, container) {
-        const orgId = d.orgId || `6210${Math.floor(10 + Math.random() * 90)}`;
-        container.innerHTML += `
-            <div class="order-card" style="margin-bottom:10px; border-right:4px solid var(--status-color); background:#161b22; padding:15px; border-radius:8px;">
-                <div style="display:flex; justify-content:space-between;">
-                    <b>${d.name}</b>
-                    <span style="color:var(--neon-blue)">#${orgId}</span>
-                </div>
-                <div style="font-size:0.8rem; color:#8696a0; margin-top:5px;">📍 ${d.address || 'עיר לא צוינה'}</div>
+    <header class="pro-header">
+        <div style="display:flex; align-items:center; gap:20px;">
+            <img src="icon-192.png" style="width:70px; filter: drop-shadow(var(--accent-glow));">
+            <div>
+                <h1 style="margin:0; font-size:1.8rem;">מרכז שליטה לוגיסטי - ח.סבן</h1>
+                <span style="color:var(--text-sub);">שידור חי למסכי MonitorsAnywhere</span>
             </div>
-        `;
-    }
+        </div>
+        <div id="clock">00:00:00</div>
+    </header>
 
-    // ניהול פופאפים
-    window.openStatusPopup = function(status) {
-        const popup = document.getElementById('status-popup');
-        const list = document.getElementById('popup-list');
-        const titles = { 1: "הזמנות חדשות", 2: "עלו למערכת", 3: "בדרך לאספקה" };
-        
-        document.getElementById('popup-title').innerText = titles[status];
-        list.innerHTML = '';
-        
-        const filtered = allOrders.filter(o => o.status === status);
-        filtered.forEach(o => {
-            list.innerHTML += `
-                <div style="padding:15px; border-bottom:1px solid #333; display:flex; justify-content:space-between;">
-                    <div><strong>${o.name}</strong><br><small>${o.address || ''}</small></div>
-                    <button class="chip" onclick="updateStatusFromPopup('${o.id}', ${status + 1})">קדם שלב</button>
-                </div>`;
+    <div class="metrics-grid">
+        <div class="metric-card-pro" style="border-right: 5px solid #34B7F1;">
+            <span class="big-num" id="stat-new" style="color:#34B7F1;">0</span>
+            <span style="font-size:1.2rem; font-weight:700;">הזמנות חדשות</span>
+        </div>
+        <div class="metric-card-pro" style="border-right: 5px solid #fbc02d;">
+            <span class="big-num" id="stat-process" style="color:#fbc02d;">0</span>
+            <span style="font-size:1.2rem; font-weight:700;">בטיפול במערכת</span>
+        </div>
+        <div class="metric-card-pro" style="border-right: 5px solid #00ffc3;">
+            <span class="big-num" id="stat-truck" style="color:#00ffc3;">0</span>
+            <span style="font-size:1.2rem; font-weight:700;">משאיות בדרך</span>
+        </div>
+    </div>
+
+    <main style="padding:0 25px;">
+        <h2 style="border-right: 4px solid var(--neon-border); padding-right:15px; margin-bottom:20px;">פיד הפצה בזמן אמת</h2>
+        <div id="live-orders-container" style="height:50vh; overflow-y:auto; padding-right:10px;">
+            </div>
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+    <script>
+        // שימוש בקונפיגורציה הקיימת שלך
+        const firebaseConfig = {
+            apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60",
+            projectId: "app-saban94-57361",
+            appId: "1:275366913167:web:f0c6f808e12f2aeb58fcfa"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // עדכון שעון חי
+        setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
+
+        // האזנה חיה לנתונים מתוך האפליקציה
+        db.collection('users').orderBy('lastUpdate', 'desc').onSnapshot(snap => {
+            const container = document.getElementById('live-orders-container');
+            container.innerHTML = '';
+            let counts = { 1: 0, 2: 0, 3: 0 };
+
+            snap.forEach(doc => {
+                const u = doc.data();
+                if (u.status && u.status < 4) {
+                    counts[u.status]++;
+                    const div = document.createElement('div');
+                    div.className = 'order-row';
+                    const orgId = u.orgId || `6210${Math.floor(10 + Math.random() * 90)}`;
+                    div.innerHTML = `
+                        <div>
+                            <b>${u.name}</b><br>
+                            <small style="color:var(--text-sub);">📍 ${u.address || 'לא צוין יעד'}</small>
+                        </div>
+                        <div style="text-align:left;">
+                            <span>#${orgId}</span><br>
+                            <small>${u.lastUpdate ? new Date(u.lastUpdate.toDate()).toLocaleTimeString() : ''}</small>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                }
+            });
+
+            document.getElementById('stat-new').innerText = counts[1];
+            document.getElementById('stat-process').innerText = counts[2];
+            document.getElementById('stat-truck').innerText = counts[3];
         });
-        popup.style.display = 'flex';
-    };
-
-    window.closePopup = () => document.getElementById('status-popup').style.display = 'none';
-
-    window.updateStatusFromPopup = function(id, newStatus) {
-        db.collection('users').doc(id).update({ status: newStatus, lastUpdate: firebase.firestore.FieldValue.serverTimestamp() });
-        closePopup();
-    };
-</script>
+    </script>
 </body>
 </html>
