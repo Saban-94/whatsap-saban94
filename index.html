@@ -24,6 +24,7 @@
             </div>
         </div>
         <div class="actions">
+            <i class="material-icons ripple" id="mute-btn">volume_up</i>
             <i class="material-icons ripple" id="refresh-btn">refresh</i>
             <i class="material-icons ripple" id="back-btn" style="display:none;">arrow_forward</i>
         </div>
@@ -32,8 +33,9 @@
     <div id="client-view" style="display:none; height: 100%;">
         <div class="client-tabs">
             <div class="c-tab active" onclick="switchClientTab('my-order')"><i class="material-icons">chat</i> הזמנה</div>
-            <div class="c-tab" onclick="switchClientTab('departments')"><i class="material-icons">groups</i> קבוצות</div>
+            <div class="c-tab" onclick="switchClientTab('departments')"><i class="material-icons">domain</i> מחלקות</div>
         </div>
+
         <div id="tab-my-order" class="tab-content" style="height: calc(100% - 110px);">
             <div id="stories-container" class="stories-bar">
                 <div class="progress-track"></div>
@@ -41,8 +43,11 @@
             </div>
             <div id="client-chat-container" class="chat-feed"></div>
         </div>
+
         <div id="tab-departments" class="tab-content" style="display:none;">
-            <div class="dept-list" id="dept-list"></div>
+            <div class="dept-list" id="dept-list">
+                <div style="text-align:center; padding:20px; color:#999;">טוען...</div>
+            </div>
         </div>
     </div>
 
@@ -52,6 +57,7 @@
             <div class="tab-item" id="tab-groups" onclick="switchManagerTab('groups')">קבוצות</div>
             <div class="tab-item" id="tab-staff" onclick="switchManagerTab('staff')">צוות</div>
         </div>
+
         <div class="dashboard-gates" id="dashboard-gates">
             <div class="gate-card active-filter" onclick="filterList('active')">
                 <div class="gate-icon"><i class="material-icons">local_shipping</i></div>
@@ -64,6 +70,7 @@
                 <div class="gate-title">ארכיון</div>
             </div>
         </div>
+
         <div id="clients-list"></div>
     </div>
 
@@ -74,9 +81,15 @@
     <button id="main-fab" class="fab-main ripple"><i class="material-icons">add</i></button>
 
     <div class="fab-menu-container" id="fab-menu">
-        <div class="mini-fab" onclick="openUserModal('client')"><i class="material-icons">person_add</i><span class="fab-tooltip">לקוח חדש</span></div>
-        <div class="mini-fab" onclick="openUserModal('group')"><i class="material-icons">groups</i><span class="fab-tooltip">קבוצה חדשה</span></div>
-        <div class="mini-fab" onclick="openUserModal('staff')"><i class="material-icons">badge</i><span class="fab-tooltip">איש צוות</span></div>
+        <div class="mini-fab" onclick="openUserModal('client')">
+            <i class="material-icons">person_add</i><span class="fab-tooltip">לקוח חדש</span>
+        </div>
+        <div class="mini-fab" onclick="openUserModal('group')">
+            <i class="material-icons">groups</i><span class="fab-tooltip">קבוצה חדשה</span>
+        </div>
+        <div class="mini-fab" onclick="openUserModal('staff')">
+            <i class="material-icons">badge</i><span class="fab-tooltip">איש צוות</span>
+        </div>
     </div>
 
     <footer class="input-area" id="input-area" style="display:none;">
@@ -85,61 +98,57 @@
             <i class="material-icons" id="internal-msg-btn" style="display:none; color:#fbc02d;" title="הערה חסויה">lock</i>
             <i class="material-icons" id="send-btn" style="color:var(--primary-color); cursor:pointer;">send</i>
         </div>
-        <div id="read-only-msg" style="display:none; color:#666; font-size:0.9rem; width:100%; text-align:center;">🚫 קבוצה לקריאה בלבד</div>
     </footer>
-
-    <div id="profile-modal" class="modal-overlay" style="display:none;">
-        <div class="modal-content">
-            <div class="modal-header"><h3>פרטים והגדרות</h3><i class="material-icons" onclick="closeModal('profile-modal')">close</i></div>
-            
-            <div style="text-align:center; margin-bottom:15px;">
-                <img id="edit-img-preview" src="" style="width:80px; height:80px; border-radius:50%; object-fit:cover; border:3px solid #eee;">
-            </div>
-            
-            <label>שם תצוגה</label><input type="text" id="edit-name" class="input-field">
-            <label>תמונה (URL)</label><input type="text" id="edit-img" class="input-field">
-            
-            <div id="group-management-area" style="display:none; margin-top:20px; border-top:1px solid #eee; padding-top:10px;">
-                <h4>👥 חברי קבוצה והרשאות</h4>
-                
-                <div class="add-member-box">
-                    <input type="text" id="new-member-id" class="input-field" placeholder="הכנס ID של איש קשר (למשל: staff_moshe)" style="margin-bottom:5px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                        <span>האם יכול להגיב?</span>
-                        <label class="switch">
-                          <input type="checkbox" id="can-write-toggle" checked>
-                          <span class="slider round"></span>
-                        </label>
-                    </div>
-                    <button class="btn-primary small" id="add-member-btn">הוסף לקבוצה</button>
-                </div>
-
-                <div id="group-members-list" class="simple-list" style="max-height:150px; overflow-y:auto; margin-top:10px;">
-                    </div>
-            </div>
-
-            <div id="contact-actions" style="display:flex; gap:10px; margin-top:15px;">
-                <button class="action-btn green" onclick="performAction('call')"><i class="material-icons">call</i></button>
-                <button class="action-btn blue" onclick="performAction('sms')"><i class="material-icons">sms</i></button>
-                <button class="action-btn orange" onclick="performAction('email')"><i class="material-icons">email</i></button>
-            </div>
-
-            <button id="save-profile-btn" class="btn-primary full-width" style="margin-top:15px;">שמור שינויים</button>
-        </div>
-    </div>
 
     <div id="msg-action-modal" class="modal-overlay" style="display:none;">
         <div class="modal-content">
             <div class="modal-header"><h3>פעולות</h3><i class="material-icons" onclick="closeModal('msg-action-modal')">close</i></div>
-            <div class="action-item" onclick="forwardMessageToGroup()"><i class="material-icons">forward</i> העבר לטיפול</div>
+            <div class="action-item" onclick="forwardMessageToGroup()">
+                <i class="material-icons">forward</i> העבר לטיפול (רכש/לוגיסטיקה)
+            </div>
         </div>
     </div>
+
     <div id="forward-target-modal" class="modal-overlay" style="display:none; z-index:3500;">
         <div class="modal-content">
             <div class="modal-header"><h3>בחר יעד</h3><i class="material-icons" onclick="closeModal('forward-target-modal')">close</i></div>
             <div id="groups-list-for-forward" class="simple-list"></div>
         </div>
     </div>
+
+    <div id="profile-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <div class="modal-header"><h3>הגדרות</h3><i class="material-icons" onclick="closeModal('profile-modal')">close</i></div>
+            <div style="text-align:center; margin-bottom:15px;">
+                <img id="edit-img-preview" src="" style="width:80px; height:80px; border-radius:50%; object-fit:cover; border:3px solid #eee;">
+            </div>
+            <input type="text" id="edit-name" class="input-field" placeholder="שם">
+            <input type="text" id="edit-img" class="input-field" placeholder="לינק לתמונה">
+            
+            <div id="group-management-area" style="display:none; margin-top:15px; border-top:1px solid #eee; padding-top:10px;">
+                <h4>חברי קבוצה</h4>
+                <div style="display:flex; gap:5px; margin-bottom:10px;">
+                    <input type="text" id="new-member-id" class="input-field" placeholder="ID חבר" style="margin:0;">
+                    <button class="btn-primary" id="add-member-btn" style="width:auto; padding:0 15px;">הוסף</button>
+                </div>
+                <div style="display:flex; align-items:center; margin-bottom:10px;">
+                    <span style="margin-left:10px;">הרשאת כתיבה?</span>
+                    <input type="checkbox" id="can-write-toggle" checked>
+                </div>
+                <div id="group-members-list" class="simple-list" style="max-height:100px; overflow-y:auto;"></div>
+            </div>
+
+            <div id="contact-actions" style="display:flex; gap:10px; margin-top:15px;">
+                <button class="action-btn green" onclick="performAction('call')"><i class="material-icons">call</i></button>
+                <button class="action-btn blue" onclick="performAction('sms')"><i class="material-icons">sms</i></button>
+                <button class="action-btn orange" onclick="performAction('email')"><i class="material-icons">email</i></button>
+                <input type="hidden" id="edit-phone"> <input type="hidden" id="edit-email">
+            </div>
+
+            <button id="save-profile-btn" class="btn-primary full-width" style="margin-top:15px;">שמור</button>
+        </div>
+    </div>
+
     <div id="order-modal" class="modal-overlay" style="display:none;">
         <div class="modal-content">
             <div class="modal-header"><h3>הזמנה</h3><i class="material-icons" onclick="closeModal('order-modal')">close</i></div>
@@ -150,15 +159,17 @@
             <button id="submit-order-btn" class="btn-primary full-width">שלח</button>
         </div>
     </div>
+
     <div id="user-modal" class="modal-overlay" style="display:none;">
         <div class="modal-content">
             <div class="modal-header"><h3 id="user-modal-title">חדש</h3><i class="material-icons" onclick="closeModal('user-modal')">close</i></div>
-            <input type="text" id="new-user-id" class="input-field" placeholder="ID (אנגלית בלבד)">
-            <input type="text" id="new-user-name" class="input-field" placeholder="שם תצוגה">
+            <input type="text" id="new-user-id" class="input-field" placeholder="ID (אנגלית)">
+            <input type="text" id="new-user-name" class="input-field" placeholder="שם">
             <input type="hidden" id="new-user-role">
             <button id="save-user-btn" class="btn-primary full-width">צור</button>
         </div>
     </div>
+
     <div id="admin-controls" class="admin-controls" style="display:none;">
         <div class="status-scroll">
             <button onclick="updateStatus(1)" class="chip">📥 התקבל</button>
