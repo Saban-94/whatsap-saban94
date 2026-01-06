@@ -53,7 +53,7 @@
     <div id="staff-dashboard" style="display:none;">
         <div class="tabs-header">
             <div class="tab-item active" id="tab-chats" onclick="switchManagerTab('chats')">צ'אטים</div>
-            <div class="tab-item" id="tab-groups" onclick="switchManagerTab('groups')">קבוצות (רכש)</div>
+            <div class="tab-item" id="tab-groups" onclick="switchManagerTab('groups')">קבוצות</div>
             <div class="tab-item" id="tab-staff" onclick="switchManagerTab('staff')">צוות</div>
         </div>
 
@@ -71,26 +71,27 @@
         </div>
 
         <div id="clients-list"></div>
-
-        <div class="fab-menu-container" id="fab-menu">
-            <div class="mini-fab" onclick="openUserModal('client')">
-                <i class="material-icons">person_add</i><span class="fab-tooltip">לקוח חדש</span>
-            </div>
-            <div class="mini-fab" onclick="openUserModal('group')">
-                <i class="material-icons">groups</i><span class="fab-tooltip">קבוצה (רכש/מלאי)</span>
-            </div>
-            <div class="mini-fab" onclick="openUserModal('staff')">
-                <i class="material-icons">badge</i><span class="fab-tooltip">איש צוות</span>
-            </div>
-        </div>
     </div>
 
     <main id="main-chat-feed" class="chat-feed" style="display:none;">
         <div class="date-divider">היום</div>
     </main>
 
+    <button id="main-fab" class="fab-main ripple"><i class="material-icons">add</i></button>
+
+    <div class="fab-menu-container" id="fab-menu">
+        <div class="mini-fab" onclick="openUserModal('client')">
+            <i class="material-icons">person_add</i><span class="fab-tooltip">לקוח חדש</span>
+        </div>
+        <div class="mini-fab" onclick="openUserModal('group')">
+            <i class="material-icons">groups</i><span class="fab-tooltip">קבוצה חדשה</span>
+        </div>
+        <div class="mini-fab" onclick="openUserModal('staff')">
+            <i class="material-icons">badge</i><span class="fab-tooltip">איש צוות</span>
+        </div>
+    </div>
+
     <footer class="input-area" id="input-area" style="display:none;">
-        <button id="main-fab" class="fab-main ripple"><i class="material-icons">add</i></button>
         <div class="input-wrapper">
             <input type="text" placeholder="הקלד הודעה..." id="msg-input">
             <i class="material-icons" id="internal-msg-btn" style="display:none; color:#fbc02d;" title="הערה חסויה">lock</i>
@@ -104,17 +105,13 @@
             <div class="action-item" onclick="forwardMessageToGroup()">
                 <i class="material-icons">forward</i> העבר לטיפול (רכש/לוגיסטיקה)
             </div>
-            <div class="action-item" onclick="copyMessageText()">
-                <i class="material-icons">content_copy</i> העתק טקסט
-            </div>
         </div>
     </div>
 
     <div id="forward-target-modal" class="modal-overlay" style="display:none; z-index:3500;">
         <div class="modal-content">
             <div class="modal-header"><h3>בחר יעד להעברה</h3><i class="material-icons" onclick="closeModal('forward-target-modal')">close</i></div>
-            <div id="groups-list-for-forward" class="simple-list">
-                </div>
+            <div id="groups-list-for-forward" class="simple-list"></div>
         </div>
     </div>
 
@@ -124,34 +121,35 @@
             <div style="text-align:center; margin-bottom:15px;">
                 <img id="edit-img-preview" src="" style="width:80px; height:80px; border-radius:50%; object-fit:cover; border:3px solid #eee;">
             </div>
-            
-            <label>שם תצוגה</label>
-            <input type="text" id="edit-name" class="input-field" placeholder="שם מלא">
-            
-            <label>קישור לתמונה (URL)</label>
-            <input type="text" id="edit-img" class="input-field" placeholder="https://...">
-            
-            <label>טלפון</label>
-            <input type="tel" id="edit-phone" class="input-field" placeholder="050-0000000">
-            
-            <label>אימייל</label>
-            <input type="email" id="edit-email" class="input-field" placeholder="email@example.com">
-            
+            <label>שם תצוגה</label><input type="text" id="edit-name" class="input-field">
+            <label>תמונה (URL)</label><input type="text" id="edit-img" class="input-field">
+            <label>טלפון</label><input type="tel" id="edit-phone" class="input-field">
+            <label>אימייל</label><input type="email" id="edit-email" class="input-field">
             <div style="display:flex; gap:10px; margin-top:15px;">
-                <button class="action-btn green" onclick="performAction('call')"><i class="material-icons">call</i> חייג</button>
-                <button class="action-btn blue" onclick="performAction('sms')"><i class="material-icons">sms</i> SMS</button>
-                <button class="action-btn orange" onclick="performAction('email')"><i class="material-icons">email</i> מייל</button>
+                <button class="action-btn green" onclick="performAction('call')"><i class="material-icons">call</i></button>
+                <button class="action-btn blue" onclick="performAction('sms')"><i class="material-icons">sms</i></button>
+                <button class="action-btn orange" onclick="performAction('email')"><i class="material-icons">email</i></button>
             </div>
-
             <button id="save-profile-btn" class="btn-primary full-width" style="margin-top:15px;">שמור שינויים</button>
+        </div>
+    </div>
+
+    <div id="order-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <div class="modal-header"><h3>הזמנה חדשה</h3><i class="material-icons" onclick="closeModal('order-modal')">close</i></div>
+            <input type="text" id="order-contact" class="input-field" placeholder="שם">
+            <input type="text" id="order-address" class="input-field" placeholder="כתובת">
+            <textarea id="order-item" class="input-field" rows="3" placeholder="פירוט"></textarea>
+            <select id="order-time" class="input-field"><option>דחוף 🔥</option><option>מחר ☀️</option></select>
+            <button id="submit-order-btn" class="btn-primary full-width">שלח</button>
         </div>
     </div>
 
     <div id="user-modal" class="modal-overlay" style="display:none;">
         <div class="modal-content">
             <div class="modal-header"><h3 id="user-modal-title">חדש</h3><i class="material-icons" onclick="closeModal('user-modal')">close</i></div>
-            <input type="text" id="new-user-id" class="input-field" placeholder="מזהה (ID)">
-            <input type="text" id="new-user-name" class="input-field" placeholder="שם">
+            <input type="text" id="new-user-id" class="input-field" placeholder="מזהה (ID) באנגלית">
+            <input type="text" id="new-user-name" class="input-field" placeholder="שם תצוגה">
             <input type="hidden" id="new-user-role">
             <button id="save-user-btn" class="btn-primary full-width">צור</button>
         </div>
