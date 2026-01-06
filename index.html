@@ -21,7 +21,7 @@
             </div>
             <div class="header-text">
                 <span id="app-title">ח.סבן חומרי בנין</span>
-                <span id="sub-title" class="status-text">מחובר כעת</span>
+                <span id="sub-title" class="status-text">טוען...</span>
             </div>
         </div>
         <div class="actions">
@@ -32,9 +32,29 @@
 
     <div id="stories-container" class="stories-bar"></div>
 
-    <div id="staff-dashboard" style="display:none; padding:10px;">
-        <h3>ניהול הזמנות פעיל</h3>
-        <div id="clients-list" class="chat-feed" style="background:none; padding:0;"></div>
+    <div id="staff-dashboard" style="display:none;">
+        <div class="dashboard-header">
+            <h2>מרכז שליטה</h2>
+            <p>מצב סידור עבודה חי</p>
+        </div>
+
+        <div class="dashboard-gates">
+            <div class="gate-card live-active" onclick="filterDashboard('active')">
+                <div class="neon-border"></div> <div class="gate-icon"><i class="material-icons">local_shipping</i></div>
+                <div class="gate-title">הזמנות חיות</div>
+                <div class="gate-stat" id="stat-active">0</div>
+            </div>
+
+            <div class="gate-card" onclick="filterDashboard('history')">
+                <div class="gate-icon"><i class="material-icons">history</i></div>
+                <div class="gate-title">ארכיון/היסטוריה</div>
+                <div class="gate-stat" id="stat-history">0</div>
+            </div>
+        </div>
+
+        <h3 id="list-title" style="margin-right: 10px; color: #555;">הזמנות לפעולה</h3>
+        <div id="clients-list">
+            </div>
     </div>
 
     <div id="admin-controls" style="display:none; background:#fff3e0; padding:10px; border-bottom:1px solid #ccc; overflow-x:auto;">
@@ -51,9 +71,7 @@
     </main>
 
     <footer class="input-area" id="input-area">
-        <button id="add-order-btn" class="fab-btn ripple">
-            <i class="material-icons">add</i>
-        </button>
+        <button id="add-order-btn" class="fab-btn ripple"><i class="material-icons">add</i></button>
         <div class="input-wrapper">
             <input type="text" placeholder="הקלד הודעה..." id="msg-input">
             <i class="material-icons" id="internal-msg-btn" style="display:none; color:#fbc02d; cursor:pointer; margin-left:5px;">lock</i>
