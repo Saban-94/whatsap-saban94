@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Harel App OS</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --app-bg: #ffffff;
+            --header-bg: #f5f5f5;
+            --primary: #007aff; /* Apple Blue */
+            --saban-green: #008069; /* Brand Green */
+            --bubble-in: #f2f2f7;
+            --bubble-out: #e1ffc7; /* WhatsApp style */
+            --gray-text: #8e8e93;
+            --separator: #c6c6c8;
+        }
+
+        body {
+            margin: 0; font-family: 'Heebo', -apple-system, sans-serif;
+            background: var(--app-bg); color: #000; height: 100vh; overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* --- Transitions --- */
+        .view {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--app-bg); display: none; flex-direction: column;
+            animation: slideIn 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+        .view.active { display: flex; }
+        @keyframes slideIn { from { transform: translateX(20%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        /* --- Components --- */
+        .header {
+            height: 50px; display: flex; align-items: center; justify-content: space-between;
+            padding: 0 15px; background: rgba(249, 249, 249, 0.9); backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0,0,0,0.1); z-index: 10; font-weight: 600; font-size: 1.1rem;
+        }
+        .header-btn { color: var(--primary); font-size: 1rem; cursor: pointer; border: none; background: none; padding: 0; }
+        
+        /* List Items */
+        .list-item {
+            display: flex; align-items: center; padding: 12px 15px; border-bottom: 1px solid var(--separator);
+            cursor: pointer; transition: background 0.2s;
+        }
+        .list-item:active { background: #f2f2f2; }
+        .avatar {
+            width: 50px; height: 50px; border-radius: 50%; object-fit: cover; margin-left: 15px;
+            background: #e1e1e1; border: 1px solid rgba(0,0,0,0.05);
+        }
+        .item-content { flex: 1; }
+        .item-title { font-weight: 600; font-size: 1rem; margin-bottom: 3px; }
+        .item-sub { font-size: 0.9rem; color: var(--gray-text); display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+        .item-meta { font-size: 0.8rem; color: var(--gray-text); }
+
+        /* Chat Area */
+        .chat-area { flex: 1; overflow-y: auto; padding: 15px; background: #e5ddd5 url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-size: 400px; }
+        
+        .msg { display: flex; flex-direction: column; max-width: 75%; margin-bottom: 10px; position: relative; }
+        .msg.in { align-self: flex-start; }
+        .msg.out { align-self: flex-end; }
+        
+        .bubble {
+            padding: 8px 12px; border-radius: 16px; font-size: 0.95rem; line-height: 1.4;
+            box-shadow: 0 1px 1px rgba(0,0,0,0.1); position: relative;
+        }
+        .msg.in .bubble { background: #fff; border-top-right-radius: 16px; border-top-left-radius: 4px; }
+        .msg.out .bubble { background: var(--bubble-out); border-top-left-radius: 16px; border-top-right-radius: 4px; }
+
+        .bubble-task {
+            background: #fff; border-radius: 12px; overflow: hidden; border: 1px solid rgba(0,0,0,0.1); width: 240px;
+        }
+        .task-header { background: #fffae6; padding: 10px; font-weight: bold; font-size: 0.9rem; color: #b38600; display: flex; align-items: center; gap: 5px; }
+        .task-body { padding: 12px; font-size: 0.9rem; }
+        .task-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .btn-action {
+            display: block; width: 100%; padding: 12px; background: var(--saban-green); color: white;
+            text-align: center; font-weight: bold; border: none; font-size: 0.9rem; cursor: pointer;
+        }
+        .btn-action:active { opacity: 0.8; }
+
+        /* Input Bar */
+        .input-bar {
+            padding: 8px 10px; background: #f0f0f0; display: flex; align-items: center; gap: 10px;
+            border-top: 1px solid #ddd; padding-bottom: max(10px, env(safe-area-inset-bottom));
+        }
+        .input-field {
+            flex: 1; padding: 10px; border-radius: 20px; border: none; background: #fff; font-size: 1rem; outline: none;
+        }
+
+        /* Admin Screen */
+        .admin-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 20px; }
+        .admin-card {
+            background: #fff; border-radius: 12px; padding: 15px; text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #eee;
+        }
+        .btn-upload {
+            margin-top: 10px; background: #000; color: #fff; border: none; padding: 6px 12px;
+            border-radius: 6px; font-size: 0.8rem; font-weight: bold; width: 100%;
+        }
+
+        /* Login Screen */
+        .login-screen {
+            justify-content: center; align-items: center; text-align: center; background: white; padding: 40px;
+        }
+        .logo-big {
+            width: 100px; height: 100px; background: var(--saban-green); color: white;
+            border-radius: 25px; display: flex; align-items: center; justify-content: center;
+            font-size: 50px; margin-bottom: 20px; box-shadow: 0 10px 20px rgba(0,128,105,0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="view-login" class="view active login-screen">
+        <div class="logo-big"><i class="material-icons" style="font-size: 60px;">local_shipping</i></div>
+        <h1 style="margin:0;">Harel Chat</h1>
+        <p style="color:#888; margin-bottom:40px;">מערכת ניהול חכמה | ח.סבן</p>
+        
+        <div style="background:#f5f5f5; padding:20px; border-radius:15px; width:100%; box-sizing:border-box;">
+            <div style="font-size:0.9rem; margin-bottom:10px;">קיבלת לינק כניסה?</div>
+            <button onclick="nav('view-chats')" style="width:100%; padding:15px; background:var(--primary); color:white; border:none; border-radius:10px; font-size:1.1rem; font-weight:bold;">
+                כנס למערכת 🚀
+            </button>
+        </div>
+    </div>
+
+    <div id="view-chats" class="view">
+        <div class="header">
+            <span style="color:var(--primary);">ערוך</span>
+            <span>שיחות</span>
+            <button class="header-btn" onclick="nav('view-admin')"><i class="material-icons">admin_panel_settings</i></button>
+        </div>
+        
+        <div class="list-item" onclick="openChat('משרד ראשי', 'office')">
+            <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="avatar">
+            <div class="item-content">
+                <div style="display:flex; justify-content:space-between;">
+                    <div class="item-title">משרד ראשי 🏢</div>
+                    <div class="item-meta">10:45</div>
+                </div>
+                <div class="item-sub">הראל: שלחתי לך משימה חדשה למנוף...</div>
+            </div>
+        </div>
+
+        <div class="list-item" onclick="openChat('קבוצת נהגים - צפון', 'group')">
+            <img src="https://cdn-icons-png.flaticon.com/512/1256/1256650.png" class="avatar">
+            <div class="item-content">
+                <div style="display:flex; justify-content:space-between;">
+                    <div class="item-title">קבוצת נהגים - צפון</div>
+                    <div class="item-meta">אתמול</div>
+                </div>
+                <div class="item-sub">דוד: סיימתי פריקה בעפולה</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-chat-room" class="view">
+        <div class="header">
+            <button class="header-btn" onclick="nav('view-chats')"><i class="material-icons">arrow_forward_ios</i> שיחות</button>
+            <div style="display:flex; flex-direction:column; align-items:center;">
+                <span id="chat-title" style="font-size:0.9rem; font-weight:bold;">שם שיחה</span>
+                <span style="font-size:0.7rem; color:#888;">מחובר</span>
+            </div>
+            <img id="chat-avatar-top" src="" style="width:30px; height:30px; border-radius:50%; background:#ddd;">
+        </div>
+
+        <div id="chat-feed" class="chat-area">
+            </div>
+
+        <div class="input-bar">
+            <i class="material-icons" style="color:var(--primary);">add</i>
+            <input type="text" class="input-field" placeholder="הודעה...">
+            <i class="material-icons" style="color:var(--primary);">mic</i>
+        </div>
+    </div>
+
+    <div id="view-admin" class="view" style="background:#f2f2f7;">
+        <div class="header">
+            <button class="header-btn" onclick="nav('view-chats')">סגור</button>
+            <span>ניהול מערכת (Admin)</span>
+            <span></span>
+        </div>
+        
+        <div style="padding:20px 20px 0;">
+            <h2 style="margin:0;">ניהול נראות נהגים 📸</h2>
+            <p style="color:#888; font-size:0.9rem;">רק אתה (הראל) יכול לשנות תמונות פרופיל.</p>
+        </div>
+
+        <div class="admin-grid">
+            <div class="admin-card">
+                <img id="admin-img-driver1" src="https://ui-avatars.com/api/?name=David&background=random" style="width:60px; height:60px; border-radius:50%;">
+                <h3>דוד כהן</h3>
+                <div style="color:green; font-size:0.8rem;">● מחובר</div>
+                <button class="btn-upload" onclick="simulateUpload('driver1')">העלה תמונה 📤</button>
+            </div>
+            
+            <div class="admin-card">
+                <img src="https://ui-avatars.com/api/?name=Yossi&background=random" style="width:60px; height:60px; border-radius:50%;">
+                <h3>יוסי מנוף</h3>
+                <div style="color:gray; font-size:0.8rem;">נראה לאחרונה 09:00</div>
+                <button class="btn-upload">העלה תמונה 📤</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- State Management ---
+        const state = {
+            currentUser: 'driver1',
+            images: {
+                driver1: 'https://ui-avatars.com/api/?name=David&background=random',
+                office: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'
+            }
+        };
+
+        // --- Navigation ---
+        function nav(viewId) {
+            document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+        }
+
+        // --- Chat Logic ---
+        function openChat(name, id) {
+            document.getElementById('chat-title').innerText = name;
+            document.getElementById('chat-avatar-top').src = state.images[id] || state.images.office;
+            
+            // Inject Mock History
+            const feed = document.getElementById('chat-feed');
+            feed.innerHTML = `
+                <div style="text-align:center; margin:20px 0;"><span style="background:#e1f5fe; padding:4px 8px; border-radius:8px; font-size:0.75rem;">היום</span></div>
+                
+                <div class="msg in">
+                    <div class="bubble">בוקר טוב הראל, אני פורק בהרצליה. מסיים עוד 20 דקות.</div>
+                    <div style="font-size:0.65rem; color:#999; margin-left:5px;">08:30</div>
+                </div>
+
+                <div class="msg out">
+                    <div class="bubble">מעולה דוד. יש לי שיבוץ הבא בשבילך.</div>
+                    <div style="font-size:0.65rem; color:#999; margin-right:5px; align-self:flex-end;">08:32 ✓✓</div>
+                </div>
+
+                <div class="msg out">
+                    <div class="bubble bubble-task">
+                        <div class="task-header"><i class="material-icons">assignment_late</i> משימה חדשה</div>
+                        <div class="task-body">
+                            <div class="task-row"><i class="material-icons" style="font-size:16px;">place</i> <strong>רעננה, אחוזה 140</strong></div>
+                            <div class="task-row"><i class="material-icons" style="font-size:16px;">build</i> <strong>מנוף 15 מטר</strong></div>
+                            <div class="task-row"><i class="material-icons" style="font-size:16px;">schedule</i> <strong>היום, 10:00</strong></div>
+                        </div>
+                        <button class="btn-action" onclick="this.innerText='✅ בוצע - נשלח דיווח'; this.style.background='#ccc';">אשר הגעה / ביצוע</button>
+                    </div>
+                </div>
+            `;
+            nav('view-chat-room');
+        }
+
+        // --- Admin Simulation Logic ---
+        function simulateUpload(userId) {
+            // מדמה העלאת תמונה אמיתית - מחליף לתמונה "אמיתית" מהרשת
+            const newImg = "https://randomuser.me/api/portraits/men/32.jpg"; 
+            state.images[userId] = newImg;
+            
+            // עדכון בזמן אמת במסך האדמין
+            document.getElementById('admin-img-' + userId).src = newImg;
+            
+            // עדכון גלובלי (אם היינו בשיחה)
+            alert('✅ התמונה הועלתה בהצלחה לשרת!\nמעכשיו כל הנהגים יראו את התמונה החדשה.');
+        }
+
+    </script>
+</body>
+</html>
