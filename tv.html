@@ -2,72 +2,179 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Saban Command Center - Ultra Pro V2</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ח.סבן - דשבורד לוגיסטי מאוחד (Master V3)</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;900&display=swap" rel="stylesheet">
+    
     <style>
+        /* === סגנונות בסיס (מתוך style.css ו-tv.html) === */
         :root {
-            --neon-blue: #00f2ff;
+            --primary-color: #008069;
             --win-accent: #0078d4;
-            --glass: rgba(255, 255, 255, 0.8);
-            --win-bg: #f3f3f3;
+            --neon-blue: #00f2ff;
+            --glass-bg: rgba(255, 255, 255, 0.9);
+            --bg-gradient: radial-gradient(circle at top right, #f0f4f8, #d9e2ec);
+            --card-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
 
         body { 
             background: #e2e2e2 url('https://img.freepik.com/free-vector/white-abstract-background_23-2148810353.jpg') no-repeat center center fixed;
-            background-size: cover; color: #201f1e; font-family: 'Heebo', sans-serif; margin: 0; overflow: hidden;
+            background-size: cover;
+            color: #201f1e;
+            font-family: 'Heebo', sans-serif;
+            margin: 0;
+            overflow: hidden; /* מניעת גלילה של כל המסך */
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
-        /* סרגל ממדים עליון */
+        /* === סרגל מדדים עליון === */
         .metrics-bar {
-            display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; padding: 20px;
-            background: var(--win-accent); color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            display: grid;
+            grid-template-columns: repeat(5, 1fr); /* 5 עמודות כולל היסטוריה */
+            gap: 15px;
+            padding: 15px 20px;
+            background: linear-gradient(90deg, #004d40, #008069);
+            color: white;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 100;
         }
 
         .metric-card {
-            background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
-            border-radius: 12px; padding: 15px; text-align: center; position: relative; overflow: hidden;
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 10px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(5px);
+            transition: transform 0.2s;
+            cursor: pointer;
         }
+        
+        .metric-card:hover { transform: translateY(-2px); background: rgba(255,255,255,0.25); }
 
-        /* אפקט נחש ניאון רחב */
+        .big-num { font-size: 2.2rem; font-weight: 900; line-height: 1; display: block; }
+        .label { font-size: 0.85rem; opacity: 0.9; }
+
+        /* אפקט נחש (אנימציה) לכרטיס פעיל */
         .active-snake::after {
-            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 3px;
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 4px;
             background: linear-gradient(90deg, transparent, var(--neon-blue), transparent);
             animation: snake-run 3s linear infinite;
         }
         @keyframes snake-run { 0% { left: -100%; } 100% { left: 100%; } }
 
-        /* פריסת Cockpit */
-        .main-layout { display: grid; grid-template-columns: 350px 1fr; height: calc(100vh - 120px); gap: 20px; padding: 20px; }
-
-        .glass-panel { 
-            background: var(--win-glass); backdrop-filter: blur(15px); 
-            border-radius: 20px; border: 1px solid rgba(255,255,255,0.4); 
-            padding: 20px; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        /* === פריסה ראשית === */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 20px;
+            padding: 20px;
+            flex: 1;
+            overflow: hidden;
         }
 
-        /* כרטיס הזמנה מרשים */
-        .order-card {
-            background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px;
-            border-right: 10px solid var(--win-accent); transition: 0.3s;
+        .panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.6);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--card-shadow);
+            overflow: hidden;
+        }
+
+        .panel-header {
             display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 2px solid rgba(0,0,0,0.05); padding-bottom: 10px; margin-bottom: 15px;
         }
-        .order-card.urgent { border-right-color: var(--neon-blue); animation: neon-glow 2s infinite alternate; }
-        @keyframes neon-glow { from { box-shadow: 0 0 5px var(--neon-blue); } to { box-shadow: 0 0 20px var(--neon-blue); } }
+        .panel-header h3 { margin: 0; color: var(--primary-color); font-size: 1.3rem; }
 
-        /* כפתור + צף */
-        .fab-add {
-            position: fixed; bottom: 40px; left: 40px; width: 75px; height: 75px;
-            background: var(--win-accent); color: white; border: none; border-radius: 50%;
-            font-size: 40px; cursor: pointer; box-shadow: 0 10px 25px rgba(0,120,212,0.4);
-            display: flex; justify-content: center; align-items: center; z-index: 1000;
+        .scroll-feed { flex: 1; overflow-y: auto; padding-right: 5px; }
+        
+        /* === כרטיסי הזמנה === */
+        .order-card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+            border-right: 6px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+            position: relative;
         }
 
-        /* טיימר מרכזי */
+        .order-card.status-1 { border-right-color: #ff3b30; animation: pulse-red 2s infinite; } /* חדש - אדום מהבהב */
+        .order-card.status-2 { border-right-color: #fbc02d; } /* בטיפול - כתום */
+        .order-card.status-3 { border-right-color: #00e676; } /* בדרך - ירוק */
+        
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(255, 59, 48, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0); } }
+
+        .card-info h4 { margin: 0 0 5px 0; font-size: 1.2rem; }
+        .card-details { font-size: 0.9rem; color: #555; display: flex; flex-direction: column; gap: 2px; }
+        .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; background: #eee; margin-top: 5px; width: fit-content; }
+        .tag.crane { background: #e3f2fd; color: #1976d2; }
+
+        .card-actions { display: flex; flex-direction: column; gap: 8px; min-width: 140px; }
+        .driver-input { padding: 6px; border: 1px solid #ccc; border-radius: 6px; width: 100%; font-family: inherit; font-size: 0.9rem; }
+        .btn-action { border: none; padding: 8px; border-radius: 6px; color: white; cursor: pointer; font-weight: bold; font-size: 0.9rem; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .btn-done { background: #2e7d32; } .btn-done:hover { background: #1b5e20; }
+        
+        /* === באנר הזמנה דחופה === */
         .next-delivery-banner {
-            background: linear-gradient(90deg, #0078d4, #00bcf2); color: white;
-            padding: 20px; border-radius: 15px; margin-bottom: 15px; display: flex;
-            justify-content: space-between; align-items: center;
+            background: linear-gradient(135deg, #0078d4, #00bcf2);
+            color: white; padding: 20px; border-radius: 15px; margin-bottom: 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 8px 20px rgba(0,120,212,0.3);
+            animation: slideIn 0.5s ease-out;
+        }
+        @keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* === כפתור פלוס צף === */
+        .fab-add {
+            position: fixed; bottom: 30px; left: 30px; width: 70px; height: 70px;
+            background: var(--primary-color); color: white; border: none; border-radius: 50%;
+            font-size: 36px; cursor: pointer; box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            display: flex; justify-content: center; align-items: center; z-index: 1000;
+            transition: transform 0.3s;
+        }
+        .fab-add:hover { transform: scale(1.1) rotate(90deg); }
+
+        /* === מודאלים === */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(5px);
+            display: none; justify-content: center; align-items: center; z-index: 2000;
+        }
+        .modal-content {
+            background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 500px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3); animation: popUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; flex-direction: column; gap: 15px; max-height: 85vh; overflow-y: auto;
+        }
+        @keyframes popUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        
+        .input-field { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; width: 100%; box-sizing: border-box; background: #f9f9f9; }
+        .input-field:focus { border-color: var(--primary-color); outline: none; background: white; }
+        
+        /* === סגנון טבלת היסטוריה === */
+        .history-table { width: 100%; border-collapse: collapse; }
+        .history-table th { text-align: right; color: #888; font-size: 0.85rem; border-bottom: 1px solid #eee; padding: 5px; }
+        .history-table td { padding: 10px 5px; border-bottom: 1px solid #f5f5f5; font-size: 0.9rem; }
+
+        /* התאמה למובייל אם צריך */
+        @media (max-width: 768px) {
+            .main-layout { grid-template-columns: 1fr; }
+            .metrics-bar { grid-template-columns: repeat(2, 1fr); }
+            .panel { height: 40vh; }
         }
     </style>
 </head>
@@ -77,64 +184,130 @@
 
     <header class="metrics-bar">
         <div class="metric-card active-snake">
-            <span style="font-size: 2rem; font-weight: 900;" id="m-0517">0</span>
-            <div>הזמנות (05:00-17:00)</div>
+            <span class="big-num" id="m-0517">0</span>
+            <span class="label">הזמנות יום (05-17)</span>
         </div>
         <div class="metric-card">
-            <span style="font-size: 2rem; font-weight: 900;" id="m-total">0</span>
-            <div>סה"כ פעיל</div>
+            <span class="big-num" id="m-active">0</span>
+            <span class="label">פעיל כעת</span>
         </div>
-        <div class="metric-card">
-            <div id="clock" style="font-size: 1.8rem; font-weight: 900;">00:00:00</div>
-            <div>זמן מקומי</div>
+        <div class="metric-card" style="background: rgba(0,0,0,0.2);">
+            <div id="clock" class="big-num">00:00</div>
+            <span class="label">שעון מקומי</span>
         </div>
-        <div class="metric-card" style="background: var(--neon-blue); color: #000;">
-            <span style="font-size: 1.5rem; font-weight: 900;" id="next-timer">--:--</span>
-            <div>צפי אספקה קרובה</div>
+        <div class="metric-card" style="background: var(--neon-blue); color: #004d40;">
+            <span class="big-num" id="next-timer">--:--</span>
+            <span class="label">אספקה קרובה</span>
+        </div>
+        <div class="metric-card" onclick="toggleHistoryModal()" style="border-color: #ffd700;">
+            <span class="big-num"><i class="material-icons">history</i></span>
+            <span class="label">ארכיון והיסטוריה</span>
         </div>
     </header>
 
     <div class="main-layout">
-        <div class="glass-panel">
-            <h3>🕒 הזמנות עתידיות</h3>
-            <div id="future-feed"></div>
-        </div>
-        <div class="glass-panel">
-            <div id="priority-banner" class="next-delivery-banner" style="display:none;">
-                <div>
-                    <small>אספקה קרובה ביותר:</small>
-                    <h2 id="next-cust-name" style="margin:0;">אשר לוי</h2>
-                </div>
-                <div id="next-cust-details" style="text-align:left;">📍 רעננה | #601921</div>
+        <div class="panel">
+            <div class="panel-header">
+                <h3>🕒 הזמנות עתידיות (מחר+)</h3>
+                <span class="tag" id="future-count">0</span>
             </div>
-            <h3>🚀 ניהול הפצה חי</h3>
-            <div id="active-feed"></div>
+            <div id="future-feed" class="scroll-feed">
+                </div>
+        </div>
+
+        <div class="panel">
+            <div id="priority-banner" class="next-delivery-banner" style="display:none;">
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <i class="material-icons" style="font-size:40px; background:rgba(255,255,255,0.2); border-radius:50%; padding:10px;">local_shipping</i>
+                    <div>
+                        <div style="font-size:0.9rem; opacity:0.9;">יעד האספקה הקרוב ביותר:</div>
+                        <h2 id="next-cust-name" style="margin:0; font-size:1.8rem;">טוען...</h2>
+                    </div>
+                </div>
+                <div style="text-align:left;">
+                    <div id="next-cust-time" style="font-size:2rem; font-weight:900;">--:--</div>
+                    <div id="next-cust-details">פרטים...</div>
+                </div>
+            </div>
+
+            <div class="panel-header">
+                <h3>🚀 סידור עבודה חי (היום)</h3>
+                <span class="tag" style="background:#e8f5e9; color:#2e7d32;" id="active-count">0</span>
+            </div>
+            <div id="active-feed" class="scroll-feed">
+                </div>
         </div>
     </div>
 
-    <button class="fab-add" onclick="document.getElementById('modal-add').style.display='flex'">
-        <i class="material-icons" style="font-size:40px;">add</i>
+    <button class="fab-add" onclick="openAddModal()">
+        <i class="material-icons">add</i>
     </button>
 
-    <div id="modal-add" class="modal-overlay" style="display:none; align-items:center; justify-content:center; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000;">
-        <div style="background:white; padding:30px; border-radius:20px; width:450px; box-shadow:0 20px 40px rgba(0,0,0,0.2);">
-            <h2 style="color:var(--win-accent); margin-top:0;">הזמנה חדשה 🏗️</h2>
-            <input type="text" id="in-num" class="input-field" placeholder="מספר הזמנה ERP">
-            <input type="text" id="in-cust" class="input-field" placeholder="שם לקוח">
-            <input type="text" id="in-addr" class="input-field" placeholder="כתובת ליעד">
+    <div id="modal-add" class="modal-overlay">
+        <div class="modal-content">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h2 style="margin:0; color:var(--primary-color);">הזמנה חדשה 🏗️</h2>
+                <i class="material-icons" onclick="closeModal('modal-add')" style="cursor:pointer;">close</i>
+            </div>
+            
+            <input type="text" id="in-num" class="input-field" placeholder="מספר הזמנה (ERP)">
+            
+            <input type="text" id="in-cust" list="clients-list" class="input-field" placeholder="שם לקוח (התחל להקליד...)" autocomplete="off">
+            <datalist id="clients-list">
+                </datalist>
+
+            <input type="text" id="in-addr" class="input-field" placeholder="כתובת / אתר בניה">
+            
             <select id="in-type" class="input-field">
-                <option>מנוף 10 מטר</option>
-                <option>משאית</option>
-                <option>מנוף 15 מטר</option>
-                <option>עבודת מנוף</option>
+                <option value="מנוף 10 מטר">מנוף 10 מטר</option>
+                <option value="מנוף 15 מטר">מנוף 15 מטר</option>
+                <option value="משאית רגילה">משאית רגילה</option>
+                <option value="מכולה 8 קוב">מכולה 8 קוב</option>
+                <option value="מכולה 24 קוב">מכולה 24 קוב</option>
+                <option value="איסוף עצמי">איסוף עצמי</option>
             </select>
-            <button onclick="saveNewOrder()" class="btn-primary" style="width:100%; padding:15px; margin-top:10px;">שמור במערכת</button>
+            
+            <div style="display:flex; gap:10px;">
+                <input type="time" id="in-time-start" class="input-field">
+                <input type="time" id="in-time-end" class="input-field">
+            </div>
+
+            <button onclick="saveNewOrder()" class="btn-action" style="background:var(--primary-color); padding:15px; font-size:1.1rem; justify-content:center;">
+                <i class="material-icons">save</i> שמור במערכת
+            </button>
+        </div>
+    </div>
+
+    <div id="modal-history" class="modal-overlay">
+        <div class="modal-content" style="max-width:700px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h2 style="margin:0; color:#555;">ארכיון ביצועים 📜</h2>
+                <i class="material-icons" onclick="closeModal('modal-history')" style="cursor:pointer;">close</i>
+            </div>
+            <div style="overflow-y:auto; max-height:60vh;">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>לקוח</th>
+                            <th>כתובת</th>
+                            <th>נהג מבצע</th>
+                            <th>שעת סיום</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-rows">
+                        </tbody>
+                </table>
+            </div>
+            <div style="text-align:center; padding-top:10px; border-top:1px solid #eee;">
+                <small>מציג 50 הזמנות אחרונות</small>
+            </div>
         </div>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
     <script>
+        // --- 1. הגדרות Firebase ---
         const firebaseConfig = {
             apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60",
             projectId: "app-saban94-57361",
@@ -143,74 +316,228 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
+        // --- 2. משתנים גלובליים ---
         let lastCount = 0;
+        let allClientsSet = new Set(); // לאוטו-קומפליט
+        let isInitialLoad = true;
 
+        // --- 3. האזנה ראשית לנתונים (Real-time) ---
         db.collection('users').orderBy('lastUpdate', 'desc').onSnapshot(snap => {
-            if (snap.size > lastCount && lastCount !== 0) document.getElementById('sound-new').play();
-            lastCount = snap.size;
-
             const activeFeed = document.getElementById('active-feed');
             const futureFeed = document.getElementById('future-feed');
-            activeFeed.innerHTML = ''; futureFeed.innerHTML = '';
+            const historyRows = document.getElementById('history-rows');
             
-            let count0517 = 0;
+            // ניקוי תצוגה
+            activeFeed.innerHTML = ''; 
+            futureFeed.innerHTML = '';
+            historyRows.innerHTML = '';
+
+            let countDay = 0; // מונה 05-17
+            let activeCount = 0;
+            let futureCount = 0;
             let activeOrders = [];
 
+            // סאונד בהזמנה חדשה
+            if (snap.size > lastCount && !isInitialLoad && lastCount !== 0) {
+                document.getElementById('sound-new').play().catch(e => console.log("Audio play failed"));
+            }
+            lastCount = snap.size;
+            isInitialLoad = false;
+
+            // מעבר על כל המסמכים
             snap.forEach(doc => {
-                const d = doc.data(); d.id = doc.id;
-                if (d.status === 4) return;
+                const d = doc.data(); 
+                d.id = doc.id;
+                
+                // איסוף שמות ל-Autocomplete
+                if (d.name) allClientsSet.add(d.name);
 
-                const hour = d.lastUpdate ? d.lastUpdate.toDate().getHours() : 0;
-                if (hour >= 5 && hour <= 17) count0517++;
+                // מיון לפי סטטוס
+                if (d.status === 4) {
+                    // היסטוריה (סופק)
+                    renderHistoryRow(d, historyRows);
+                } else {
+                    // פעיל או עתידי
+                    const orderDate = d.lastUpdate ? d.lastUpdate.toDate() : new Date();
+                    const isToday = isDateToday(orderDate);
+                    
+                    // חישוב מונה יומי (05:00-17:00)
+                    const h = orderDate.getHours();
+                    if (isToday && h >= 5 && h <= 17) countDay++;
 
-                activeOrders.push(d);
-                renderCard(d, activeFeed);
+                    if (isToday || d.status < 4) { // הגיון פשוט: אם לא סופק, זה פעיל
+                        activeCount++;
+                        activeOrders.push(d);
+                        renderCard(d, activeFeed);
+                    } else {
+                        futureCount++;
+                        renderCard(d, futureFeed, true);
+                    }
+                }
             });
 
-            document.getElementById('m-0517').innerText = count0517;
-            document.getElementById('m-total').innerText = activeOrders.length;
+            // עדכון מונים
+            document.getElementById('m-0517').innerText = countDay;
+            document.getElementById('m-active').innerText = activeCount;
+            document.getElementById('active-count').innerText = activeCount;
+            document.getElementById('future-count').innerText = futureCount;
 
-            if(activeOrders.length > 0) {
-                const next = activeOrders[activeOrders.length-1];
-                document.getElementById('priority-banner').style.display = 'flex';
-                document.getElementById('next-cust-name').innerText = next.name;
-                document.getElementById('next-cust-details').innerText = `📍 ${next.address || ''} | #${next.orgId || ''}`;
-            }
+            // עדכון רשימת הלקוחות להשלמה אוטומטית
+            updateDataList();
+
+            // עדכון באנר "הבא בתור"
+            updateNextDeliveryBanner(activeOrders);
         });
 
-        function renderCard(d, container) {
+        // --- 4. פונקציות תצוגה (Rendering) ---
+
+        function renderCard(d, container, isFuture = false) {
             const div = document.createElement('div');
-            div.className = `order-card ${d.status === 1 ? 'urgent' : ''}`;
+            // זיהוי סטטוס לצבעים (1=חדש, 2=בטיפול, 3=בדרך)
+            const statusClass = d.status ? `status-${d.status}` : ''; 
+            div.className = `order-card ${statusClass}`;
+            
+            // המרה לתאריך קריא
+            const timeStr = d.lastUpdate ? new Date(d.lastUpdate.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--:--';
+            const orgId = d.orgId || '---';
+
             div.innerHTML = `
-                <div>
-                    <h2 style="margin:0; font-size:1.8rem;">${d.name}</h2>
-                    <small>📍 ${d.address || ''} | # ${d.orgId || ''}</small><br>
-                    <span style="color:var(--win-accent); font-weight:bold;">🏗️ ${d.deliveryType || 'מנוף 10 מטר'}</span>
+                <div class="card-info">
+                    <h4>${d.name}</h4>
+                    <div class="card-details">
+                        <span>📍 ${d.address || 'כתובת לא צוינה'}</span>
+                        <span>📦 #${orgId} | ${timeStr}</span>
+                    </div>
+                    <span class="tag crane">${d.deliveryType || 'כללי'}</span>
                 </div>
-                <div style="text-align:left;">
-                    <input type="text" placeholder="שם נהג..." value="${d.driverName || ''}" onchange="updateDriver('${d.id}', this.value)" style="padding:5px; border-radius:5px; border:1px solid #ddd; width:120px;"><br>
-                    <button onclick="updateStatus('${d.id}', 4)" style="margin-top:10px; background:#107c10; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer;">סופק ✅</button>
+                
+                <div class="card-actions">
+                    <input type="text" class="driver-input" 
+                           placeholder="שם נהג / מספר משאית" 
+                           value="${d.driverName || ''}" 
+                           onchange="updateDriver('${d.id}', this.value)">
+                    
+                    ${d.status === 3 
+                        ? `<button onclick="updateStatus('${d.id}', 4)" class="btn-action btn-done"><i class="material-icons">done_all</i> סופק</button>`
+                        : `<select onchange="updateStatus('${d.id}', parseInt(this.value))" class="driver-input" style="border-color:#ccc;">
+                             <option value="1" ${d.status==1?'selected':''}>📥 התקבל</option>
+                             <option value="2" ${d.status==2?'selected':''}>⚙️ בטיפול</option>
+                             <option value="3" ${d.status==3?'selected':''}>🚚 יצא לדרך</option>
+                           </select>`
+                    }
                 </div>
             `;
             container.appendChild(div);
         }
 
+        function renderHistoryRow(d, container) {
+            const tr = document.createElement('tr');
+            const timeStr = d.lastUpdate ? new Date(d.lastUpdate.toDate()).toLocaleString('he-IL') : '-';
+            tr.innerHTML = `
+                <td><strong>${d.name}</strong></td>
+                <td>${d.address || ''}</td>
+                <td>${d.driverName || '-'}</td>
+                <td style="direction:ltr;">${timeStr}</td>
+            `;
+            container.appendChild(tr);
+        }
+
+        function updateNextDeliveryBanner(orders) {
+            // לוגיקה: מצא את ההזמנה הפעילה הכי וותיקה או לפי שדה שעה
+            // כאן נשתמש בהזמנה האחרונה ברשימה שהיא לא בסטטוס "חדש" לגמרי, או הראשונה ברשימה
+            const banner = document.getElementById('priority-banner');
+            
+            // סינון להזמנות שיש להן יעד או שעת יעד
+            const priority = orders.filter(o => o.status !== 4); // כל הפעילים
+            
+            if (priority.length > 0) {
+                // לוקחים את האחרון שנכנס (או הראשון בתור, תלוי בלוגיקה העסקית שלך)
+                // כאן נניח שהכי דחוף הוא זה שנמצא בסטטוס "בדרך" (3) או "בטיפול" (2)
+                let next = priority.find(o => o.status === 3) || priority[0];
+                
+                banner.style.display = 'flex';
+                document.getElementById('next-cust-name').innerText = next.name;
+                const time = next.lastUpdate ? new Date(next.lastUpdate.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--:--';
+                document.getElementById('next-cust-time').innerText = time;
+                document.getElementById('next-cust-details').innerText = `📍 ${next.address || ''} | ${next.deliveryType || ''}`;
+            } else {
+                banner.style.display = 'none';
+            }
+        }
+
+        function updateDataList() {
+            const list = document.getElementById('clients-list');
+            list.innerHTML = '';
+            allClientsSet.forEach(name => {
+                const opt = document.createElement('option');
+                opt.value = name;
+                list.appendChild(opt);
+            });
+        }
+
+        // --- 5. פעולות (Actions) ---
+
         function saveNewOrder() {
+            const name = document.getElementById('in-cust').value;
+            if (!name) { alert('חובה להזין שם לקוח'); return; }
+
             db.collection('users').add({
-                name: document.getElementById('in-cust').value,
+                name: name,
                 orgId: document.getElementById('in-num').value,
                 address: document.getElementById('in-addr').value,
                 deliveryType: document.getElementById('in-type').value,
-                status: 1,
-                lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
+                status: 1, // 1 = חדש
+                type: 'client',
+                lastUpdate: firebase.firestore.FieldValue.serverTimestamp(),
+                // שמירת היסטוריית זמנים אם הוזנו
+                deliveryStart: document.getElementById('in-time-start').value,
+                deliveryEnd: document.getElementById('in-time-end').value
+            }).then(() => {
+                closeModal('modal-add');
+                // איפוס שדות
+                document.getElementById('in-cust').value = '';
+                document.getElementById('in-addr').value = '';
+                document.getElementById('in-num').value = '';
             });
-            document.getElementById('modal-add').style.display = 'none';
         }
 
-        function updateDriver(id, name) { db.collection('users').doc(id).update({ driverName: name }); }
-        function updateStatus(id, s) { db.collection('users').doc(id).update({ status: s, lastUpdate: firebase.firestore.FieldValue.serverTimestamp() }); }
+        function updateDriver(id, driverName) {
+            db.collection('users').doc(id).update({ driverName: driverName });
+        }
 
-        setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
+        function updateStatus(id, status) {
+            db.collection('users').doc(id).update({ 
+                status: status,
+                lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        }
+
+        // --- 6. עזרים (Utils) ---
+
+        function isDateToday(date) {
+            const today = new Date();
+            return date.getDate() === today.getDate() &&
+                   date.getMonth() === today.getMonth() &&
+                   date.getFullYear() === today.getFullYear();
+        }
+
+        function openAddModal() { 
+            document.getElementById('modal-add').style.display = 'flex'; 
+            document.getElementById('in-cust').focus();
+        }
+        function toggleHistoryModal() { document.getElementById('modal-history').style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+        // שעון רץ
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            // חישוב זמן משוער לאספקה (סתם לצורך תצוגה - +שעה מעכשיו)
+            const next = new Date(now.getTime() + 60*60*1000);
+            document.getElementById('next-timer').innerText = next.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        }, 1000);
+
     </script>
 </body>
 </html>
