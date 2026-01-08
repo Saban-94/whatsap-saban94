@@ -2,318 +2,283 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ח.סבן - מרכז שליטה (נקי)</title>
-    
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <title>מרכז שליטה - ח.סבן (מתוקן)</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
     
     <style>
-        /* --- הגדרות בסיס --- */
-        body { margin: 0; background: #e0e0e0; font-family: 'Rubik', sans-serif; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
-
-        /* --- בר עליון --- */
-        .top-bar {
-            height: 90px; padding: 10px 25px;
-            background: linear-gradient(135deg, #1e1e1e 0%, #2c3e50 100%);
-            display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.4); z-index: 1000; position: relative;
+        body { background-color: #f4f6f9; font-family: 'Rubik', sans-serif; overflow-x: hidden; }
+        
+        /* סרגל צד */
+        .sidebar { position: fixed; right: 0; top: 0; bottom: 0; width: 260px; background: #263238; color: white; padding: 20px; z-index: 1000; display: flex; flex-direction: column; }
+        .brand { text-align: center; font-weight: 900; font-size: 1.4rem; margin-bottom: 30px; color: #00e676; border-bottom: 1px solid #444; padding-bottom: 15px; }
+        .nav-btn { background: transparent; border: none; color: #b0bec5; padding: 12px; margin-bottom: 8px; border-radius: 10px; text-align: right; display: flex; align-items: center; gap: 12px; width: 100%; transition: 0.2s; }
+        .nav-btn:hover { background: rgba(255,255,255,0.1); color: white; }
+        .nav-btn.active { background: #00e676; color: #121212; font-weight: bold; box-shadow: 0 4px 15px rgba(0,230,118,0.3); }
+        
+        /* תוכן */
+        .main-content { margin-right: 260px; padding: 30px; }
+        .card-box { background: white; border-radius: 16px; padding: 25px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); margin-bottom: 25px; }
+        
+        /* כרטיסי שיגור מהיר */
+        .quick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
+        .quick-card { 
+            background: white; border: 1px solid #e0e0e0; border-radius: 12px; padding: 15px; text-align: center; cursor: pointer; transition: 0.2s; position: relative;
         }
-        .metric-card {
-            background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
-            color: white; display: flex; flex-direction: column; justify-content: center; align-items: center;
-            backdrop-filter: blur(5px); position: relative; overflow: hidden;
-        }
-        .m-val { font-size: 2.2rem; font-weight: 900; line-height: 1; text-shadow: 0 2px 5px rgba(0,0,0,0.5); }
-        .m-sub { font-size: 0.8rem; opacity: 0.8; margin-top: 5px; letter-spacing: 1px; }
-        .border-bot { position: absolute; bottom: 0; left: 0; width: 100%; height: 4px; }
-        .c-1 { background: #fbc02d; } .c-2 { background: #00e676; } .c-3 { background: #29b6f6; } .c-4 { background: #ff3b30; }
+        .quick-card:hover { border-color: #00e676; transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .quick-card:active { transform: scale(0.98); }
+        .qc-icon { font-size: 2rem; color: #00e676; margin-bottom: 5px; }
+        .qc-name { font-weight: bold; color: #333; }
+        .qc-sub { font-size: 0.8rem; color: #888; margin-top: 2px; }
 
-        /* --- במה ומפה --- */
-        .main-stage { flex: 1; position: relative; overflow: hidden; }
-        #map { width: 100%; height: 100%; }
-
-        /* --- סרגלי צד --- */
-        .glass-panel {
-            background: rgba(20, 20, 20, 0.95); color: white; border-radius: 12px; overflow: hidden; pointer-events: auto;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column;
-        }
-        .ph-title { padding: 12px; background: rgba(255,255,255,0.05); font-weight: 700; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .scroll-area { flex: 1; overflow-y: auto; padding: 10px; }
-
-        /* צד שמאל */
-        .sidebar-left {
-            position: absolute; top: 20px; left: 20px; bottom: 20px; width: 360px;
-            display: flex; flex-direction: column; gap: 20px; z-index: 500; pointer-events: none;
-        }
-        .panel-active { flex: 2; } 
-        .panel-done { flex: 1; }
-
-        /* צד ימין (מורחב ללא Viva) */
-        .sidebar-right {
-            position: absolute; top: 20px; right: 20px; bottom: 70px; width: 320px;
-            display: flex; flex-direction: column; z-index: 500; pointer-events: none;
-        }
-        .panel-future { flex: 1; background: rgba(10, 30, 40, 0.95); } /* תופס הכל */
-
-        /* כרטיסים */
-        .kitchen-card {
-            background: #2a2a2a; border-radius: 6px; padding: 10px; margin-bottom: 8px;
-            border-left: 4px solid #555; position: relative; transition: transform 0.3s; color: white;
-        }
-        .highlight-card { transform: scale(1.02); box-shadow: 0 0 15px rgba(255,255,255,0.1); border: 1px solid white; }
-        .st-green { border-left-color: #00e676; } .st-yellow { border-left-color: #fbc02d; } .st-red { border-left-color: #ff3b30; }
-        .kc-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-        .kc-name { font-weight: bold; font-size: 1rem; }
-        .kc-meta { font-size: 0.8rem; color: #aaa; }
-        .kc-timer { font-family: monospace; font-weight: 900; font-size: 1.2rem; color: #00e676; }
-
-        .future-card { background: #263238; border-radius: 6px; padding: 10px; margin-bottom: 8px; border-right: 4px solid #78909c; opacity: 0.8; color: #ccc; }
-        .future-tomorrow { border-right-color: #00bcd4; background: #37474f; opacity: 1; color: white; }
-        .fc-date { font-weight: bold; color: #00bcd4; font-size: 0.85rem; }
-
-        /* סיכות */
-        .pin-container { position: relative; display: flex; justify-content: center; align-items: center; }
-        .info-bubble {
-            position: absolute; bottom: 65px; background: #1e1e1e; color: white; border-radius: 8px;
-            min-width: 170px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 100; padding: 8px;
-        }
-        .info-bubble::after { content: ''; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); border-width: 8px 8px 0; border-style: solid; border-color: #1e1e1e transparent transparent transparent; }
-        .snake-border {
-            position: absolute; inset: -2px; border-radius: 10px;
-            background: conic-gradient(from 0deg, transparent, #00e676, transparent 30%);
-            animation: rotate 2s linear infinite; z-index: -1;
-        }
-        .snake-inner { position: absolute; inset: 2px; background: #1e1e1e; border-radius: 8px; z-index: 0; }
-        @keyframes rotate { 100% { transform: rotate(360deg); } }
-        .bubble-content { position: relative; z-index: 1; }
-        .row-top { font-size: 0.8rem; color: #00e676; border-bottom: 1px solid #333; padding-bottom: 2px; margin-bottom: 2px; display: flex; justify-content: space-between; }
-        .row-main { font-weight: bold; font-size: 1rem; margin-bottom: 2px; line-height: 1.1; }
-        .row-sub { font-size: 0.8rem; color: #bbb; display: flex; align-items: center; justify-content: center; gap: 5px; }
-        .mode-info { display: block; } .mode-timer { display: none; font-family: monospace; font-size: 1.5rem; color: #fbc02d; font-weight: bold; }
-        .show-timer .mode-info { display: none; } .show-timer .mode-timer { display: block; }
-        .urgent .snake-border { background: conic-gradient(from 0deg, transparent, #ff3b30, transparent 30%); }
-        .map-icon {
-            width: 48px; height: 48px; background: white; border-radius: 50%;
-            background-size: 70%; background-repeat: no-repeat; background-position: center;
-            border: 3px solid white; box-shadow: 0 5px 15px rgba(0,0,0,0.4); z-index: 50; transition: transform 0.5s;
-        }
-        .pin-highlight .map-icon { transform: scale(1.3); box-shadow: 0 0 30px #00e676; border-color: #00e676; }
-        .ic-crane { background-image: url('https://cdn-icons-png.flaticon.com/512/2675/2675860.png'); border-color: #fbc02d; }
-        .ic-truck { background-image: url('https://cdn-icons-png.flaticon.com/512/9420/9420542.png'); border-color: #2196f3; }
-        .ic-cont { background-image: url('https://cdn-icons-png.flaticon.com/512/9630/9630364.png'); border-color: #ff9800; }
-
-        /* POSTER POPUP */
-        .mega-popup-overlay { position: absolute; inset: 0; z-index: 9999; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; backdrop-filter: blur(15px); }
-        .popup-card { background: #1e1e1e; color: white; border-radius: 20px; box-shadow: 0 20px 80px rgba(0,0,0,0.8); overflow: hidden; position: relative; max-width: 900px; width: 90%; animation: zoomIn 0.5s; display: flex; flex-direction: column; }
-        .popup-poster-mode { flex-direction: row; text-align: right; height: 500px; }
-        .pop-image-side { flex: 1; background-size: cover; background-position: center; position: relative; border-right: 4px solid; }
-        .pop-content-side { flex: 1; padding: 40px; display: flex; flex-direction: column; justify-content: center; }
-        .theme-gold .pop-image-side { border-color: #ffd700; } .theme-gold .pop-title { color: #ffd700; text-shadow: 0 2px 10px rgba(255,215,0,0.3); }
-        .theme-neon .pop-image-side { border-color: #00e676; } .theme-neon .pop-title { color: #00e676; text-shadow: 0 0 20px rgba(0,230,118,0.5); }
-        .theme-alert .pop-image-side { border-color: #ff3b30; } .theme-alert .pop-title { color: #ff3b30; text-transform: uppercase; letter-spacing: 3px; }
-        .pop-icon { font-size: 60px; margin-bottom: 20px; }
-        .pop-title { font-size: 3.5rem; font-weight: 900; margin-bottom: 20px; line-height: 1; }
-        .pop-body { font-size: 1.6rem; color: #e0e0e0; line-height: 1.5; font-weight: 300; }
-        @keyframes zoomIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
-        /* חדשות */
-        .news-ticker { height: 50px; background: #0078d4; color: white; display: flex; align-items: center; box-shadow: 0 -5px 20px rgba(0,0,0,0.3); z-index: 2000; position: relative; }
-        .ticker-label { background: #005a9e; height: 100%; display: flex; align-items: center; padding: 0 20px; font-weight: 900; z-index: 2; }
-        .ticker-content { position: absolute; line-height: 50px; font-size: 1.3rem; font-weight: 500; white-space: nowrap; animation: move 20s linear infinite; padding-left: 100%; }
-        @keyframes move { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
-        .theme-alert { background: #d32f2f !important; } .theme-success { background: #2e7d32 !important; }
-
+        /* סטודיו */
+        .studio-panel { background: #1e1e1e; color: white; border-radius: 16px; padding: 20px; border: 1px solid #333; }
+        .form-dark { background: #2c2c2c; border: 1px solid #444; color: white; }
+        .form-dark:focus { background: #333; color: white; border-color: #00e676; box-shadow: none; }
+        
+        /* טבלאות */
+        .table td { vertical-align: middle; }
+        .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div class="top-bar">
-        <div class="metric-card"><span class="m-val" id="val-hist">0</span><span class="m-sub">ארכיון</span><div class="border-bot c-1"></div></div>
-        <div class="metric-card"><span class="m-val" id="val-next" style="color:#29b6f6">--:--</span><span class="m-sub">משימה הבאה</span><div class="border-bot c-3"></div></div>
-        <div class="metric-card"><span class="m-val" id="val-clock">00:00</span><span class="m-sub">שעון</span><div class="border-bot c-2"></div></div>
-        <div class="metric-card"><span class="m-val" id="val-active">0</span><span class="m-sub">פעילים היום</span><div class="border-bot c-4"></div></div>
+    <div class="sidebar">
+        <div class="brand"><i class="material-icons" style="vertical-align:middle">local_shipping</i> ח.סבן לוגיסטיקה</div>
+        <button class="nav-btn active" onclick="switchTab('live', this)"><i class="material-icons">dvr</i> לוח בקרה</button>
+        <button class="nav-btn" onclick="switchTab('studio', this)"><i class="material-icons">campaign</i> סטודיו שידור</button>
+        <button class="nav-btn" onclick="switchTab('clients', this)"><i class="material-icons">people</i> ניהול לקוחות</button>
+        <button class="nav-btn" onclick="switchTab('history', this)"><i class="material-icons">history</i> ארכיון</button>
     </div>
 
-    <div class="main-stage">
-        <div id="map"></div>
+    <div class="main-content">
         
-        <div class="sidebar-left">
-            <div class="glass-panel panel-active">
-                <div class="ph-title"><span>🔥 משימות להיום</span><span id="cnt-active">0</span></div>
-                <div class="scroll-area" id="list-active"></div>
+        <div id="tab-live" class="tab-pane">
+            
+            <div class="card-box">
+                <h5 class="mb-3 text-secondary"><i class="material-icons" style="vertical-align:middle">rocket_launch</i> שיגור הזמנה ללקוח קיים</h5>
+                <div id="quick-grid" class="quick-grid">
+                    <div class="text-muted p-2">טוען נתונים...</div>
+                </div>
             </div>
-            <div class="glass-panel panel-done">
-                <div class="ph-title" style="color:#aaa;"><span>✅ סופקו</span><span id="cnt-done">0</span></div>
-                <div class="scroll-area" id="list-done" style="font-size:0.85rem; color:#ccc;"></div>
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="fw-bold">הזמנות פעילות</h3>
+                <button class="btn btn-primary shadow" onclick="openOrderModal()">
+                    <i class="material-icons" style="vertical-align:middle">add</i> הזמנה חדשה (ריק)
+                </button>
+            </div>
+            <div class="card-box p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="bg-light"><tr><th>תעודה</th><th>זמן</th><th>לקוח</th><th>כתובת</th><th>נהג</th><th>פעולות</th></tr></thead>
+                    <tbody id="live-table-body"></tbody>
+                </table>
             </div>
         </div>
 
-        <div class="sidebar-right">
-            <div class="glass-panel panel-future">
-                <div class="ph-title" style="color:#00bcd4;"><span>📅 תכנון עתידי</span><span id="cnt-future">0</span></div>
-                <div class="scroll-area" id="list-future"></div>
+        <div id="tab-studio" class="tab-pane" style="display:none;">
+            <div class="row">
+                <div class="col-md-5">
+                    <div class="studio-panel mb-3">
+                        <h5>פס חדשות (Ticker)</h5>
+                        <input id="news-input" class="form-control form-dark mb-3" placeholder="הקלד הודעה רצה...">
+                        <div class="d-flex gap-2 mb-3">
+                            <button class="btn btn-sm btn-primary" onclick="updateNews('blue')">כחול</button>
+                            <button class="btn btn-sm btn-danger" onclick="updateNews('red')">אדום</button>
+                            <button class="btn btn-sm btn-success" onclick="updateNews('green')">ירוק</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-7">
+                    <div class="studio-panel" style="border-color:#00e676;">
+                        <h5 style="color:#00e676;">MEGA POPUP (פוסטר)</h5>
+                        <input id="pop-title" class="form-control form-dark mb-2" placeholder="כותרת ראשית">
+                        <textarea id="pop-body" class="form-control form-dark mb-2" rows="2" placeholder="תוכן ההודעה..."></textarea>
+                        <input id="pop-img" class="form-control form-dark mb-2" placeholder="קישור לתמונה (URL)...">
+                        
+                        <div class="d-flex gap-2 mb-3 overflow-auto">
+                            <button class="btn btn-outline-secondary btn-sm" onclick="setImg('https://img.freepik.com/free-photo/truck-highway_1112-964.jpg')">🚚 משאית</button>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="setImg('https://img.freepik.com/free-photo/birthday-cake-with-candles_144627-42861.jpg')">🎂 עוגה</button>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="setImg('https://img.freepik.com/free-vector/warning-signs-collection_23-2148559052.jpg')">⚠️ אזהרה</button>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="setImg('')">❌ נקה</button>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-6"><select id="pop-icon" class="form-select form-dark"><option value="verified">✅ וי</option><option value="warning">⚠️ אזהרה</option><option value="celebration">🎉 חגיגה</option></select></div>
+                            <div class="col-6"><select id="pop-theme" class="form-select form-dark"><option value="neon">💎 ניאון</option><option value="gold">🥇 זהב</option><option value="alert">🚨 חירום</option></select></div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-success flex-fill" onclick="togglePopup(true)">שדר למסך</button>
+                            <button class="btn btn-danger flex-fill" onclick="togglePopup(false)">כבה שידור</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-clients" class="tab-pane" style="display:none;">
+            <div class="d-flex justify-content-between mb-3">
+                <h3>ניהול לקוחות</h3>
+                <button class="btn btn-success" onclick="openClientModal()">+ הוסף לקוח חדש</button>
+            </div>
+            <div class="card-box">
+                <table class="table table-striped">
+                    <thead><tr><th>שם לקוח</th><th>כתובת ברירת מחדל</th><th>סוג</th><th>פעולות</th></tr></thead>
+                    <tbody id="clients-table"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="tab-history" class="tab-pane" style="display:none;">
+            <h3>ארכיון ביצועים</h3>
+            <div class="card-box">
+                <table class="table table-striped">
+                    <thead><tr><th>תאריך</th><th>לקוח</th><th>כתובת</th><th>נהג</th><th>מחק</th></tr></thead>
+                    <tbody id="history-table"></tbody>
+                </table>
             </div>
         </div>
     </div>
 
-    <div id="mega-popup" class="mega-popup-overlay">
-        <div class="popup-card" id="popup-inner"></div>
-    </div>
-
-    <div class="news-ticker" id="ticker-bar">
-        <div class="ticker-label"><i class="material-icons">campaign</i>&nbsp;<span id="news-title">עדכונים</span></div>
-        <div class="ticker-content-wrapper" style="flex:1; position:relative; overflow:hidden;">
-            <div class="ticker-content" id="news-text">טוען נתונים...</div>
+    <div class="modal fade" id="orderModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white"><h5 class="modal-title">פרטי הזמנה</h5><button class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <form id="orderForm">
+                        <input type="hidden" id="o-id">
+                        <div class="row g-2 mb-2">
+                            <div class="col-4"><label>מס' תעודה</label><input id="o-oid" class="form-control" type="number"></div>
+                            <div class="col-8"><label>שם לקוח</label><input id="o-name" class="form-control" required></div>
+                        </div>
+                        <div class="mb-2"><label>כתובת מלאה</label><input id="o-addr" class="form-control" placeholder="עיר ורחוב"></div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-6"><label>נהג</label><input id="o-drv" class="form-control"></div>
+                            <div class="col-6"><label>סוג</label><select id="o-type" class="form-select"><option>מנוף 10 מטר</option><option>מכולה 8 קוב</option><option>משאית חומרים</option></select></div>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6"><label>תאריך</label><input type="date" id="o-date" class="form-control"></div>
+                            <div class="col-6"><label>שעה</label><input type="time" id="o-time" class="form-control"></div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">שמור ושלח</button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <div class="modal fade" id="clientModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white"><h5 class="modal-title">לקוח חדש</h5><button class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <form id="clientForm">
+                        <div class="mb-2"><label>שם</label><input id="c-name" class="form-control" required></div>
+                        <div class="mb-2"><label>כתובת</label><input id="c-addr" class="form-control"></div>
+                        <div class="mb-2"><label>סוג מועדף</label><select id="c-type" class="form-select"><option>מנוף 10 מטר</option><option>מכולה 8 קוב</option></select></div>
+                        <button type="submit" class="btn btn-success w-100">שמור</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, query, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, setDoc, doc, onSnapshot, query, orderBy } 
+        from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const db = getFirestore(initializeApp({ apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60", projectId: "app-saban94-57361", appId: "1:275366913167:web:f0c6f808e12f2aeb58fcfa" }));
+        
+        let allOrders = [];
+        let allClients = []; // מערך לשמירת הלקוחות לשימוש בלחיצה
 
-        const map = L.map('map', { zoomControl: false }).setView([32.3215, 34.8532], 12);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
-        const markersLayer = L.layerGroup().addTo(map);
-        const geoCache = {};
+        // 1. טעינת הזמנות
+        onSnapshot(query(collection(db, "users"), orderBy("lastUpdate", "desc")), (snap) => {
+            const l = document.getElementById('live-table-body');
+            const h = document.getElementById('history-table');
+            l.innerHTML = ''; h.innerHTML = ''; allOrders = [];
 
-        let activeLocations = []; let currentFlyIndex = 0; let isUserInteracting = false;
-
-        async function getCoords(address) {
-            if(!address) return null;
-            if(geoCache[address]) return geoCache[address];
-            try{
-                const jitter = (Math.random()-0.5)*0.0003;
-                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address+', Israel')}&limit=1`);
-                const data = await res.json();
-                if(data.length){ const c={lat:parseFloat(data[0].lat)+jitter, lon:parseFloat(data[0].lon)+jitter}; geoCache[address]=c; return c; }
-            }catch(e){} return null;
-        }
-
-        function getIconClass(t) { if(!t)return 'ic-truck'; if(t.includes('מנוף'))return 'ic-crane'; if(t.includes('מכולה'))return 'ic-cont'; return 'ic-truck'; }
-        function getSec(t) { if(!t) return 99999; const now=new Date(); const [h,m]=t.split(':'); const d=new Date(); d.setHours(h,m,0); return Math.floor((d-now)/1000); }
-        function fmt(s) { const h=Math.floor(Math.abs(s)/3600), m=Math.floor((Math.abs(s)%3600)/60), sc=Math.abs(s)%60; return `${s<0?'-':''}${h<10?'0'+h:h}:${m<10?'0'+m:m}:${sc<10?'0'+sc:sc}`; }
-
-        onSnapshot(query(collection(db, "users")), async (snap) => {
-            markersLayer.clearLayers();
-            document.getElementById('list-active').innerHTML=''; 
-            document.getElementById('list-done').innerHTML=''; 
-            document.getElementById('list-future').innerHTML='';
-            
-            let act=0, don=0, fut=0, minS=99999;
-            activeLocations=[]; 
-            const today = new Date().toISOString().split('T')[0];
-            const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate()+1);
-            const tmrStr = tomorrow.toISOString().split('T')[0];
-            let todayOrders=[]; let futureOrders=[];
-
-            snap.docs.forEach(docSnap => {
-                const d = docSnap.data(); d.id=docSnap.id;
+            snap.forEach(docSnap => {
+                const d = docSnap.data(); d.id = docSnap.id; allOrders.push(d);
                 if(d.status === 4) {
-                    don++;
-                    document.getElementById('list-done').innerHTML += `<div style="border-bottom:1px solid #444; padding:5px; display:flex; justify-content:space-between;"><span>${d.name}</span><span>${d.deliveryType}</span></div>`;
+                    h.innerHTML += `<tr><td>${d.targetDate}</td><td>${d.name}</td><td>${d.address}</td><td>${d.driverName}</td><td><button class="btn btn-sm btn-outline-danger" onclick="del('${d.id}')">X</button></td></tr>`;
                 } else {
-                    const oDate = d.targetDate || today;
-                    if(oDate > today) futureOrders.push(d); else todayOrders.push(d);
+                    l.innerHTML += `<tr><td>${d.orgId||'--'}</td><td class="text-primary fw-bold">${d.targetTime}</td><td><b>${d.name}</b></td><td>${d.address}</td><td>${d.driverName}<br><small>${d.deliveryType}</small></td><td><button class="btn btn-sm btn-light" onclick="edit('${d.id}')">ערוך</button> <button class="btn btn-sm btn-success" onclick="done('${d.id}')">✓</button></td></tr>`;
                 }
             });
+        });
 
-            todayOrders.sort((a,b)=>getSec(a.targetTime)-getSec(b.targetTime));
-            for(const d of todayOrders) {
-                act++;
-                const sec = getSec(d.targetTime);
-                if(sec<minS) minS=sec;
-                let st='st-green'; if(sec<1800)st='st-yellow'; if(sec<0)st='st-red';
-                const oid=d.orgId||'--'; const drv=d.driverName||'ללא נהג';
+        // 2. טעינת לקוחות (ותיקון הכפתורים!)
+        onSnapshot(collection(db, "clients"), (snap) => {
+            const grid = document.getElementById('quick-grid');
+            const table = document.getElementById('clients-table');
+            grid.innerHTML = ''; table.innerHTML = ''; allClients = [];
 
-                document.getElementById('list-active').innerHTML += `
-                    <div class="kitchen-card ${st}" id="card-${d.id}">
-                        <div class="kc-row"><span>#${oid}</span><span>${d.targetTime}</span></div>
-                        <div class="kc-row"><div><div class="kc-name">${d.name}</div><div class="kc-meta">${d.deliveryType} | ${drv}</div></div>
-                        <div class="kc-timer" data-s="${sec}">${fmt(sec)}</div></div>
+            snap.forEach(docSnap => {
+                const c = docSnap.data(); c.id = docSnap.id; allClients.push(c);
+
+                // יצירת כרטיס לחיץ
+                grid.innerHTML += `
+                    <div class="quick-card" onclick="launchClient('${c.id}')">
+                        <div class="qc-icon"><i class="material-icons">touch_app</i></div>
+                        <div class="qc-name">${c.name}</div>
+                        <div class="qc-sub">${c.type}</div>
                     </div>`;
 
-                if(d.address) {
-                    const c = await getCoords(d.address);
-                    if(c) {
-                        activeLocations.push({lat:c.lat, lon:c.lon, id:d.id});
-                        const ic=getIconClass(d.deliveryType);
-                        const urg=sec<1800?'urgent':'';
-                        const html = `<div class="pin-container ${urg}" id="pin-${d.id}"><div class="info-bubble"><div class="snake-border"></div><div class="snake-inner"></div><div class="bubble-content mode-info"><div class="row-top"><span>#${oid}</span><span>${d.targetTime}</span></div><div class="row-main">${d.name}</div><div class="row-sub">${drv}</div><div class="row-sub" style="font-size:0.7rem; color:#888;">${d.address.split(',')[0]}</div></div><div class="bubble-content mode-timer" data-s="${sec}">${fmt(sec)}</div></div><div class="map-icon ${ic}"></div></div>`;
-                        L.marker([c.lat,c.lon], {icon:L.divIcon({className:'c', html:html, iconSize:[48,48], iconAnchor:[24,24]})}).addTo(markersLayer);
-                    }
-                }
-            }
-
-            futureOrders.sort((a,b)=>a.targetDate.localeCompare(b.targetDate));
-            futureOrders.forEach(d => {
-                fut++;
-                const isTmr = d.targetDate === tmrStr;
-                const cls = isTmr ? 'future-tomorrow' : '';
-                const dateTxt = isTmr ? 'מחר!' : d.targetDate.split('-').reverse().join('/');
-                document.getElementById('list-future').innerHTML += `<div class="future-card ${cls}"><div class="kc-row"><span class="fc-date">${dateTxt}</span><span>${d.targetTime}</span></div><div class="kc-name" style="font-size:0.9rem">${d.name}</div><div class="kc-meta">${d.deliveryType}</div></div>`;
+                // יצירת שורה בטבלה
+                table.innerHTML += `
+                    <tr>
+                        <td><b>${c.name}</b></td>
+                        <td>${c.address}</td>
+                        <td>${c.type}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="launchClient('${c.id}')">🚀 שיגור</button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="delClient('${c.id}')">מחק</button>
+                        </td>
+                    </tr>`;
             });
-
-            document.getElementById('val-active').innerText=act; document.getElementById('cnt-active').innerText=act;
-            document.getElementById('val-hist').innerText=don; document.getElementById('cnt-done').innerText=don;
-            document.getElementById('cnt-future').innerText=fut;
-            if(minS!==99999){ const n=new Date(); n.setSeconds(n.getSeconds()+minS); document.getElementById('val-next').innerText=n.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
         });
 
-        onSnapshot(doc(db, "settings", "popup"), (s)=>{
-            if(s.exists()){
-                const d=s.data(); const el=document.getElementById('mega-popup'); const c=document.getElementById('popup-inner');
-                if(d.active){
-                    const hasImage = d.imageUrl && d.imageUrl.length > 5;
-                    let html = '';
-                    if(hasImage) {
-                        c.className = `popup-card popup-poster-mode theme-${d.theme||'neon'}`;
-                        c.style.padding='0';
-                        html = `<div class="pop-image-side" style="background-image: url('${d.imageUrl}');"></div><div class="pop-content-side"><i class="material-icons pop-icon">${d.icon||'verified'}</i><div class="pop-title">${d.title}</div><div class="pop-body">${d.text}</div></div>`;
-                    } else {
-                        c.className = `popup-card theme-${d.theme||'neon'}`;
-                        c.style.padding='40px';
-                        html = `<i class="material-icons pop-icon" style="display:block;margin:0 auto 20px;">${d.icon||'verified'}</i><div class="pop-title">${d.title}</div><div class="pop-body">${d.text}</div>`;
-                    }
-                    c.innerHTML = html;
-                    el.style.display='flex';
-                } else el.style.display='none';
-            }
-        });
+        // 3. פונקציית השיגור (החשובה!)
+        window.launchClient = (clientId) => {
+            const c = allClients.find(x => x.id === clientId);
+            if (!c) { alert('שגיאה: לקוח לא נמצא'); return; }
 
-        onSnapshot(doc(db, "settings", "news"), (s)=>{
-            if(s.exists()){
-                const d=s.data();
-                document.getElementById('news-text').innerText = d.text || '...';
-                const b=document.getElementById('ticker-bar'); b.className='news-ticker';
-                if(d.type==='alert') b.classList.add('theme-alert');
-                if(d.type==='success') b.classList.add('theme-success');
-            }
-        });
+            // פתיחת המודאל ומילוי פרטים
+            window.openOrderModal();
+            document.getElementById('o-name').value = c.name;
+            document.getElementById('o-addr').value = c.address;
+            document.getElementById('o-type').value = c.type;
+            
+            // תאריך ושעה אוטומטיים (עכשיו)
+            const now = new Date();
+            document.getElementById('o-date').valueAsDate = now;
+            document.getElementById('o-time').value = now.toTimeString().substring(0,5);
+        };
 
-        setInterval(()=>{
-            if(!activeLocations.length || isUserInteracting) return;
-            const t = activeLocations[currentFlyIndex];
-            map.flyTo([t.lat,t.lon], 15, {animate:true, duration:4});
-            document.querySelectorAll('.kitchen-card').forEach(e=>e.classList.remove('highlight-card'));
-            document.querySelectorAll('.pin-container').forEach(e=>e.classList.remove('pin-highlight'));
-            const c=document.getElementById('card-'+t.id); if(c){ c.classList.add('highlight-card'); c.scrollIntoView({behavior:"smooth",block:"center"}); }
-            const p=document.getElementById('pin-'+t.id); if(p) p.classList.add('pin-highlight');
-            currentFlyIndex=(currentFlyIndex+1)%activeLocations.length;
-        }, 10000);
-        map.on('mousedown', ()=>{isUserInteracting=true; setTimeout(()=>isUserInteracting=false,30000);});
+        // פונקציות מערכת
+        window.switchTab = (t, b) => { document.querySelectorAll('.tab-pane').forEach(e => e.style.display='none'); document.getElementById('tab-'+t).style.display='block'; document.querySelectorAll('.nav-btn').forEach(e=>e.classList.remove('active')); if(b)b.classList.add('active'); };
+        
+        window.openOrderModal = () => { document.getElementById('orderForm').reset(); document.getElementById('o-id').value=''; document.getElementById('o-date').valueAsDate=new Date(); new bootstrap.Modal(document.getElementById('orderModal')).show(); };
+        
+        window.edit = (id) => { const o=allOrders.find(x=>x.id===id); window.openOrderModal(); document.getElementById('o-id').value=id; document.getElementById('o-name').value=o.name; document.getElementById('o-oid').value=o.orgId; document.getElementById('o-addr').value=o.address; document.getElementById('o-drv').value=o.driverName; document.getElementById('o-type').value=o.deliveryType; document.getElementById('o-date').value=o.targetDate; document.getElementById('o-time').value=o.targetTime; };
 
-        setInterval(()=>{
-            document.getElementById('val-clock').innerText=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-            const show=(Math.floor(Date.now()/1000)%10)>5;
-            document.querySelectorAll('.info-bubble').forEach(e=>show?e.classList.add('show-timer'):e.classList.remove('show-timer'));
-            document.querySelectorAll('.kc-timer, .mode-timer').forEach(e=>{let s=parseInt(e.dataset.s)-1; e.dataset.s=s; e.innerText=fmt(s);});
-        },1000);
+        document.getElementById('orderForm').onsubmit = async(e) => { e.preventDefault(); const id=document.getElementById('o-id').value; const d={ name:document.getElementById('o-name').value, orgId:document.getElementById('o-oid').value, address:document.getElementById('o-addr').value, driverName:document.getElementById('o-drv').value, deliveryType:document.getElementById('o-type').value, targetDate:document.getElementById('o-date').value, targetTime:document.getElementById('o-time').value, lastUpdate:new Date() }; if(id) await updateDoc(doc(db,"users",id),d); else { d.status=1; await addDoc(collection(db,"users"),d); } bootstrap.Modal.getInstance(document.getElementById('orderModal')).hide(); };
+        
+        window.openClientModal = () => new bootstrap.Modal(document.getElementById('clientModal')).show();
+        document.getElementById('clientForm').onsubmit = async(e) => { e.preventDefault(); await addDoc(collection(db,"clients"), {name:document.getElementById('c-name').value, address:document.getElementById('c-addr').value, type:document.getElementById('c-type').value}); bootstrap.Modal.getInstance(document.getElementById('clientModal')).hide(); };
+        
+        window.done = async(id) => updateDoc(doc(db,"users",id),{status:4});
+        window.del = async(id) => { if(confirm('למחוק?')) deleteDoc(doc(db,"users",id)); };
+        window.delClient = async(id) => { if(confirm('למחוק לקוח?')) deleteDoc(doc(db,"clients",id)); };
+
+        // סטודיו
+        window.setImg = (u) => document.getElementById('pop-img').value = u;
+        window.updateNews = async(c) => { let t='info'; if(c==='red')t='alert'; if(c==='green')t='success'; await setDoc(doc(db,"settings","news"),{text:document.getElementById('news-input').value, type:t}); alert('פס עודכן'); };
+        window.togglePopup = async(act) => { await setDoc(doc(db,"settings","popup"),{ active:act, title:document.getElementById('pop-title').value, text:document.getElementById('pop-body').value, icon:document.getElementById('pop-icon').value, theme:document.getElementById('pop-theme').value, imageUrl:document.getElementById('pop-img').value }); alert(act?'שודר':'כובה'); };
     </script>
 </body>
 </html>
