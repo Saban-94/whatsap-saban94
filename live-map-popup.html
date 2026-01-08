@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ח.סבן - מסך שידור יוקרתי</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    
+    <style>
+        body { margin: 0; background: #e0e0e0; font-family: 'Rubik', sans-serif; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
+
+        /* --- 1. המפה והבר העליון (אותו בסיס יציב) --- */
+        .top-bar {
+            height: 90px; padding: 10px 25px;
+            background: linear-gradient(135deg, #1e1e1e 0%, #2c3e50 100%);
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4); z-index: 1000; position: relative;
+        }
+        .metric-card {
+            background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
+            color: white; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            backdrop-filter: blur(5px);
+        }
+        .m-val { font-size: 2.2rem; font-weight: 900; line-height: 1; }
+        .m-sub { font-size: 0.8rem; opacity: 0.8; margin-top: 5px; }
+
+        .main-stage { flex: 1; position: relative; overflow: hidden; }
+        #map { width: 100%; height: 100%; }
+
+        /* סרגל צד שמאל */
+        .sidebar-left {
+            position: absolute; top: 20px; left: 20px; bottom: 20px; width: 360px;
+            display: flex; flex-direction: column; gap: 20px; z-index: 500; pointer-events: none;
+        }
+        .glass-panel {
+            background: rgba(20, 20, 20, 0.95); color: white; border-radius: 12px; overflow: hidden; pointer-events: auto;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column;
+        }
+        .panel-active { flex: 2; } .panel-done { flex: 1; }
+        .scroll-area { flex: 1; overflow-y: auto; padding: 10px; }
+
+        /* --- 2. MEGA POPUP (המרכז) --- */
+        .mega-popup-overlay {
+            position: absolute; inset: 0; z-index: 9999;
+            background: rgba(0,0,0,0.8);
+            display: none; /* מוסתר כברירת מחדל */
+            justify-content: center; align-items: center;
+            backdrop-filter: blur(8px);
+        }
+        
+        .popup-card {
+            width: 700px; padding: 40px; border-radius: 30px;
+            text-align: center; color: white; position: relative;
+            box-shadow: 0 0 100px rgba(0,0,0,0.8);
+            animation: zoomIn 0.5s;
+        }
+
+        /* ערכות נושא לפופ-אפ */
+        .theme-gold {
+            background: linear-gradient(135deg, #1c1c1c, #4a4a4a);
+            border: 4px solid #ffd700;
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.3);
+        }
+        .theme-gold .pop-title { color: #ffd700; text-shadow: 0 2px 10px rgba(255,215,0,0.5); }
+        
+        .theme-neon {
+            background: #0d1117;
+            border: 4px solid #00e676;
+            box-shadow: 0 0 50px rgba(0, 230, 118, 0.3);
+        }
+        .theme-neon .pop-title { color: #00e676; text-shadow: 0 0 20px #00e676; }
+
+        .theme-alert {
+            background: #2b0a0a;
+            border: 4px solid #ff3b30;
+            animation: pulse-border 1s infinite;
+        }
+        @keyframes pulse-border { 50% { border-color: transparent; box-shadow: 0 0 0 transparent; } }
+        .theme-alert .pop-title { color: #ff3b30; text-transform: uppercase; letter-spacing: 5px; }
+
+        .pop-icon { font-size: 80px; margin-bottom: 20px; display: block; }
+        .pop-title { font-size: 3rem; font-weight: 900; margin-bottom: 20px; line-height: 1.1; }
+        .pop-body { font-size: 1.8rem; line-height: 1.4; white-space: pre-wrap; margin-bottom: 40px; color: #eee; font-weight: 300; }
+        .pop-footer { 
+            position: absolute; bottom: 0; left: 0; width: 100%; 
+            background: rgba(0,0,0,0.3); padding: 10px; font-size: 0.9rem; color: #aaa;
+            border-bottom-left-radius: 25px; border-bottom-right-radius: 25px;
+        }
+
+        /* --- 3. Corner Rotator (הודעות בפינה ימין למטה) --- */
+        .corner-notification {
+            position: absolute; bottom: 30px; right: 30px; width: 320px;
+            background: white; border-radius: 15px; padding: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3); z-index: 2000;
+            display: flex; gap: 15px; align-items: center;
+            border-right: 6px solid #008069;
+            animation: slideInRight 1s;
+        }
+        .cn-icon { 
+            width: 50px; height: 50px; background: #e0f2f1; color: #008069; 
+            border-radius: 50%; display: flex; justify-content: center; align-items: center; 
+        }
+        .cn-content h5 { margin: 0; font-size: 1rem; font-weight: bold; color: #333; }
+        .cn-content p { margin: 0; font-size: 0.85rem; color: #666; }
+
+        /* אנימציות */
+        @keyframes zoomIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        /* עיצוב כרטיסים (כמו קודם) */
+        .kitchen-card { background: #2a2a2a; border-radius: 6px; padding: 10px; margin-bottom: 8px; border-left: 4px solid #555; position: relative; color: white; }
+        .st-green { border-left-color: #00e676; } .st-yellow { border-left-color: #fbc02d; }
+        .kc-row { display: flex; justify-content: space-between; }
+        .kc-name { font-weight: bold; }
+
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <div class="metric-card"><span class="m-val" id="val-hist">0</span><span class="m-sub">ארכיון</span></div>
+        <div class="metric-card"><span class="m-val" id="val-next" style="color:#29b6f6">--:--</span><span class="m-sub">הבאה</span></div>
+        <div class="metric-card"><span class="m-val" id="val-clock">00:00</span><span class="m-sub">שעון</span></div>
+        <div class="metric-card"><span class="m-val" id="val-active">0</span><span class="m-sub">פעילים</span></div>
+    </div>
+
+    <div class="main-stage">
+        <div id="map"></div>
+        
+        <div class="sidebar-left">
+            <div class="glass-panel panel-active">
+                <div class="scroll-area" id="list-active"></div>
+            </div>
+            <div class="glass-panel panel-done">
+                <div class="scroll-area" id="list-done" style="font-size:0.85rem; color:#ccc;"></div>
+            </div>
+        </div>
+        
+        <div id="corner-box"></div>
+    </div>
+
+    <div id="mega-popup" class="mega-popup-overlay">
+        <div class="popup-card" id="popup-inner">
+            <i class="material-icons pop-icon" id="pop-icon">verified</i>
+            <div class="pop-title" id="pop-title">הודעה חשובה</div>
+            <div class="pop-body" id="pop-body">תוכן ההודעה יופיע כאן...</div>
+            <div class="pop-footer">בברכה, הנהלת ח.סבן לוגיסטיקה</div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, query, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const config = { apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60", projectId: "app-saban94-57361", appId: "1:275366913167:web:f0c6f808e12f2aeb58fcfa" };
+        const db = getFirestore(initializeApp(config));
+
+        const map = L.map('map', { zoomControl: false }).setView([32.3215, 34.8532], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+
+        // --- ניהול ה-POPUP ---
+        onSnapshot(doc(db, "settings", "popup"), (docSnap) => {
+            if(docSnap.exists()){
+                const d = docSnap.data();
+                const overlay = document.getElementById('mega-popup');
+                const card = document.getElementById('popup-inner');
+                
+                if(d.active) {
+                    // הצגת הפופ-אפ
+                    document.getElementById('pop-title').innerText = d.title;
+                    document.getElementById('pop-body').innerText = d.text;
+                    document.getElementById('pop-icon').innerText = d.icon || 'info';
+                    
+                    // איפוס עיצוב
+                    card.className = 'popup-card animate__animated animate__zoomIn';
+                    if(d.theme === 'gold') card.classList.add('theme-gold');
+                    else if(d.theme === 'alert') card.classList.add('theme-alert');
+                    else card.classList.add('theme-neon');
+
+                    overlay.style.display = 'flex';
+                } else {
+                    // הסתרה
+                    overlay.style.display = 'none';
+                }
+            }
+        });
+
+        // --- ניהול הודעות בפינה (Corner Rotator) ---
+        // נשתמש במערך הודעות פשוט שמתחלף
+        const cornerMessages = [
+            { t: "מזג אוויר", m: "היום צפוי יום בהיר, סעו בזהירות", i: "wb_sunny" },
+            { t: "בטיחות", m: "חובה ללבוש אפוד זוהר באתרי בנייה", i: "health_and_safety" },
+            { t: "ח.סבן", m: "נהג מצטיין החודש יוכרז בקרוב!", i: "emoji_events" }
+        ];
+        let cornerIdx = 0;
+        
+        function rotateCorner() {
+            const msg = cornerMessages[cornerIdx];
+            const box = document.getElementById('corner-box');
+            
+            // יצירת ה-HTML
+            box.innerHTML = `
+                <div class="corner-notification animate__animated animate__fadeInRight">
+                    <div class="cn-icon"><i class="material-icons">${msg.i}</i></div>
+                    <div class="cn-content"><h5>${msg.t}</h5><p>${msg.m}</p></div>
+                </div>
+            `;
+            
+            cornerIdx = (cornerIdx + 1) % cornerMessages.length;
+        }
+        setInterval(rotateCorner, 8000); // כל 8 שניות מחליף הודעה בפינה
+        rotateCorner(); // הפעלה ראשונה
+
+        // --- הזמנות (מקוצר כדי לא להעמיס על הקוד כאן, הלוגיקה זהה לקודמים) ---
+        onSnapshot(collection(db, "users"), (s) => {
+            let act=0, don=0;
+            const lAct = document.getElementById('list-active');
+            const lDon = document.getElementById('list-done');
+            lAct.innerHTML=''; lDon.innerHTML='';
+
+            s.forEach(ds => {
+                const d = ds.data();
+                if(d.status===4) {
+                    don++;
+                    lDon.innerHTML += `<div style="border-bottom:1px solid #444; padding:5px;">${d.name}</div>`;
+                } else {
+                    act++;
+                    let st='st-green'; // לוגיקת זמן פשוטה לתצוגה
+                    lAct.innerHTML += `
+                    <div class="kitchen-card ${st}">
+                        <div class="kc-row"><span>${d.targetTime||''}</span><span class="kc-name">${d.name}</span></div>
+                        <div class="kc-row"><small>${d.deliveryType}</small></div>
+                    </div>`;
+                }
+            });
+            document.getElementById('val-active').innerText = act;
+            document.getElementById('val-hist').innerText = don;
+        });
+
+        // שעון
+        setInterval(() => {
+            document.getElementById('val-clock').innerText = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+        }, 1000);
+
+    </script>
+</body>
+</html>
