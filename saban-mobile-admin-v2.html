@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Saban App Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root { --primary: #00e676; --bg: #121212; --card: #1e1e1e; --nav: #263238; }
+        body { background-color: var(--bg); color: #e0e0e0; font-family: 'Rubik', sans-serif; padding-bottom: 80px; user-select: none; }
+        
+        /* כניסה */
+        #login-screen {
+            position: fixed; inset: 0; background: #000; z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 30px; text-align: center;
+        }
+        .login-input { background: #333; border: 1px solid #555; color: white; text-align: center; font-size: 1.5rem; letter-spacing: 5px; border-radius: 12px; padding: 15px; margin-bottom: 20px; width: 100%; }
+        
+        /* כרטיסים */
+        .order-card {
+            background: var(--card); border-radius: 16px; padding: 15px; margin-bottom: 15px;
+            border-left: 5px solid #555; position: relative; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .st-green { border-left-color: var(--primary); }
+        .btn-action { flex: 1; border-radius: 8px; padding: 8px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 5px; }
+
+        /* תפריט תחתון */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 70px;
+            background: var(--nav); display: flex; justify-content: space-around; align-items: center;
+            border-top: 1px solid #333; z-index: 1000; box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
+        }
+        .nav-item { color: #90a4ae; text-align: center; font-size: 0.75rem; flex: 1; padding: 10px 0; }
+        .nav-item i { font-size: 24px; display: block; margin-bottom: 2px; }
+        .nav-item.active { color: var(--primary); }
+
+        /* פלוס צף */
+        .fab {
+            position: fixed; bottom: 85px; left: 20px;
+            width: 60px; height: 60px; background: var(--primary); color: black;
+            border-radius: 50%; display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 5px 20px rgba(0,230,118,0.4); font-size: 30px; z-index: 900; border: none;
+        }
+
+        /* --- צפייה במסכים (חדש!) --- */
+        .tv-wrapper {
+            width: 100%;
+            height: 250px; /* גובה התצוגה בטלפון */
+            background: #000;
+            border-radius: 12px;
+            border: 2px solid #333;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0,230,118,0.1);
+        }
+        
+        /* הטריק להציג אתר גדול בתוך קופסה קטנה */
+        .tv-frame {
+            width: 1920px; /* רוחב מסך מלא HD */
+            height: 1080px; /* גובה מסך מלא HD */
+            border: 0;
+            position: absolute;
+            top: 0; left: 0;
+            transform-origin: 0 0; /* מתחילים להקטין מהפינה */
+            transform: scale(0.18); /* מקטינים לגודל טלפון */
+            pointer-events: none; /* מונע גלילה בטעות בתוך המפה */
+        }
+        
+        .live-badge {
+            position: absolute; top: 10px; right: 10px;
+            background: red; color: white; padding: 2px 8px; border-radius: 4px;
+            font-size: 0.7rem; font-weight: bold; animation: pulse 2s infinite; z-index: 10;
+        }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        /* דפים */
+        .page { display: none; padding: 20px; padding-top: 10px; padding-bottom: 100px; }
+        .page.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* מודאלים */
+        .modal-content { background: #222; color: white; border: 1px solid #444; }
+        .form-control, .form-select { background: #333; border: 1px solid #555; color: white; }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <div class="login-logo" style="font-size:40px; margin-bottom:20px;">🚚</div>
+        <h3 class="mb-4">ח.סבן לוגיסטיקה</h3>
+        <input type="tel" id="user-id" class="login-input" placeholder="קוד כניסה" value="1234">
+        <button class="btn btn-success w-100 py-3 fw-bold" onclick="tryLogin()">כניסה</button>
+    </div>
+
+    <div id="app-container" style="display:none;">
+        
+        <button class="fab" onclick="openOrderModal()" id="fab-btn"><i class="material-icons">add</i></button>
+
+        <div id="page-orders" class="page active">
+            <h4 class="mb-3 fw-bold"><i class="material-icons text-success" style="vertical-align:middle;">dvr</i> לוח פעיל</h4>
+            <div style="overflow-x: auto; white-space: nowrap; padding-bottom: 10px; margin-bottom: 10px;">
+                <div id="quick-clients-row" style="display: inline-flex; gap: 10px;"></div>
+            </div>
+            <div id="orders-list"></div>
+        </div>
+
+        <div id="page-studio" class="page">
+            <h4 class="mb-3 fw-bold">🎨 סטודיו שידור</h4>
+            <div class="p-3 mb-3 bg-dark rounded border border-secondary">
+                <label class="text-muted">הודעה רצה (פס תחתון)</label>
+                <input id="news-in" class="form-control mt-2 mb-2" placeholder="כתוב כאן...">
+                <button class="btn btn-outline-light w-100" onclick="updateNews()">עדכן</button>
+            </div>
+            <div class="p-3 bg-dark rounded border border-secondary">
+                <label class="text-muted">פופ-אפ מתפרץ</label>
+                <input id="pop-title" class="form-control mt-2 mb-2" placeholder="כותרת">
+                <textarea id="pop-body" class="form-control mb-2" rows="2" placeholder="תוכן..."></textarea>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-primary flex-fill" onclick="togglePopup(true)">שדר</button>
+                    <button class="btn btn-dark flex-fill" onclick="togglePopup(false)">כבה</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="page-screens" class="page">
+            <h4 class="mb-3 fw-bold"><i class="material-icons text-danger" style="vertical-align:middle;">live_tv</i> שידור חי</h4>
+            <p class="text-muted small">צפייה בזמן אמת במה שמוצג במסך הראשי</p>
+            
+            <div class="tv-wrapper">
+                <div class="live-badge">LIVE</div>
+                <iframe src="live-map-popup.html" class="tv-frame" id="preview-frame"></iframe>
+            </div>
+            
+            <div class="mt-3 text-center">
+                <button class="btn btn-outline-secondary btn-sm" onclick="document.getElementById('preview-frame').src += ''">
+                    <i class="material-icons" style="vertical-align:middle; font-size:16px;">refresh</i> רענן תצוגה
+                </button>
+            </div>
+
+            <div class="alert alert-dark mt-4 small">
+                <i class="material-icons" style="font-size:14px">info</i>
+                התצוגה כאן מוקטנת. במסכים האמיתיים זה מוצג ב-Full HD.
+            </div>
+        </div>
+
+        <div id="page-history" class="page">
+            <h4 class="mb-3 fw-bold">📜 ארכיון</h4>
+            <div id="history-list"></div>
+        </div>
+
+        <nav class="bottom-nav">
+            <div class="nav-item active" onclick="nav('orders', this)"><i class="material-icons">list_alt</i><span>הזמנות</span></div>
+            <div class="nav-item" onclick="nav('studio', this)"><i class="material-icons">campaign</i><span>סטודיו</span></div>
+            <div class="nav-item" onclick="nav('screens', this)"><i class="material-icons">tv</i><span>מסכים</span></div>
+            <div class="nav-item" onclick="nav('history', this)"><i class="material-icons">history</i><span>ארכיון</span></div>
+        </nav>
+    </div>
+
+    <div class="modal fade" id="orderModal">
+        <div class="modal-dialog modal-fullscreen-sm-down">
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">הזמנה</h5><button class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <form id="orderForm"><input type="hidden" id="o-id">
+                        <div class="mb-2"><label>לקוח</label><input id="o-name" class="form-control" required></div>
+                        <div class="mb-2"><label>כתובת</label><input id="o-addr" class="form-control"></div>
+                        <div class="row g-2 mb-2"><div class="col-6"><label>תעודה</label><input id="o-oid" class="form-control"></div><div class="col-6"><label>נהג</label><input id="o-drv" class="form-control"></div></div>
+                        <div class="mb-2"><label>סוג</label><select id="o-type" class="form-select"><option>מנוף 10 מטר</option><option>מכולה 8 קוב</option><option>משאית חומרים</option></select></div>
+                        <div class="row g-2 mb-3"><div class="col-6"><label>תאריך</label><input type="date" id="o-date" class="form-control"></div><div class="col-6"><label>שעה</label><input type="time" id="o-time" class="form-control"></div></div>
+                        <button type="submit" class="btn btn-success w-100 py-3">שמור</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, setDoc, doc, onSnapshot, query, orderBy } 
+        from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const db = getFirestore(initializeApp({ apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60", projectId: "app-saban94-57361", appId: "1:275366913167:web:f0c6f808e12f2aeb58fcfa" }));
+        
+        let allOrders = [];
+
+        window.tryLogin = () => { if(document.getElementById('user-id').value.length >= 4) { document.getElementById('login-screen').style.display='none'; document.getElementById('app-container').style.display='block'; } };
+
+        window.nav = (pageId, el) => {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById('page-' + pageId).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            el.classList.add('active');
+            document.getElementById('fab-btn').style.display = pageId === 'orders' ? 'flex' : 'none';
+        };
+
+        // טעינת הזמנות
+        onSnapshot(query(collection(db, "users"), orderBy("lastUpdate", "desc")), (snap) => {
+            const list = document.getElementById('orders-list');
+            const hist = document.getElementById('history-list');
+            list.innerHTML = ''; hist.innerHTML = '';
+            allOrders = [];
+
+            snap.forEach(docSnap => {
+                const d = docSnap.data(); d.id = docSnap.id; allOrders.push(d);
+                if(d.status === 4) {
+                    hist.innerHTML += `<div class="order-card" style="opacity:0.7;"><div class="oc-header"><span>${d.targetDate}</span><span>#${d.orgId||'-'}</span></div><div class="oc-title">${d.name}</div><div class="oc-actions"><div class="btn-action bg-danger text-white" onclick="del('${d.id}')">מחק</div></div></div>`;
+                } else {
+                    list.innerHTML += `<div class="order-card st-green"><div class="oc-header"><span>${d.targetTime}</span><span>#${d.orgId||'-'}</span></div><div class="oc-title">${d.name}</div><div class="oc-meta">${d.address||'אין כתובת'}</div><div class="oc-meta text-info">${d.driverName||'ללא נהג'} | ${d.deliveryType}</div><div class="oc-actions"><div class="btn-action bg-secondary text-white" onclick="edit('${d.id}')">ערוך</div><div class="btn-action bg-success text-white" onclick="done('${d.id}')">סופק</div></div></div>`;
+                }
+            });
+        });
+
+        // לקוחות לשיגור מהיר
+        onSnapshot(collection(db, "clients"), (snap) => {
+            const r = document.getElementById('quick-clients-row'); r.innerHTML='';
+            snap.forEach(s => { const c=s.data(); r.innerHTML+=`<div onclick="quick('${c.name}','${c.address}','${c.type}')" style="background:#333;padding:8px 15px;border-radius:20px;display:inline-flex;gap:5px;align-items:center;border:1px solid #555;"><i class="material-icons text-success" style="font-size:16px">person</i> ${c.name}</div>`; });
+        });
+
+        // פונקציות ניהול
+        window.openOrderModal = () => { document.getElementById('orderForm').reset(); document.getElementById('o-id').value=''; document.getElementById('o-date').valueAsDate=new Date(); new bootstrap.Modal(document.getElementById('orderModal')).show(); };
+        window.quick = (n,a,t) => { openOrderModal(); document.getElementById('o-name').value=n; document.getElementById('o-addr').value=a; document.getElementById('o-type').value=t; };
+        window.edit = (id) => { const o=allOrders.find(x=>x.id===id); document.getElementById('o-id').value=id; document.getElementById('o-name').value=o.name; document.getElementById('o-addr').value=o.address; document.getElementById('o-oid').value=o.orgId; document.getElementById('o-drv').value=o.driverName; document.getElementById('o-type').value=o.deliveryType; document.getElementById('o-date').value=o.targetDate; document.getElementById('o-time').value=o.targetTime; new bootstrap.Modal(document.getElementById('orderModal')).show(); };
+        
+        document.getElementById('orderForm').onsubmit = async(e)=>{ e.preventDefault(); const id=document.getElementById('o-id').value; const d={ name:document.getElementById('o-name').value, address:document.getElementById('o-addr').value, orgId:document.getElementById('o-oid').value, driverName:document.getElementById('o-drv').value, deliveryType:document.getElementById('o-type').value, targetDate:document.getElementById('o-date').value, targetTime:document.getElementById('o-time').value, lastUpdate:new Date() }; if(id) await updateDoc(doc(db,"users",id),d); else { d.status=1; await addDoc(collection(db,"users"),d); } bootstrap.Modal.getInstance(document.getElementById('orderModal')).hide(); };
+        
+        window.done = async(id)=>updateDoc(doc(db,"users",id),{status:4});
+        window.del = async(id)=>{ if(confirm('למחוק?')) deleteDoc(doc(db,"users",id)); };
+        
+        // סטודיו
+        window.updateNews = async()=>{ await setDoc(doc(db,"settings","news"), {text:document.getElementById('news-in').value, type:'info'}); alert('עודכן'); };
+        window.togglePopup = async(act)=>{ await setDoc(doc(db,"settings","popup"), {active:act, title:document.getElementById('pop-title').value, text:document.getElementById('pop-body').value, theme:'neon'}); alert(act?'שודר':'כובה'); };
+
+    </script>
+</body>
+</html>
