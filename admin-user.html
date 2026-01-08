@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>מנהל משתמשים - ח.סבן</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #111b21; color: white; font-family: sans-serif; padding: 20px; }
+        .card { background: #202c33; border: 1px solid #333; color: white; margin-top: 20px; }
+        .magic-link { background: #005c4b; padding: 10px; word-break: break-all; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="container" style="max-width: 600px;">
+        <h3 class="text-success mb-4">👷 מחולל עובדים למערכת</h3>
+        
+        <div class="mb-3">
+            <label>שם העובד</label>
+            <input id="u-name" class="form-control bg-dark text-white" placeholder="למשל: איציק זהבי">
+        </div>
+        <div class="mb-3">
+            <label>תפקיד/סניף</label>
+            <input id="u-role" class="form-control bg-dark text-white" placeholder="למשל: מנהל סניף החרש">
+        </div>
+        <div class="mb-3">
+            <label>מספר תעודת זהות (ישמש כקוד כניסה)</label>
+            <input id="u-id" class="form-control bg-dark text-white" placeholder="123456789">
+        </div>
+        <div class="mb-3">
+            <label>תמונת פרופיל (קישור)</label>
+            <input id="u-img" class="form-control bg-dark text-white" value="https://cdn-icons-png.flaticon.com/512/149/149071.png">
+        </div>
+
+        <button onclick="createUser()" class="btn btn-success w-100 py-3 fw-bold">צור עובד וקבל לינק 🔗</button>
+
+        <div id="result" class="card p-3" style="display:none;">
+            <h5 class="text-success">המשתמש נוצר בהצלחה!</h5>
+            <p>שלח לעובד את הלינק הבא (הוא יזהה אותו אוטומטית):</p>
+            <div id="link-box" class="magic-link" onclick="copyLink()"></div>
+            <small class="text-muted mt-2 d-block">* לחץ על הלינק להעתקה</small>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        
+        const db = getFirestore(initializeApp({ apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60", projectId: "app-saban94-57361", appId: "1:275366913167:web:f0c6f808e12f2aeb58fcfa" }));
+
+        window.createUser = async () => {
+            const id = document.getElementById('u-id').value;
+            const data = {
+                name: document.getElementById('u-name').value,
+                role: document.getElementById('u-role').value,
+                avatar: document.getElementById('u-img').value,
+                active: true,
+                createdAt: new Date()
+            };
+
+            if(!id) return alert('חובה להזין ת.ז');
+
+            await setDoc(doc(db, "employees", id), data);
+            
+            // כאן אתה שם את הכתובת האמיתית של האפליקציה שלך מהחלק השני!
+            const baseUrl = "https://your-server-url/saban-connect.html"; 
+            const magicLink = `${baseUrl}?uid=${id}`;
+            
+            document.getElementById('result').style.display = 'block';
+            document.getElementById('link-box').innerText = magicLink;
+        };
+
+        window.copyLink = () => {
+            navigator.clipboard.writeText(document.getElementById('link-box').innerText);
+            alert("הלינק הועתק! שלח אותו בווצאף לעובד.");
+        };
+    </script>
+</body>
+</html>
