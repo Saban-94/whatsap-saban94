@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>ח.סבן - סטודיו שידור</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        body { background: #121212; color: white; font-family: 'Segoe UI', sans-serif; padding: 20px; }
+        .card-studio { background: #1e1e1e; border: 1px solid #333; border-radius: 15px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .preview-screen {
+            background: #333; height: 300px; border-radius: 10px; display: flex; justify-content: center; align-items: center;
+            border: 4px solid #555; position: relative; overflow: hidden;
+        }
+        
+        /* עיצובי פריוויו (זהים למסך) */
+        .p-card { padding: 20px; text-align: center; border-radius: 15px; width: 80%; }
+        .t-gold { background: #333; border: 2px solid #ffd700; color: #ffd700; box-shadow: 0 0 20px #ffd700; }
+        .t-neon { background: #000; border: 2px solid #00e676; color: #00e676; box-shadow: 0 0 20px #00e676; }
+        .t-alert { background: #2b0a0a; border: 2px solid #ff3b30; color: #ff3b30; animation: blink 1s infinite; }
+        
+        @keyframes blink { 50% { opacity: 0.7; } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2 class="mb-4 text-center" style="color:#00e676"><i class="material-icons">diamond</i> סטודיו שידור יוקרתי</h2>
+
+    <div class="row">
+        <div class="col-md-5">
+            <div class="card-studio">
+                <h5 class="mb-3">עיצוב ההודעה</h5>
+                
+                <label>כותרת ראשית</label>
+                <input type="text" id="in-title" class="form-control mb-2 bg-dark text-white" placeholder="הודעה דרמטית" oninput="render()">
+                
+                <label>תוכן ההודעה (שורות)</label>
+                <textarea id="in-body" class="form-control mb-3 bg-dark text-white" rows="4" placeholder="כתוב כאן..." oninput="render()"></textarea>
+                
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <label>אייקון</label>
+                        <select id="in-icon" class="form-select bg-dark text-white" onchange="render()">
+                            <option value="verified">✅ וי כחול</option>
+                            <option value="warning">⚠️ אזהרה</option>
+                            <option value="celebration">🎉 מסיבה</option>
+                            <option value="star">⭐ כוכב</option>
+                            <option value="campaign">📢 כריזה</option>
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label>ערכת נושא</label>
+                        <select id="in-theme" class="form-select bg-dark text-white" onchange="render()">
+                            <option value="neon">💎 ניאון ירוק</option>
+                            <option value="gold">🥇 זהב יוקרתי</option>
+                            <option value="alert">🚨 חירום אדום</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button class="btn btn-success w-100 py-2" onclick="togglePopup(true)">
+                        <i class="material-icons" style="vertical-align:middle">play_arrow</i> שדר למסכים
+                    </button>
+                    <button class="btn btn-outline-danger w-50" onclick="togglePopup(false)">
+                        <i class="material-icons" style="vertical-align:middle">stop</i> כבה
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-7">
+            <div class="card-studio">
+                <h5 class="mb-3">תצוגה מקדימה (במסך)</h5>
+                <div class="preview-screen">
+                    <div id="prev-card" class="p-card t-neon">
+                        <i class="material-icons" id="p-icon" style="font-size:40px;">verified</i>
+                        <h2 id="p-title">כותרת</h2>
+                        <p id="p-body">התוכן יופיע כאן</p>
+                        <small style="opacity:0.5">בברכה, ח.סבן</small>
+                    </div>
+                </div>
+                <small class="text-muted mt-2 d-block text-center">* התצוגה להמחשה בלבד, במסך זה ייראה גדול ומרשים יותר.</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const db = getFirestore(initializeApp({ apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60", projectId: "app-saban94-57361", appId: "1:275366913167:web:f0c6f808e12f2aeb58fcfa" }));
+
+    window.render = () => {
+        const title = document.getElementById('in-title').value || 'כותרת';
+        const body = document.getElementById('in-body').value || 'תוכן...';
+        const icon = document.getElementById('in-icon').value;
+        const theme = document.getElementById('in-theme').value;
+        
+        document.getElementById('p-title').innerText = title;
+        document.getElementById('p-body').innerText = body;
+        document.getElementById('p-icon').innerText = icon;
+        
+        const card = document.getElementById('prev-card');
+        card.className = 'p-card t-' + theme;
+    };
+
+    window.togglePopup = async (isActive) => {
+        const data = {
+            active: isActive,
+            title: document.getElementById('in-title').value,
+            text: document.getElementById('in-body').value,
+            icon: document.getElementById('in-icon').value,
+            theme: document.getElementById('in-theme').value,
+            timestamp: new Date()
+        };
+        
+        await setDoc(doc(db, "settings", "popup"), data);
+        if(isActive) alert("הפופ-אפ שודר בהצלחה! 🔥");
+        else alert("הפופ-אפ כובה.");
+    };
+
+    // רנדור ראשוני
+    render();
+</script>
+</body>
+</html>
