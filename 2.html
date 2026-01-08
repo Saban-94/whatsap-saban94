@@ -2,265 +2,400 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>ח.סבן - מרכז שליטה (Live)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ח.סבן - דשבורד היברידי</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;900&display=swap" rel="stylesheet">
+    
     <style>
-        :root {
-            --bg-dark: #121212;
-            --card-bg: #1e1e1e;
-            --text-main: #ffffff;
-            --accent: #008069;
-            --alert-color: #ff3b30;
+        /* --- הגדרות כלליות (רקע בהיר למפה) --- */
+        body { margin: 0; background: #e0e0e0; font-family: 'Rubik', sans-serif; overflow: hidden; }
+
+        /* --- 1. הבר העליון (צבעוני) --- */
+        .top-metrics-bar {
+            position: absolute; top: 20px; left: 20px; right: 20px;
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;
+            z-index: 1000;
         }
-        body { margin: 0; font-family: 'Heebo', sans-serif; background: var(--bg-dark); color: var(--text-main); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
-        
-        /* Top Metrics Bar */
-        .top-bar {
-            height: 80px; background: #252525; display: flex; align-items: center; padding: 0 20px; gap: 20px;
-            border-bottom: 2px solid #333; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-        }
+
         .metric-box {
-            background: #333; padding: 10px 20px; border-radius: 8px; text-align: center; min-width: 100px;
+            padding: 10px; border-radius: 12px; text-align: center; color: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2);
+            display: flex; flex-direction: column; justify-content: center;
+            backdrop-filter: blur(10px);
         }
-        .metric-val { font-size: 1.8rem; font-weight: bold; line-height: 1; }
-        .metric-label { font-size: 0.8rem; opacity: 0.7; }
-        
-        #clock { font-size: 2.5rem; font-weight: 900; margin-right: auto; color: var(--accent); }
 
-        /* Main Grid */
-        .board { display: flex; flex: 1; padding: 20px; gap: 20px; overflow: hidden; }
-        
-        .column {
-            flex: 1; background: rgba(255,255,255,0.05); border-radius: 15px; padding: 15px;
-            display: flex; flex-direction: column; border: 1px solid #333;
-        }
-        .col-header { font-size: 1.4rem; font-weight: bold; margin-bottom: 15px; border-bottom: 2px solid var(--accent); padding-bottom: 10px; display: flex; justify-content: space-between; }
-        
-        .orders-list { flex: 1; overflow-y: auto; padding-right: 5px; }
+        .mb-dark { background: #263238; border-bottom: 4px solid #fbc02d; }
+        .mb-cyan { background: #00bcd4; border-bottom: 4px solid white; color: #003333; }
+        .mb-green { background: #008069; border-bottom: 4px solid #00e676; }
+        .mb-teal { background: #00695c; border-bottom: 4px solid #80cbc4; }
 
-        /* Order Card */
-        .order-card {
-            background: var(--card-bg); border-radius: 8px; padding: 15px; margin-bottom: 10px;
-            border-right: 5px solid #555; position: relative; transition: 0.2s;
-            display: grid; grid-template-columns: 1fr auto; gap: 10px;
-        }
-        .order-card:hover { transform: translateY(-2px); background: #2a2a2a; }
-        
-        /* Service Types Colors */
-        .type-material { border-right-color: #2196f3; }
-        .type-container { border-right-color: #ff9800; }
-        
-        .card-title { font-size: 1.2rem; font-weight: bold; }
-        .card-sub { font-size: 0.9rem; color: #aaa; margin-top: 5px; }
-        .card-time { 
-            background: #333; padding: 5px 10px; border-radius: 5px; text-align: center;
-            font-size: 1.2rem; font-weight: bold; min-width: 60px;
-        }
-        
-        /* Red Alert Modal */
-        .alert-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255, 0, 0, 0.2); z-index: 9999; display: none;
-            justify-content: center; align-items: center;
-            animation: bg-pulse 1s infinite alternate;
-        }
-        @keyframes bg-pulse { from { background: rgba(255, 0, 0, 0.1); } to { background: rgba(255, 0, 0, 0.4); } }
-        
-        .alert-box {
-            background: #222; border: 4px solid var(--alert-color); padding: 40px; border-radius: 20px;
-            text-align: center; box-shadow: 0 0 50px var(--alert-color); max-width: 600px; width: 90%;
-            animation: box-shake 0.5s infinite;
-        }
-        /* Shake animation subtle */
-        @keyframes box-shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-1px, -2px) rotate(-1deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 30% { transform: translate(3px, 2px) rotate(0deg); } 40% { transform: translate(1px, -1px) rotate(1deg); } 50% { transform: translate(-1px, 2px) rotate(-1deg); } 60% { transform: translate(-3px, 1px) rotate(0deg); } 70% { transform: translate(3px, 1px) rotate(-1deg); } 80% { transform: translate(-1px, -1px) rotate(1deg); } 90% { transform: translate(1px, 2px) rotate(0deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
+        .m-val { font-size: 2rem; font-weight: 900; line-height: 1; }
+        .m-label { font-size: 0.85rem; opacity: 0.9; margin-top: 5px; font-weight: 500; }
 
-        .alert-title { font-size: 3rem; color: var(--alert-color); margin: 0; font-weight: 900; }
-        .alert-info { font-size: 2rem; margin: 20px 0; }
-        .btn-ack { 
-            background: var(--alert-color); color: white; border: none; padding: 15px 40px; font-size: 1.5rem; 
-            font-weight: bold; cursor: pointer; border-radius: 10px; margin-top: 20px; 
+        /* --- 2. סרגל צד (רשימות כהות על רקע בהיר) --- */
+        .sidebar-container {
+            position: absolute; top: 120px; left: 20px; bottom: 20px; width: 380px;
+            display: flex; flex-direction: column; gap: 15px; z-index: 1000;
         }
-        .btn-ack:hover { background: #d32f2f; }
 
-        /* Driver Input */
-        .driver-input {
-            background: #111; border: 1px solid #444; color: white; padding: 5px; width: 100%; margin-top: 5px;
+        /* עיצוב כהה לרשימות */
+        .active-orders-panel, .completed-panel {
+            background: #1e1e1e; /* רקע כהה */
+            color: #fff;
+            border-radius: 12px; overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            border: 1px solid #333;
         }
+
+        .active-orders-panel { flex: 2; display: flex; flex-direction: column; }
+        .completed-panel { flex: 1; display: flex; flex-direction: column; }
+
+        .panel-header {
+            background: #121212; color: #00e676; padding: 12px;
+            font-weight: bold; display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid #333;
+        }
+
+        .active-list-scroll { flex: 1; overflow-y: auto; padding: 10px; }
+
+        /* כרטיס הזמנה במטבח (Dark Mode) */
+        .kitchen-ticket {
+            background: #2c2c2c; border: 1px solid #444; margin-bottom: 8px;
+            border-radius: 6px; padding: 10px; position: relative;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            border-right: 6px solid #ccc;
+            transition: 0.3s;
+        }
+
+        /* סטטוסים */
+        .ticket-green { border-right-color: #00e676; }
+        .ticket-yellow { border-right-color: #fbc02d; }
+        .ticket-red { border-right-color: #ff3b30; animation: flash-border 1.5s infinite; }
+
+        @keyframes flash-border { 0% { border-right-color: #ff3b30; } 50% { border-right-color: transparent; } 100% { border-right-color: #ff3b30; } }
+
+        .k-header { display: flex; justify-content: space-between; font-size: 0.8rem; color: #aaa; border-bottom: 1px solid #444; padding-bottom: 4px; margin-bottom: 4px; }
+        .k-main { font-weight: bold; font-size: 1.1rem; color: #fff; }
+        .k-sub { font-size: 0.85rem; color: #ccc; }
+        .k-driver { font-size: 0.8rem; background: #444; color: #ddd; padding: 2px 6px; border-radius: 4px; margin-top: 4px; display: inline-block; }
+        
+        .k-timer {
+            font-family: monospace; font-size: 1.4rem; font-weight: 900;
+            padding: 4px 8px; border-radius: 4px; background: #000; color: #00e676;
+            min-width: 80px; text-align: center;
+        }
+        .ticket-yellow .k-timer { color: #fbc02d; }
+        .ticket-red .k-timer { color: #ff3b30; }
+
+        /* רשימת סופקו */
+        .marquee-container { flex: 1; position: relative; overflow: hidden; }
+        .marquee-content { position: absolute; width: 100%; top: 0; }
+        .completed-item {
+            padding: 10px; border-bottom: 1px solid #333; font-size: 0.9rem;
+            display: flex; justify-content: space-between; color: #bbb;
+        }
+        .completed-item b { color: #fff; }
+
+        /* --- המפה --- */
+        #map { width: 100vw; height: 100vh; }
+
+        /* --- 3. עיצוב הסיכה המיוחדת (נחש ניאון + שלט מתחלף) --- */
+        .pin-wrapper { position: relative; display: flex; justify-content: center; align-items: center; }
+
+        /* השלט המתחלף */
+        .floating-sign {
+            position: absolute; bottom: 60px;
+            background: #1e1e1e; color: #fff;
+            padding: 8px 15px; border-radius: 8px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+            text-align: center; min-width: 140px;
+            font-weight: bold; border: 1px solid #333;
+            z-index: 10;
+            overflow: hidden;
+        }
+        
+        /* משולש קטן לשלט */
+        .floating-sign::after {
+            content: ''; position: absolute; bottom: -6px; left: 50%; margin-left: -6px;
+            border-width: 6px 6px 0; border-style: solid; border-color: #1e1e1e transparent transparent transparent;
+        }
+
+        /* הנחש הזוחל (ניאון) */
+        .neon-snake {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            border-radius: 8px;
+            background: linear-gradient(90deg, transparent, #00e676, transparent);
+            background-size: 200% 100%;
+            animation: snake-border 2s linear infinite;
+            opacity: 0.5; pointer-events: none;
+            z-index: -1; /* מאחורי הטקסט */
+        }
+        
+        /* מסגרת נוספת ליופי */
+        .sign-border {
+            position: absolute; top: 1px; left: 1px; right: 1px; bottom: 1px;
+            background: #1e1e1e; border-radius: 7px; z-index: -1;
+        }
+
+        @keyframes snake-border { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+
+        /* מצבי טקסט */
+        .fs-content { transition: opacity 0.5s; }
+        .mode-name { display: block; font-size: 0.95rem; }
+        .mode-timer { display: none; font-family: monospace; font-size: 1.2rem; color: #00e676; letter-spacing: 1px; }
+        
+        /* קלאס להחלפה */
+        .show-timer .mode-name { display: none; }
+        .show-timer .mode-timer { display: block; }
+
+        /* צבעים דחופים לסיכה */
+        .pin-wrapper.urgent .neon-snake { background: linear-gradient(90deg, transparent, #ff3b30, transparent); }
+        .pin-wrapper.urgent .mode-timer { color: #ff3b30; }
+
+        /* העיגול המרכזי (אייקון) */
+        .center-icon {
+            width: 44px; height: 44px; border-radius: 50%;
+            background-color: white; background-size: 70%; background-repeat: no-repeat; background-position: center;
+            position: relative; z-index: 2;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+            border: 3px solid white;
+        }
+
+        /* אייקונים (אותם לינקים יפים שמצאנו) */
+        .icon-crane { background-image: url('https://cdn-icons-png.flaticon.com/512/2675/2675860.png'); border-color: #fbc02d; }
+        .icon-truck { background-image: url('https://cdn-icons-png.flaticon.com/512/9420/9420542.png'); border-color: #2196f3; }
+        .icon-container { background-image: url('https://cdn-icons-png.flaticon.com/512/9630/9630364.png'); border-color: #ff9800; }
+        .icon-default { background-image: url('https://cdn-icons-png.flaticon.com/512/664/664468.png'); }
+
     </style>
 </head>
 <body>
 
-    <audio id="sound-alert" src="https://assets.mixkit.co/active_storage/sfx/995/995-preview.mp3" loop></audio>
-
-    <div class="top-bar">
-        <div style="font-weight:900; font-size:1.5rem; color:var(--accent);">ח.סבן LOGISTICS</div>
-        <div class="metric-box">
-            <div class="metric-val" id="cnt-mat">0</div>
-            <div class="metric-label">חומרי בניין</div>
+    <div class="top-metrics-bar">
+        <div class="metric-box mb-dark">
+            <div class="m-val"><i class="material-icons">history</i></div>
+            <div class="m-label">ארכיון</div>
         </div>
-        <div class="metric-box">
-            <div class="metric-val" id="cnt-cont">0</div>
-            <div class="metric-label">מכולות</div>
+        <div class="metric-box mb-cyan">
+            <div class="m-val" id="top-next-time">--:--</div>
+            <div class="m-label">אספקה קרובה</div>
         </div>
-        <div id="clock">00:00:00</div>
-    </div>
-
-    <div class="board">
-        <div class="column">
-            <div class="col-header">
-                <span>📦 ממתין לשיבוץ / יציאה</span>
-                <span id="col-1-count">0</span>
-            </div>
-            <div id="list-pending" class="orders-list"></div>
+        <div class="metric-box mb-green">
+            <div class="m-val" id="top-clock">00:00</div>
+            <div class="m-label">שעון</div>
         </div>
-        
-        <div class="column">
-            <div class="col-header">
-                <span>🚚 בביצוע / בדרך</span>
-                <span id="col-2-count">0</span>
-            </div>
-            <div id="list-active" class="orders-list"></div>
+        <div class="metric-box mb-teal">
+            <div class="m-val" id="top-active-count">0</div>
+            <div class="m-label">פעילים (05-17)</div>
         </div>
     </div>
 
-    <div id="alert-modal" class="alert-overlay">
-        <div class="alert-box">
-            <h1 class="alert-title">⚠️ התראת יציאה!</h1>
-            <div class="alert-info">
-                <div id="alert-client" style="font-weight:bold;">יוסי קבלן</div>
-                <div id="alert-type">מנוף 10 מטר</div>
-                <div id="alert-dest" style="color:#aaa;">תל אביב</div>
-                <div style="font-size:3rem; margin-top:10px;">⏰ הגיע הזמן!</div>
+    <div class="sidebar-container">
+        <div class="active-orders-panel">
+            <div class="panel-header">
+                <span>🔥 במטבח (פעיל)</span>
+                <span id="active-badge" style="background:#333; padding:2px 8px; border-radius:4px;">0</span>
             </div>
-            <button class="btn-ack" onclick="acknowledgeAlert()">קיבלתי, מטפל!</button>
+            <div class="active-list-scroll" id="kitchen-list"></div>
+        </div>
+
+        <div class="completed-panel">
+            <div class="panel-header" style="background:#212121; color:#aaa;">
+                <span>✅ סופקו היום</span>
+                <span id="comp-badge">0</span>
+            </div>
+            <div class="marquee-container">
+                <div class="marquee-content" id="completed-list"></div>
+            </div>
         </div>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
-    <script>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, query, updateDoc, doc } 
+        from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
         const firebaseConfig = {
             apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60",
+            authDomain: "app-saban94-57361.firebaseapp.com",
             projectId: "app-saban94-57361",
+            storageBucket: "app-saban94-57361.firebasestorage.app",
+            messagingSenderId: "275366913167",
             appId: "1:275366913167:web:f0c6f808e12f2aeb58fcfa"
         };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-        let activeOrdersData = [];
-        let currentAlertId = null;
+        // מפה בהירה (OpenStreetMap)
+        const map = L.map('map', { zoomControl: false }).setView([32.3215, 34.8532], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+        const markersLayer = L.layerGroup().addTo(map);
+        const geoCache = {};
 
-        // שעון
-        setInterval(() => {
-            document.getElementById('clock').innerText = new Date().toLocaleTimeString('he-IL', {hour12:false});
-            checkAlerts(); // בדיקת התראות כל שנייה
-        }, 1000);
+        // --- פונקציות עזר ---
+        async function getCoords(address) {
+            if(!address) return null;
+            if(geoCache[address]) return geoCache[address];
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address+', Israel')}&limit=1`);
+                const data = await res.json();
+                if(data.length){
+                    const c = {lat:data[0].lat, lon:data[0].lon};
+                    geoCache[address]=c; return c;
+                }
+            }catch(e){}
+            return null;
+        }
 
-        // האזנה לנתונים
-        db.collection('users').orderBy('lastUpdate', 'desc').onSnapshot(snap => {
-            const listPending = document.getElementById('list-pending');
-            const listActive = document.getElementById('list-active');
-            listPending.innerHTML = ''; listActive.innerHTML = '';
+        function getSecondsLeft(date, time) {
+            if(!time) return 99999;
+            const now = new Date();
+            let target = date ? new Date(date) : new Date();
+            const [h, m] = time.split(':');
+            target.setHours(h, m, 0, 0);
+            return Math.floor((target - now) / 1000);
+        }
+
+        function formatTimer(sec) {
+            const abs = Math.abs(sec);
+            const h = Math.floor(abs / 3600);
+            const m = Math.floor((abs % 3600) / 60);
+            const s = abs % 60;
+            return `${sec<0?'-':''}${h<10?'0'+h:h}:${m<10?'0'+m:m}:${s<10?'0'+s:s}`;
+        }
+
+        function getIconClass(type) {
+            if(!type) return 'icon-default';
+            if(type.includes('מנוף')) return 'icon-crane';
+            if(type.includes('מכולה')) return 'icon-container';
+            if(type.includes('משאית')) return 'icon-truck';
+            return 'icon-default';
+        }
+
+        // --- לוגיקה ראשית ---
+        const q = query(collection(db, "users"));
+        onSnapshot(q, async (snap) => {
+            markersLayer.clearLayers();
+            const activeList = document.getElementById('kitchen-list');
+            const compList = document.getElementById('completed-list');
+            activeList.innerHTML = ''; compList.innerHTML = '';
             
-            activeOrdersData = [];
-            let cMat = 0, cCont = 0;
+            let activeCount = 0;
+            let compCount = 0;
+            let minSeconds = 999999;
 
-            snap.forEach(doc => {
-                const d = doc.data(); d.id = doc.id;
+            const promises = snap.docs.map(async docSnap => {
+                const d = docSnap.data();
+                const oid = d.orgId || docSnap.id.substring(0,4);
                 
-                if (d.status === 4) return; // היסטוריה
+                // סופקו
+                if(d.status === 4) {
+                    compCount++;
+                    const row = document.createElement('div');
+                    row.className = 'completed-item';
+                    row.innerHTML = `<div><b>${d.name}</b></div><div>${d.deliveryType}</div>`;
+                    compList.appendChild(row);
+                    return;
+                }
 
-                activeOrdersData.push(d);
-                if(d.serviceType === 'container') cCont++; else cMat++;
+                // פעילים
+                activeCount++;
+                const seconds = getSecondsLeft(d.targetDate, d.targetTime);
+                if(seconds < minSeconds) minSeconds = seconds;
 
-                const el = createCard(d);
-                
-                // לוגיקת עמודות: אם יש נהג וסטטוס > 1 זה "בביצוע", אחרת "ממתין"
-                if(d.status >= 2 || (d.driverName && d.driverName.length > 1)) {
-                    listActive.appendChild(el);
-                } else {
-                    listPending.appendChild(el);
+                // יצירת כרטיס רשימה (כהה)
+                let colorClass = 'ticket-green';
+                if(seconds < 1800) colorClass = 'ticket-yellow';
+                if(seconds < 0) colorClass = 'ticket-red';
+
+                const ticket = document.createElement('div');
+                ticket.className = `kitchen-ticket ${colorClass}`;
+                ticket.innerHTML = `
+                    <div class="k-header"><span>#${oid}</span><span>${d.targetTime||'--:--'}</span></div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div class="k-main">${d.name}</div>
+                            <div class="k-sub">${d.deliveryType}</div>
+                            <div class="k-driver">${d.driverName||'ללא נהג'}</div>
+                        </div>
+                        <div class="k-timer" data-sec="${seconds}">${formatTimer(seconds)}</div>
+                    </div>
+                `;
+                activeList.appendChild(ticket);
+
+                // יצירת סיכה על המפה
+                if(d.address) {
+                    const coords = await getCoords(d.address);
+                    if(coords) {
+                        const iconClass = getIconClass(d.deliveryType);
+                        const urgentClass = seconds < 1800 ? 'urgent' : '';
+                        
+                        const html = `
+                            <div class="pin-wrapper ${urgentClass}">
+                                <div class="floating-sign">
+                                    <div class="neon-snake"></div>
+                                    <div class="sign-border"></div>
+                                    <div class="fs-content mode-name">${d.name}<br><span style="font-size:0.8em; font-weight:normal;">${d.deliveryType}</span></div>
+                                    <div class="fs-content mode-timer" data-sec="${seconds}">${formatTimer(seconds)}</div>
+                                </div>
+                                <div class="center-icon ${iconClass}"></div>
+                            </div>
+                        `;
+                        const icon = L.divIcon({ className:'c', html:html, iconSize:[44,44], iconAnchor:[22,22] });
+                        L.marker([coords.lat,coords.lon], {icon}).addTo(markersLayer);
+                    }
                 }
             });
 
-            document.getElementById('cnt-mat').innerText = cMat;
-            document.getElementById('cnt-cont').innerText = cCont;
-            document.getElementById('col-1-count').innerText = listPending.children.length;
-            document.getElementById('col-2-count').innerText = listActive.children.length;
+            await Promise.all(promises);
+            document.getElementById('top-active-count').innerText = activeCount;
+            document.getElementById('active-badge').innerText = activeCount;
+            document.getElementById('comp-badge').innerText = compCount;
+            
+            if(minSeconds !== 999999) {
+                const now = new Date();
+                const next = new Date(now.getTime() + minSeconds*1000);
+                document.getElementById('top-next-time').innerText = next.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+            }
+
+            // גלילה לרשימת סופקו
+            const ch = compList.scrollHeight;
+            if(ch > 200) {
+                let p = 0;
+                if(window.scrInt) clearInterval(window.scrInt);
+                window.scrInt = setInterval(()=>{ p--; if(Math.abs(p)>=ch) p=200; compList.style.top=p+'px'; }, 50);
+            }
         });
 
-        function createCard(d) {
-            const div = document.createElement('div');
-            const typeClass = d.serviceType === 'container' ? 'type-container' : 'type-material';
-            const icon = d.serviceType === 'container' ? 'delete' : 'handyman';
+        // לולאת עדכון זמן ואנימציה לסיכות
+        setInterval(() => {
+            // שעון עליון
+            document.getElementById('top-clock').innerText = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
             
-            div.className = `order-card ${typeClass}`;
-            div.innerHTML = `
-                <div>
-                    <div class="card-title"><i class="material-icons" style="vertical-align:middle; font-size:1.1rem;">${icon}</i> ${d.name}</div>
-                    <div class="card-sub">${d.deliveryType || ''}</div>
-                    <div class="card-sub">📍 ${d.address || 'לא צוין'}</div>
-                    <input class="driver-input" placeholder="שיבוץ נהג..." value="${d.driverName || ''}" onchange="updateDriver('${d.id}', this.value)">
-                </div>
-                <div style="display:flex; flex-direction:column; align-items:center; gap:5px;">
-                    <div class="card-time">${d.deliveryTime || '--:--'}</div>
-                    <select onchange="updateStatus('${d.id}', this.value)" style="background:#333; color:white; border:none;">
-                        <option value="1" ${d.status==1?'selected':''}>ממתין</option>
-                        <option value="2" ${d.status==2?'selected':''}>בטיפול</option>
-                        <option value="3" ${d.status==3?'selected':''}>יצא</option>
-                        <option value="4">סופק</option>
-                    </select>
-                </div>
-            `;
-            return div;
-        }
-
-        function checkAlerts() {
-            const now = new Date();
-            const currentHours = now.getHours();
-            const currentMinutes = now.getMinutes();
-            const currentTimeVal = currentHours * 60 + currentMinutes;
-
-            activeOrdersData.forEach(order => {
-                if(!order.deliveryTime || order.status >= 3 || order.alertAck) return;
-
-                const [h, m] = order.deliveryTime.split(':').map(Number);
-                const orderTimeVal = h * 60 + m;
-                const diff = orderTimeVal - currentTimeVal;
-
-                // אם נשאר 10 דקות או פחות (ועדיין לא עבר שעה מאז הזמן)
-                if (diff <= 10 && diff > -60) {
-                    triggerAlert(order);
-                }
+            // החלפת טקסט בסיכות (שם <-> טיימר)
+            const nowSec = Math.floor(Date.now() / 1000);
+            const showTimer = (nowSec % 10) > 5; // כל 5 שניות
+            
+            document.querySelectorAll('.floating-sign').forEach(el => {
+                if(showTimer) el.classList.add('show-timer');
+                else el.classList.remove('show-timer');
             });
-        }
 
-        function triggerAlert(order) {
-            if(document.getElementById('alert-modal').style.display === 'flex') return; // כבר מוצגת התראה
+            // עדכון טיימרים (גם ברשימה וגם במפה)
+            document.querySelectorAll('.k-timer, .mode-timer').forEach(el => {
+                let s = parseInt(el.getAttribute('data-sec'));
+                s--;
+                el.setAttribute('data-sec', s);
+                el.innerText = formatTimer(s);
+            });
+        }, 1000);
 
-            currentAlertId = order.id;
-            document.getElementById('alert-client').innerText = order.name;
-            document.getElementById('alert-type').innerText = order.deliveryType;
-            document.getElementById('alert-dest').innerText = order.address;
-            
-            document.getElementById('alert-modal').style.display = 'flex';
-            document.getElementById('sound-alert').play().catch(()=>{});
-        }
-
-        function acknowledgeAlert() {
-            document.getElementById('alert-modal').style.display = 'none';
-            document.getElementById('sound-alert').pause();
-            document.getElementById('sound-alert').currentTime = 0;
-            
-            // עדכון בדאטה-בייס שההתראה טופלה כדי לא תצפצף שוב
-            if(currentAlertId) {
-                db.collection('users').doc(currentAlertId).update({ alertAck: true });
-            }
-        }
-
-        function updateDriver(id, val) { db.collection('users').doc(id).update({ driverName: val }); }
-        function updateStatus(id, val) { db.collection('users').doc(id).update({ status: parseInt(val) }); }
     </script>
 </body>
 </html>
