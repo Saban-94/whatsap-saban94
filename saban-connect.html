@@ -280,18 +280,20 @@
         </form>
     </div>
 
-    <script type="module">
+<script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, doc, setDoc, onSnapshot, query, where, orderBy } 
         from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const db = getFirestore(initializeApp({ apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60", projectId: "app-saban94-57361", appId: "1:275366913167:web:f0c6f808e12f2aeb58fcfa" }));
 
-        // OneSignal Initialization
-        window.OneSignalDeferred = window.OneSignalDeferred || [];
-        OneSignalDeferred.push(function(OneSignal) {
-            OneSignal.init({ appId: "YOUR-APP-ID", safari_web_id: "web.onesignal.auto.xxx" });
-        });
+        // OneSignal - הגנה מפני קריסה אם אין ID
+        try {
+            window.OneSignalDeferred = window.OneSignalDeferred || [];
+            OneSignalDeferred.push(function(OneSignal) {
+                OneSignal.init({ appId: "YOUR-REAL-APP-ID-HERE", safari_web_id: "web.onesignal.auto.xxx" });
+            });
+        } catch (e) { console.log("OneSignal not configured yet"); }
 
         let currentUser = null;
 
@@ -307,19 +309,47 @@
             document.getElementById('login-overlay').style.display = 'none';
             document.getElementById('desktop').style.display = 'flex';
             document.getElementById('my-avatar').src = currentUser.avatar;
-            document.getElementById('req-from').value = currentUser.role; // אוטומטי לטופס
+            document.getElementById('req-from').value = currentUser.role;
             
-            // השמעת צליל כניסה
             document.getElementById('msg-sound').play().catch(()=>{});
             
-            // הרשמה להתראות
-            OneSignalDeferred.push(function(OneSignal) { OneSignal.login(userKey); });
+            // נסיון חיבור להתראות
+            try { OneSignalDeferred.push(function(OneSignal) { OneSignal.login(userKey); }); } catch(e){}
 
-            // טעינת היסטוריה אישית
             loadMyHistory();
         };
 
-        // --- 2. לוגיקה של הטופס החכם ---
+        // --- 2. תיקון: פונקציית החלפת צ'אטים ---
+        window.switchChat = (chatId) => {
+            // הדגשה ויזואלית בתפריט
+            document.querySelectorAll('.chat-item').forEach(el => el.classList.remove('active'));
+            // (בגלל שהפונקציה נקראת מתוך HTML, אנו משתמשים ב-event.currentTarget בזהירות)
+            if(event && event.currentTarget) event.currentTarget.classList.add('active');
+
+            const headerName = document.getElementById('header-name');
+            const headerStatus = document.getElementById('header-status');
+            const headerAvatar = document.getElementById('header-avatar');
+            const msgContainer = document.getElementById('msg-container');
+
+            if (chatId === 'bot') {
+                headerName.innerText = 'בוט הסידור 🤖';
+                headerStatus.innerText = 'מחובר - הקש (+) להזמנה';
+                headerAvatar.src = 'https://cdn-icons-png.flaticon.com/512/4712/4712035.png';
+                msgContainer.innerHTML = '<div class="msg msg-in">שלום! אני המוח הלוגיסטי של ח.סבן.<br>איך אפשר לעזור היום? 🚚</div>';
+            } else if (chatId === 'logistics') {
+                headerName.innerText = '🏗️ לוגיסטיקה וסידור';
+                headerStatus.innerText = 'יוסי, אבי, דני, נתנאל...';
+                headerAvatar.src = ''; // אפשר לשים תמונה קבוצתית
+                // כאן מדמים היסטוריית צ'אט קבוצתי
+                msgContainer.innerHTML = `
+                    <div class="msg msg-in"><b class="text-warning">אבי נהג:</b><br>פרקתי בחרש, לאן עכשיו? <span class="msg-time">10:15</span></div>
+                    <div class="msg msg-out">תמשיך למחסן התלמיד להעמיס <span class="msg-time">10:16</span></div>
+                    <div class="msg msg-in"><b class="text-warning">יוסי מנוף:</b><br>מישהו יודע איפה המלגזה? <span class="msg-time">10:45</span></div>
+                `;
+            }
+        };
+
+        // --- 3. לוגיקה של הטופס החכם ---
         window.openRequestModal = () => {
             document.getElementById('modal-overlay').style.display = 'block';
             setTimeout(() => document.getElementById('request-modal').classList.add('show'), 10);
@@ -346,20 +376,18 @@
             document.getElementById('takeover-warning').style.display = isUrgent ? 'block' : 'none';
         };
 
-        // --- 3. שליחת הבקשה (המוח) ---
+        // --- 4. שליחת הבקשה ---
         window.submitRequest = async () => {
             const type = document.getElementById('req-type').value;
             const isReady = document.getElementById('req-ready').checked;
             const refNum = document.getElementById('req-ref').value;
             const isUrgent = document.getElementById('req-urgent').value === 'true';
 
-            // בדיקת חסימה: אם מוכן - חייב מספר
             if (isReady && !refNum) {
-                alert("⚠️ שגיאה: סימנת שהסחורה מוכנה, חובה להזין מספר תעודה/העברה!");
+                alert("⚠️ שגיאה: חובה להזין מספר תעודה/העברה!");
                 return;
             }
 
-            // יצירת האובייקט
             const requestData = {
                 requesterName: currentUser.name,
                 requesterRole: currentUser.role,
@@ -369,38 +397,31 @@
                 isReady: isReady,
                 refNumber: refNum || null,
                 isUrgent: isUrgent,
-                status: isReady ? 1 : 0, // 1=פעיל לסידור, 0=טיוטה/לא מוכן
-                createdAt: new Date(),
+                status: isReady ? 1 : 0, 
+                createdAt: new Date(), // <-- זה השדה שדורש אינדקס
                 lastUpdate: new Date(),
-                // שדות תצוגה למפה
                 name: type === 'client' ? document.getElementById('req-client-name').value : `העברה ל${document.getElementById('req-to').value}`,
                 deliveryType: type === 'client' ? 'משאית' : 'העברה פנימית',
-                address: '', // ימולא ע"י הסדרן
+                address: '', 
                 targetTime: isUrgent ? 'דחוף!' : '--:--'
             };
 
-            // שמירה ב-Firestore
             await addDoc(collection(db, "users"), requestData);
 
-            // אם דחוף -> הפעלת פופ-אפ משתלט במסכים
             if (isUrgent) {
                 await setDoc(doc(db, "settings", "popup"), {
                     active: true,
                     title: `בקשה דחופה מ${currentUser.name}`,
-                    text: `נדרש איסוף דחוף! ${requestData.name} (מס' ${refNum || 'ללא'})`,
-                    icon: 'warning',
-                    theme: 'alert',
-                    imageUrl: currentUser.avatar
+                    text: `נדרש איסוף דחוף! ${requestData.name}`,
+                    icon: 'warning', theme: 'alert', imageUrl: currentUser.avatar
                 });
             }
 
-            // סגירה ופידבק בוואטסאפ
             closeModal();
-            addChatMessage("out", `בקשה נשלחה: ${requestData.name} (${isUrgent ? 'דחוף 🔥' : 'רגיל'})`);
-            setTimeout(() => addChatMessage("in", "קיבלתי. הבקשה הועברה לסדרן לאישור. אעדכן כשיהיה נהג. 👍"), 1000);
+            addChatMessage("out", `בקשה נשלחה: ${requestData.name}`);
+            setTimeout(() => addChatMessage("in", "הבקשה התקבלה במערכת 👍"), 1000);
         };
 
-        // --- 4. ממשק צ'אט ---
         function addChatMessage(dir, text) {
             const container = document.getElementById('msg-container');
             const div = document.createElement('div');
@@ -417,7 +438,6 @@
                 if(txt) {
                     addChatMessage('out', txt);
                     document.getElementById('chat-input').value = '';
-                    // תגובה אוטומטית פשוטה
                     setTimeout(() => addChatMessage('in', "אני בוט לוגיסטי, נא להשתמש בכפתור (+) להזמנות."), 1500);
                 }
             }
@@ -425,30 +445,28 @@
 
         window.toggleStats = () => document.getElementById('stats-panel').classList.toggle('open');
 
-        // --- 5. היסטוריה אישית ---
+        // --- 5. היסטוריה אישית (דורש אינדקס!) ---
         function loadMyHistory() {
-            // מאזין רק לבקשות של המשתמש הנוכחי
-            const q = query(collection(db, "users"), where("requesterName", "==", currentUser.name), orderBy("createdAt", "desc"));
-            onSnapshot(q, (snap) => {
-                const list = document.getElementById('my-history-list');
-                list.innerHTML = '';
-                snap.forEach(d => {
-                    const data = d.data();
-                    let icon = 'schedule'; let color = 'text-warning';
-                    if(data.status === 4) { icon = 'check_circle'; color = 'text-success'; } // בוצע
-                    if(data.driverName) { icon = 'local_shipping'; color = 'text-info'; } // בדרך
-                    
-                    list.innerHTML += `
-                        <div class="d-flex justify-content-between mb-2 border-bottom border-secondary pb-1">
-                            <span>${data.name}</span>
-                            <i class="material-icons ${color}" style="font-size:16px">${icon}</i>
-                        </div>
-                    `;
+            try {
+                const q = query(collection(db, "users"), where("requesterName", "==", currentUser.name), orderBy("createdAt", "desc"));
+                onSnapshot(q, (snap) => {
+                    const list = document.getElementById('my-history-list');
+                    list.innerHTML = '';
+                    snap.forEach(d => {
+                        const data = d.data();
+                        let icon = 'schedule'; let color = 'text-warning';
+                        if(data.status === 4) { icon = 'check_circle'; color = 'text-success'; }
+                        if(data.driverName) { icon = 'local_shipping'; color = 'text-info'; }
+                        
+                        list.innerHTML += `<div class="d-flex justify-content-between mb-2 border-bottom border-secondary pb-1"><span>${data.name}</span><i class="material-icons ${color}" style="font-size:16px">${icon}</i></div>`;
+                    });
+                }, (error) => {
+                    // אם אין אינדקס, נציג הודעה בקונסול במקום לקרוס
+                    console.error("Firestore Index Missing! Click the link in console to fix.", error);
                 });
-            });
+            } catch(e) { console.log("History load error", e); }
         }
 
-        // שעון
         setInterval(() => document.getElementById('win-clock').innerText = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}), 1000);
 
     </script>
