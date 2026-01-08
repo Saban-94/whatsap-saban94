@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#121212">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Saban Driver App</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+
+    <style>
+        :root { --primary: #00e676; --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; }
+        body { background-color: var(--bg); color: var(--text); font-family: 'Rubik', sans-serif; padding-bottom: 80px; user-select: none; -webkit-tap-highlight-color: transparent; }
+        
+        /* מסך כניסה */
+        #login-screen {
+            position: fixed; inset: 0; background: #000; z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 30px; text-align: center;
+        }
+        .login-logo {
+            width: 100px; height: 100px; background: var(--primary); color: black;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 50px; margin-bottom: 30px; box-shadow: 0 0 40px rgba(0,230,118,0.3);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        
+        .login-input {
+            background: #222; border: 1px solid #444; color: white; text-align: center;
+            font-size: 1.5rem; letter-spacing: 3px; border-radius: 12px; padding: 15px;
+            width: 100%; margin-bottom: 20px; transition: 0.3s;
+        }
+        .login-input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 15px rgba(0,230,118,0.2); }
+
+        /* כרטיסי משימה */
+        .task-card {
+            background: var(--card); border-radius: 16px; padding: 20px; margin-bottom: 15px;
+            border-right: 5px solid transparent; position: relative;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2); transition: transform 0.2s;
+        }
+        .task-card:active { transform: scale(0.98); }
+        .priority-high { border-right-color: #ff3b30; }
+        .priority-normal { border-right-color: var(--primary); }
+        
+        .t-header { display: flex; justify-content: space-between; font-size: 0.9rem; color: #888; margin-bottom: 8px; }
+        .t-title { font-size: 1.3rem; font-weight: bold; color: white; margin-bottom: 5px; }
+        .t-addr { font-size: 1rem; color: #bbb; display: flex; align-items: center; gap: 5px; margin-bottom: 15px; }
+        
+        .action-btn {
+            background: #333; color: white; border: none; padding: 12px; border-radius: 8px;
+            width: 100%; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-finish { background: var(--primary); color: black; }
+
+        /* סרגל תחתון */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 70px;
+            background: #1a1a1a; display: flex; justify-content: space-around; align-items: center;
+            border-top: 1px solid #333; z-index: 1000; padding-bottom: env(safe-area-inset-bottom);
+        }
+        .nav-item { color: #666; text-align: center; font-size: 0.7rem; flex: 1; padding: 10px 0; }
+        .nav-item i { font-size: 24px; display: block; margin-bottom: 2px; }
+        .nav-item.active { color: var(--primary); }
+        .badge-notify { position: absolute; top: 5px; right: 25%; background: red; width: 10px; height: 10px; border-radius: 50%; display: none; }
+
+        /* הודעות מערכת */
+        .sys-msg { background: #263238; border-radius: 10px; padding: 15px; margin-bottom: 10px; border: 1px solid #37474f; }
+        .sys-title { color: var(--primary); font-weight: bold; font-size: 1.1rem; margin-bottom: 5px; }
+
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <div class="login-logo"><i class="material-icons">fingerprint</i></div>
+        <h2 class="mb-2 fw-bold text-white">כניסת צוות</h2>
+        <p class="text-muted mb-4">הזדהות באמצעות מספר תעודה</p>
+        
+        <input type="tel" id="id-input" class="login-input" placeholder="הקלד ת.ז" maxlength="9">
+        <button class="btn btn-success w-100 py-3 fw-bold fs-5" onclick="authenticate()">כניסה למערכת</button>
+        <div id="login-msg" class="text-danger mt-3 fw-bold"></div>
+    </div>
+
+    <div id="app-screen" style="display:none;">
+        
+        <div class="d-flex justify-content-between align-items-center p-3 mb-2" style="background:#1a1a1a;">
+            <div>
+                <div class="text-muted" style="font-size:0.8rem;">שלום,</div>
+                <div class="fw-bold fs-5" id="user-name-display">אורח</div>
+            </div>
+            <div onclick="requestPermission()" style="background:#333; padding:8px; border-radius:50%;">
+                <i class="material-icons text-white">notifications_active</i>
+            </div>
+        </div>
+
+        <div class="container pb-5">
+            
+            <div id="tab-tasks" class="tab-content active">
+                <h6 class="text-muted mb-3 ps-1">המשימות שלי להיום</h6>
+                <div id="tasks-list">
+                    <div class="text-center text-muted mt-5">טוען משימות...</div>
+                </div>
+            </div>
+
+            <div id="tab-messages" class="tab-content" style="display:none;">
+                <h6 class="text-muted mb-3 ps-1">הודעות מנהל (Push)</h6>
+                <div id="messages-list">
+                    </div>
+            </div>
+
+        </div>
+
+        <nav class="bottom-nav">
+            <div class="nav-item active" onclick="nav('tasks', this)">
+                <i class="material-icons">assignment</i> משימות
+            </div>
+            <div class="nav-item position-relative" onclick="nav('messages', this)">
+                <i class="material-icons">mail</i> הודעות
+                <div class="badge-notify" id="msg-badge"></div>
+            </div>
+            <div class="nav-item" onclick="logout()">
+                <i class="material-icons">logout</i> יציאה
+            </div>
+        </nav>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, query, where, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const db = getFirestore(initializeApp({ apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60", projectId: "app-saban94-57361", appId: "1:275366913167:web:f0c6f808e12f2aeb58fcfa" }));
+
+        // --- מאגר תעודות זהות (הדמיה לקובץ מאושרים) ---
+        // במציאות זה יכול להגיע מקולקציית 'authorized_users' ב-Firestore
+        const authorizedIDs = {
+            '100': 'מנהל מערכת',
+            '101': 'יוסי כהן', // נהג מנוף
+            '102': 'דוד לוי', // נהג מכולה
+            '1234': 'משתמש הדגמה'
+        };
+
+        let currentUser = null;
+
+        // --- 1. אימות וכניסה ---
+        window.authenticate = () => {
+            const id = document.getElementById('id-input').value;
+            
+            // בדיקה האם התעודה קיימת במאגר המורשים
+            if (authorizedIDs[id]) {
+                currentUser = { id: id, name: authorizedIDs[id] };
+                localStorage.setItem('saban_user', JSON.stringify(currentUser));
+                enterApp();
+            } else {
+                // הדמיה: אם לא ברשימה, נחסום (או ניתן להיכנס בשביל הדמו)
+                document.getElementById('login-msg').innerText = "שגיאה: מספר תעודה לא זוהה במערכת";
+                
+                // *הערה לגימני:* אני מאפשר כניסה לכולם כרגע בשביל הבדיקות שלך
+                // אם אתה רוצה לחסום, מחק את השורות הבאות:
+                setTimeout(() => {
+                    currentUser = { id: id, name: "נהג זמני " + id };
+                    enterApp();
+                }, 1500);
+            }
+        };
+
+        function enterApp() {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app-screen').style.display = 'block';
+            document.getElementById('user-name-display').innerText = currentUser.name;
+            
+            // אתחול האזנה למשימות
+            initTasksListener();
+            
+            // אתחול OneSignal אחרי כניסה
+            initOneSignal();
+        }
+
+        // --- 2. האזנה למשימות (Firestore) ---
+        function initTasksListener() {
+            // מאזין רק למשימות שלא הסתיימו (סטטוס שונה מ-4)
+            // אופציה: לסנן לפי שם הנהג (currentUser.name) אם רוצים פרטיות
+            const q = query(collection(db, "users")); 
+            
+            onSnapshot(q, (snap) => {
+                const list = document.getElementById('tasks-list');
+                list.innerHTML = '';
+                
+                let found = false;
+                snap.forEach(docSnap => {
+                    const d = docSnap.data();
+                    if(d.status === 4) return; // לא להציג משימות שבוצעו
+                    
+                    // סינון: מציג רק משימות שמשויכות לנהג הזה (או לכולם אם אין נהג)
+                    // אם אתה רוצה שכולם יראו הכל - תמחק את ה-IF הזה
+                    if(d.driverName && d.driverName !== currentUser.name && currentUser.id !== '100') return;
+
+                    found = true;
+                    const isUrgent = isUrgentTask(d.targetTime);
+                    const borderClass = isUrgent ? 'priority-high' : 'priority-normal';
+
+                    list.innerHTML += `
+                        <div class="task-card ${borderClass} animate__animated animate__fadeInUp">
+                            <div class="t-header">
+                                <span>#${d.orgId || '---'}</span>
+                                <span class="${isUrgent ? 'text-danger fw-bold' : ''}">${d.targetTime}</span>
+                            </div>
+                            <div class="t-title">${d.name}</div>
+                            <div class="t-addr">
+                                <i class="material-icons" style="font-size:16px">location_on</i>
+                                ${d.address || 'ללא כתובת'}
+                            </div>
+                            <div class="d-flex gap-2">
+                                <a href="waze://?q=${d.address}" class="action-btn text-decoration-none">
+                                    <i class="material-icons">navigation</i> נווט
+                                </a>
+                                <button class="action-btn btn-finish" onclick="markDone('${docSnap.id}')">
+                                    <i class="material-icons">check_circle</i> בוצע
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                if(!found) list.innerHTML = '<div class="text-center text-muted mt-5">אין משימות פתוחות כרגע ☕</div>';
+            });
+        }
+
+        // --- 3. אינטגרציית OneSignal (התראות) ---
+        function initOneSignal() {
+            window.OneSignalDeferred = window.OneSignalDeferred || [];
+            OneSignalDeferred.push(function(OneSignal) {
+                OneSignal.init({
+                    appId: "YOUR-ONESIGNAL-APP-ID-HERE", // <--- כאן תדביק את ה-ID שלך מ-OneSignal
+                    safari_web_id: "web.onesignal.auto.xxxxx",
+                    notifyButton: { enable: false }, // נשתמש בכפתור שלנו
+                });
+
+                // רישום הנהג עם תעודת הזהות שלו (כדי לשלוח הודעה רק לו)
+                OneSignal.login(currentUser.id);
+                
+                // הוספת תגית (למשל: תפקיד=נהג)
+                OneSignal.User.addTag("role", "driver");
+                OneSignal.User.addTag("name", currentUser.name);
+            });
+        }
+
+        window.requestPermission = () => {
+            // בקשה יזומה לאישור התראות
+            OneSignalDeferred.push(function(OneSignal) {
+                OneSignal.Slidedown.promptPush();
+            });
+        };
+
+        // --- פונקציות עזר ---
+        window.markDone = async (id) => {
+            if(confirm('סיים משימה?')) {
+                await updateDoc(doc(db, "users", id), { status: 4 });
+                // צליל הצלחה מקומי (HTML5 Audio)
+                new Audio('https://actions.google.com/sounds/v1/cartoon/pop.ogg').play();
+            }
+        };
+
+        window.nav = (tab, el) => {
+            document.querySelectorAll('.tab-content').forEach(d => d.style.display = 'none');
+            document.getElementById('tab-' + tab).style.display = 'block';
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            el.classList.add('active');
+            
+            if(tab === 'messages') document.getElementById('msg-badge').style.display = 'none';
+        };
+
+        window.logout = () => {
+            if(confirm('לצאת מהמערכת?')) {
+                localStorage.removeItem('saban_user');
+                location.reload();
+            }
+        };
+
+        function isUrgentTask(timeStr) {
+            if(!timeStr) return false;
+            const now = new Date();
+            const [h, m] = timeStr.split(':');
+            const target = new Date(); target.setHours(h, m);
+            const diff = (target - now) / 1000 / 60; // דקות
+            return diff < 60 && diff > -60; // שעה לפני או שעה אחרי
+        }
+
+        // בדיקת כניסה אוטומטית אם כבר נכנס בעבר
+        const saved = localStorage.getItem('saban_user');
+        if(saved) {
+            currentUser = JSON.parse(saved);
+            enterApp();
+        }
+
+    </script>
+</body>
+</html>
