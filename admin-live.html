@@ -2,411 +2,283 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ח.סבן - מאסטר ניהול</title>
+    <title>מרכז שליטה - ח.סבן (מתוקן)</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+    
     <style>
-        body { background-color: #f0f2f5; font-family: 'Segoe UI', sans-serif; padding-bottom: 100px; }
+        body { background-color: #f4f6f9; font-family: 'Rubik', sans-serif; overflow-x: hidden; }
         
         /* סרגל צד */
-        .sidebar {
-            background: #263238; min-height: 100vh; color: white; padding: 20px;
-            position: fixed; right: 0; top: 0; width: 250px; z-index: 1000;
-        }
-        .main-content { margin-right: 250px; padding: 30px; }
+        .sidebar { position: fixed; right: 0; top: 0; bottom: 0; width: 260px; background: #263238; color: white; padding: 20px; z-index: 1000; display: flex; flex-direction: column; }
+        .brand { text-align: center; font-weight: 900; font-size: 1.4rem; margin-bottom: 30px; color: #00e676; border-bottom: 1px solid #444; padding-bottom: 15px; }
+        .nav-btn { background: transparent; border: none; color: #b0bec5; padding: 12px; margin-bottom: 8px; border-radius: 10px; text-align: right; display: flex; align-items: center; gap: 12px; width: 100%; transition: 0.2s; }
+        .nav-btn:hover { background: rgba(255,255,255,0.1); color: white; }
+        .nav-btn.active { background: #00e676; color: #121212; font-weight: bold; box-shadow: 0 4px 15px rgba(0,230,118,0.3); }
         
-        .nav-btn {
-            width: 100%; text-align: right; padding: 12px; margin-bottom: 8px;
-            background: transparent; border: none; color: #b0bec5; border-radius: 8px;
-            display: flex; align-items: center; gap: 10px; transition: 0.3s;
+        /* תוכן */
+        .main-content { margin-right: 260px; padding: 30px; }
+        .card-box { background: white; border-radius: 16px; padding: 25px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); margin-bottom: 25px; }
+        
+        /* כרטיסי שיגור מהיר */
+        .quick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
+        .quick-card { 
+            background: white; border: 1px solid #e0e0e0; border-radius: 12px; padding: 15px; text-align: center; cursor: pointer; transition: 0.2s; position: relative;
         }
-        .nav-btn:hover, .nav-btn.active { background: #37474f; color: white; }
-        .nav-btn i { font-size: 22px; }
+        .quick-card:hover { border-color: #00e676; transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .quick-card:active { transform: scale(0.98); }
+        .qc-icon { font-size: 2rem; color: #00e676; margin-bottom: 5px; }
+        .qc-name { font-weight: bold; color: #333; }
+        .qc-sub { font-size: 0.8rem; color: #888; margin-top: 2px; }
 
-        /* כרטיסים וטבלאות */
-        .card-box { background: white; border-radius: 12px; box-shadow: 0 2px 15px rgba(0,0,0,0.05); border: none; overflow: hidden; }
-        .table thead th { background: #f8f9fa; border-bottom: 2px solid #e9ecef; color: #495057; font-weight: 600; }
+        /* סטודיו */
+        .studio-panel { background: #1e1e1e; color: white; border-radius: 16px; padding: 20px; border: 1px solid #333; }
+        .form-dark { background: #2c2c2c; border: 1px solid #444; color: white; }
+        .form-dark:focus { background: #333; color: white; border-color: #00e676; box-shadow: none; }
+        
+        /* טבלאות */
         .table td { vertical-align: middle; }
-        
-        /* כפתורי שיגור מהיר */
-        .quick-client-btn {
-            background: white; border: 1px solid #ddd; padding: 10px 15px; border-radius: 10px;
-            cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; min-width: 120px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-        .quick-client-btn:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); border-color: #008069; }
-        .qc-icon { background: #e0f2f1; color: #00695c; width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-bottom: 5px; }
-        .qc-name { font-weight: bold; font-size: 0.9rem; }
-        .qc-sub { font-size: 0.75rem; color: #777; }
-
-        /* כפתורים בטבלה */
-        .btn-icon { padding: 5px 10px; border-radius: 6px; }
+        .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="sidebar">
-    <h3 class="mb-4 text-center fw-bold" style="color:#00e676;">ח.סבן לוגיסטיקה</h3>
-    <button class="nav-btn active" onclick="showTab('live')"><i class="material-icons">dvr</i> לוח פעיל</button>
-    <button class="nav-btn" onclick="showTab('history')"><i class="material-icons">history</i> ארכיון והיסטוריה</button>
-    <button class="nav-btn" onclick="showTab('clients')"><i class="material-icons">people</i> ניהול לקוחות</button>
-    
-    <div style="margin-top: 50px; border-top: 1px solid #444; padding-top: 20px;">
-        <small class="text-muted">סטודיו חדשות:</small>
-        <button class="btn btn-outline-light w-100 mt-2 btn-sm" data-bs-toggle="modal" data-bs-target="#newsModal">
-            <i class="material-icons" style="vertical-align:middle; font-size:16px;">campaign</i> ערוך פס חדשות
-        </button>
+    <div class="sidebar">
+        <div class="brand"><i class="material-icons" style="vertical-align:middle">local_shipping</i> ח.סבן לוגיסטיקה</div>
+        <button class="nav-btn active" onclick="switchTab('live', this)"><i class="material-icons">dvr</i> לוח בקרה</button>
+        <button class="nav-btn" onclick="switchTab('studio', this)"><i class="material-icons">campaign</i> סטודיו שידור</button>
+        <button class="nav-btn" onclick="switchTab('clients', this)"><i class="material-icons">people</i> ניהול לקוחות</button>
+        <button class="nav-btn" onclick="switchTab('history', this)"><i class="material-icons">history</i> ארכיון</button>
     </div>
-</div>
 
-<div class="main-content">
+    <div class="main-content">
+        
+        <div id="tab-live" class="tab-pane">
+            
+            <div class="card-box">
+                <h5 class="mb-3 text-secondary"><i class="material-icons" style="vertical-align:middle">rocket_launch</i> שיגור הזמנה ללקוח קיים</h5>
+                <div id="quick-grid" class="quick-grid">
+                    <div class="text-muted p-2">טוען נתונים...</div>
+                </div>
+            </div>
 
-    <div id="tab-live">
-        <div class="mb-4">
-            <h5 class="text-muted mb-3"><i class="material-icons" style="vertical-align:middle">rocket_launch</i> שיגור מהיר (לקוחות קבועים)</h5>
-            <div class="d-flex gap-3 flex-wrap" id="quick-bar">
-                <div class="text-muted p-2">טוען לקוחות...</div>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="fw-bold">הזמנות פעילות</h3>
+                <button class="btn btn-primary shadow" onclick="openOrderModal()">
+                    <i class="material-icons" style="vertical-align:middle">add</i> הזמנה חדשה (ריק)
+                </button>
+            </div>
+            <div class="card-box p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="bg-light"><tr><th>תעודה</th><th>זמן</th><th>לקוח</th><th>כתובת</th><th>נהג</th><th>פעולות</th></tr></thead>
+                    <tbody id="live-table-body"></tbody>
+                </table>
             </div>
         </div>
 
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h3 class="fw-bold">📋 הזמנות פעילות</h3>
-            <button class="btn btn-primary" onclick="openOrderModal()">
-                <i class="material-icons" style="vertical-align:middle">add</i> הזמנה חדשה (ידני)
-            </button>
+        <div id="tab-studio" class="tab-pane" style="display:none;">
+            <div class="row">
+                <div class="col-md-5">
+                    <div class="studio-panel mb-3">
+                        <h5>פס חדשות (Ticker)</h5>
+                        <input id="news-input" class="form-control form-dark mb-3" placeholder="הקלד הודעה רצה...">
+                        <div class="d-flex gap-2 mb-3">
+                            <button class="btn btn-sm btn-primary" onclick="updateNews('blue')">כחול</button>
+                            <button class="btn btn-sm btn-danger" onclick="updateNews('red')">אדום</button>
+                            <button class="btn btn-sm btn-success" onclick="updateNews('green')">ירוק</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-7">
+                    <div class="studio-panel" style="border-color:#00e676;">
+                        <h5 style="color:#00e676;">MEGA POPUP (פוסטר)</h5>
+                        <input id="pop-title" class="form-control form-dark mb-2" placeholder="כותרת ראשית">
+                        <textarea id="pop-body" class="form-control form-dark mb-2" rows="2" placeholder="תוכן ההודעה..."></textarea>
+                        <input id="pop-img" class="form-control form-dark mb-2" placeholder="קישור לתמונה (URL)...">
+                        
+                        <div class="d-flex gap-2 mb-3 overflow-auto">
+                            <button class="btn btn-outline-secondary btn-sm" onclick="setImg('https://img.freepik.com/free-photo/truck-highway_1112-964.jpg')">🚚 משאית</button>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="setImg('https://img.freepik.com/free-photo/birthday-cake-with-candles_144627-42861.jpg')">🎂 עוגה</button>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="setImg('https://img.freepik.com/free-vector/warning-signs-collection_23-2148559052.jpg')">⚠️ אזהרה</button>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="setImg('')">❌ נקה</button>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-6"><select id="pop-icon" class="form-select form-dark"><option value="verified">✅ וי</option><option value="warning">⚠️ אזהרה</option><option value="celebration">🎉 חגיגה</option></select></div>
+                            <div class="col-6"><select id="pop-theme" class="form-select form-dark"><option value="neon">💎 ניאון</option><option value="gold">🥇 זהב</option><option value="alert">🚨 חירום</option></select></div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-success flex-fill" onclick="togglePopup(true)">שדר למסך</button>
+                            <button class="btn btn-danger flex-fill" onclick="togglePopup(false)">כבה שידור</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div class="card-box">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead>
-                        <tr>
-                            <th>תעודה</th>
-                            <th>לקוח</th>
-                            <th>נהג</th>
-                            <th>כתובת מלאה</th>
-                            <th>סוג</th>
-                            <th>זמן יעד</th>
-                            <th>פעולות</th>
-                        </tr>
-                    </thead>
-                    <tbody id="live-body"></tbody>
+        <div id="tab-clients" class="tab-pane" style="display:none;">
+            <div class="d-flex justify-content-between mb-3">
+                <h3>ניהול לקוחות</h3>
+                <button class="btn btn-success" onclick="openClientModal()">+ הוסף לקוח חדש</button>
+            </div>
+            <div class="card-box">
+                <table class="table table-striped">
+                    <thead><tr><th>שם לקוח</th><th>כתובת ברירת מחדל</th><th>סוג</th><th>פעולות</th></tr></thead>
+                    <tbody id="clients-table"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="tab-history" class="tab-pane" style="display:none;">
+            <h3>ארכיון ביצועים</h3>
+            <div class="card-box">
+                <table class="table table-striped">
+                    <thead><tr><th>תאריך</th><th>לקוח</th><th>כתובת</th><th>נהג</th><th>מחק</th></tr></thead>
+                    <tbody id="history-table"></tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <div id="tab-history" style="display:none;">
-        <h3 class="fw-bold mb-3">📜 ארכיון ביצועים</h3>
-        <div class="alert alert-info">כאן מוצגות כל ההזמנות שסופקו. מחיקה מכאן היא סופית.</div>
-        <div class="card-box">
-            <table class="table table-striped mb-0">
-                <thead>
-                    <tr>
-                        <th>תאריך ביצוע</th>
-                        <th>לקוח</th>
-                        <th>נהג</th>
-                        <th>סוג</th>
-                        <th>כתובת</th>
-                        <th>ניהול</th>
-                    </tr>
-                </thead>
-                <tbody id="history-body"></tbody>
-            </table>
-        </div>
-    </div>
-
-    <div id="tab-clients" style="display:none;">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h3 class="fw-bold">👥 מאגר לקוחות לשיגור מהיר</h3>
-            <button class="btn btn-success" onclick="openClientModal()">
-                <i class="material-icons" style="vertical-align:middle">person_add</i> הוסף לקוח
-            </button>
-        </div>
-        <div class="card-box p-3">
-            <table class="table">
-                <thead><tr><th>שם לקוח</th><th>כתובת ברירת מחדל</th><th>סוג ברירת מחדל</th><th>פעולות</th></tr></thead>
-                <tbody id="clients-body"></tbody>
-            </table>
-        </div>
-    </div>
-
-</div>
-
-<div class="modal fade" id="orderModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="modalTitle">פרטי הזמנה</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="orderForm">
-                    <input type="hidden" id="o-id">
-                    <div class="row g-2 mb-2">
-                        <div class="col-4"><label>מס' תעודה</label><input type="text" id="o-oid" class="form-control" placeholder="1001"></div>
-                        <div class="col-8"><label>שם לקוח</label><input type="text" id="o-name" class="form-control" required></div>
-                    </div>
-                    <div class="mb-2">
-                        <label>כתובת מלאה (חובה למפה!)</label>
-                        <input type="text" id="o-addr" class="form-control" placeholder="עיר, רחוב ומספר">
-                    </div>
-                    <div class="row g-2 mb-2">
-                        <div class="col-6"><label>נהג משובץ</label><input type="text" id="o-driver" class="form-control"></div>
-                        <div class="col-6"><label>סוג הובלה</label>
-                            <select id="o-type" class="form-select">
-                                <option>מנוף 10 מטר</option>
-                                <option>מנוף 15 מטר</option>
-                                <option>מנוף זרוע</option>
-                                <option>מכולה 8 קוב</option>
-                                <option>מכולה 24 קוב</option>
-                                <option>משאית חומרים</option>
-                            </select>
+    <div class="modal fade" id="orderModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white"><h5 class="modal-title">פרטי הזמנה</h5><button class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <form id="orderForm">
+                        <input type="hidden" id="o-id">
+                        <div class="row g-2 mb-2">
+                            <div class="col-4"><label>מס' תעודה</label><input id="o-oid" class="form-control" type="number"></div>
+                            <div class="col-8"><label>שם לקוח</label><input id="o-name" class="form-control" required></div>
                         </div>
-                    </div>
-                    <div class="row g-2 mb-3">
-                        <div class="col-6"><label>תאריך יעד</label><input type="date" id="o-date" class="form-control"></div>
-                        <div class="col-6"><label>שעת יעד</label><input type="time" id="o-time" class="form-control"></div>
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100">שמור ושלח למסכים</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="clientModal">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-success text-white"><h5 class="modal-title">לקוח חדש</h5><button class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body">
-                <form id="clientForm">
-                    <div class="mb-2"><label>שם לקוח</label><input type="text" id="c-name" class="form-control" required></div>
-                    <div class="mb-2"><label>כתובת קבועה</label><input type="text" id="c-addr" class="form-control"></div>
-                    <div class="mb-2"><label>סוג קבוע</label>
-                        <select id="c-type" class="form-select">
-                            <option>מנוף 10 מטר</option><option>מכולה 8 קוב</option><option>משאית חומרים</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-success w-100 mt-2">שמור לקוח</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="newsModal">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-dark text-white"><h5 class="modal-title">עורך פס חדשות</h5><button class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body">
-                <label>הודעה:</label>
-                <input type="text" id="news-text" class="form-control mb-2">
-                <label>צבע:</label>
-                <select id="news-color" class="form-select mb-2">
-                    <option value="blue">כחול (רגיל)</option>
-                    <option value="red">אדום (דחוף/אזהרה)</option>
-                    <option value="green">ירוק (הודעה משמחת)</option>
-                </select>
-                <button onclick="publishNews()" class="btn btn-dark w-100">עדכן מסכים</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, updateDoc, deleteDoc, setDoc, doc, onSnapshot, query, orderBy } 
-    from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-    const config = { apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60", projectId: "app-saban94-57361", appId: "1:275366913167:web:f0c6f808e12f2aeb58fcfa" };
-    const db = getFirestore(initializeApp(config));
-    
-    let allOrders = [];
-    let allClients = [];
-
-    // --- 1. טעינת הזמנות (Live & History) ---
-    onSnapshot(query(collection(db, "users"), orderBy("lastUpdate", "desc")), (snap) => {
-        allOrders = [];
-        const live = document.getElementById('live-body');
-        const hist = document.getElementById('history-body');
-        live.innerHTML = ''; hist.innerHTML = '';
-
-        snap.forEach(docSnap => {
-            const d = docSnap.data(); d.id = docSnap.id; allOrders.push(d);
-            
-            if(d.status === 4) {
-                // היסטוריה
-                hist.innerHTML += `
-                    <tr>
-                        <td>${d.targetDate || '-'}</td>
-                        <td><b>${d.name}</b></td>
-                        <td>${d.driverName || '-'}</td>
-                        <td>${d.deliveryType}</td>
-                        <td class="text-muted small">${d.address || ''}</td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-danger btn-icon" onclick="window.del('${d.id}')" title="מחק לצמיתות">
-                                <i class="material-icons" style="font-size:16px">delete</i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            } else {
-                // פעיל
-                live.innerHTML += `
-                    <tr>
-                        <td>${d.orgId || '--'}</td>
-                        <td><b>${d.name}</b></td>
-                        <td>${d.driverName || '<span class="badge bg-secondary">--</span>'}</td>
-                        <td>${d.address || '<span class="text-danger">חסר</span>'}</td>
-                        <td><span class="badge bg-light text-dark border">${d.deliveryType}</span></td>
-                        <td class="text-success fw-bold">${d.targetTime || ''}</td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-primary btn-icon" onclick="window.edit('${d.id}')"><i class="material-icons" style="font-size:16px">edit</i></button>
-                            <button class="btn btn-sm btn-success btn-icon" onclick="window.markDone('${d.id}')"><i class="material-icons" style="font-size:16px">check</i></button>
-                        </td>
-                    </tr>
-                `;
-            }
-        });
-    });
-
-    // --- 2. טעינת לקוחות (Clients) ---
-    onSnapshot(collection(db, "clients"), (snap) => {
-        allClients = [];
-        const bar = document.getElementById('quick-bar');
-        const list = document.getElementById('clients-body');
-        bar.innerHTML = ''; list.innerHTML = '';
-
-        snap.forEach(docSnap => {
-            const c = docSnap.data(); c.id = docSnap.id; allClients.push(c);
-            
-            // כפתור שיגור מהיר
-            bar.innerHTML += `
-                <div class="quick-client-btn" onclick="window.quickLaunch('${c.id}')">
-                    <div class="qc-icon"><i class="material-icons">person</i></div>
-                    <div class="qc-name">${c.name}</div>
-                    <div class="qc-sub">${c.type}</div>
+                        <div class="mb-2"><label>כתובת מלאה</label><input id="o-addr" class="form-control" placeholder="עיר ורחוב"></div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-6"><label>נהג</label><input id="o-drv" class="form-control"></div>
+                            <div class="col-6"><label>סוג</label><select id="o-type" class="form-select"><option>מנוף 10 מטר</option><option>מכולה 8 קוב</option><option>משאית חומרים</option></select></div>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6"><label>תאריך</label><input type="date" id="o-date" class="form-control"></div>
+                            <div class="col-6"><label>שעה</label><input type="time" id="o-time" class="form-control"></div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">שמור ושלח</button>
+                    </form>
                 </div>
-            `;
+            </div>
+        </div>
+    </div>
 
-            // שורה בטבלת ניהול
-            list.innerHTML += `
-                <tr>
-                    <td><b>${c.name}</b></td>
-                    <td>${c.address}</td>
-                    <td>${c.type}</td>
-                    <td><button class="btn btn-sm btn-outline-danger" onclick="window.delClient('${c.id}')">מחק</button></td>
-                </tr>
-            `;
-        });
-    });
+    <div class="modal fade" id="clientModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white"><h5 class="modal-title">לקוח חדש</h5><button class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <form id="clientForm">
+                        <div class="mb-2"><label>שם</label><input id="c-name" class="form-control" required></div>
+                        <div class="mb-2"><label>כתובת</label><input id="c-addr" class="form-control"></div>
+                        <div class="mb-2"><label>סוג מועדף</label><select id="c-type" class="form-select"><option>מנוף 10 מטר</option><option>מכולה 8 קוב</option></select></div>
+                        <button type="submit" class="btn btn-success w-100">שמור</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    // --- לוגיקה ופונקציות ---
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, setDoc, doc, onSnapshot, query, orderBy } 
+        from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    window.showTab = (tab) => {
-        document.getElementById('tab-live').style.display = tab==='live'?'block':'none';
-        document.getElementById('tab-history').style.display = tab==='history'?'block':'none';
-        document.getElementById('tab-clients').style.display = tab==='clients'?'block':'none';
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-        event.currentTarget.classList.add('active');
-    };
-
-    // הזמנה חדשה / עריכה
-    window.openOrderModal = () => {
-        document.getElementById('orderForm').reset();
-        document.getElementById('o-id').value = '';
-        document.getElementById('o-date').valueAsDate = new Date();
-        document.getElementById('modalTitle').innerText = 'הזמנה חדשה';
-        new bootstrap.Modal(document.getElementById('orderModal')).show();
-    };
-
-    window.edit = (id) => {
-        const o = allOrders.find(x => x.id === id);
-        if(!o) return;
-        document.getElementById('o-id').value = id;
-        document.getElementById('o-name').value = o.name;
-        document.getElementById('o-oid').value = o.orgId || '';
-        document.getElementById('o-addr').value = o.address || '';
-        document.getElementById('o-driver').value = o.driverName || '';
-        document.getElementById('o-type').value = o.deliveryType;
-        document.getElementById('o-date').value = o.targetDate || '';
-        document.getElementById('o-time').value = o.targetTime || '';
-        document.getElementById('modalTitle').innerText = 'עריכת הזמנה';
-        new bootstrap.Modal(document.getElementById('orderModal')).show();
-    };
-
-    // שיגור מהיר
-    window.quickLaunch = (cid) => {
-        const c = allClients.find(x => x.id === cid);
-        if(!c) return;
+        const db = getFirestore(initializeApp({ apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60", projectId: "app-saban94-57361", appId: "1:275366913167:web:f0c6f808e12f2aeb58fcfa" }));
         
-        // פותח מודאל וממלא אותו
-        openOrderModal();
-        document.getElementById('o-name').value = c.name;
-        document.getElementById('o-addr').value = c.address;
-        document.getElementById('o-type').value = c.type;
-        // ממלא תאריך ושעה אוטומטית לעכשיו + שעה
-        const now = new Date();
-        now.setHours(now.getHours() + 1);
-        document.getElementById('o-time').value = now.toTimeString().substring(0,5);
-    };
+        let allOrders = [];
+        let allClients = []; // מערך לשמירת הלקוחות לשימוש בלחיצה
 
-    // שמירת הזמנה
-    document.getElementById('orderForm').onsubmit = async (e) => {
-        e.preventDefault();
-        const id = document.getElementById('o-id').value;
-        const d = {
-            name: document.getElementById('o-name').value,
-            orgId: document.getElementById('o-oid').value,
-            address: document.getElementById('o-addr').value,
-            driverName: document.getElementById('o-driver').value,
-            deliveryType: document.getElementById('o-type').value,
-            targetDate: document.getElementById('o-date').value,
-            targetTime: document.getElementById('o-time').value,
-            lastUpdate: new Date()
+        // 1. טעינת הזמנות
+        onSnapshot(query(collection(db, "users"), orderBy("lastUpdate", "desc")), (snap) => {
+            const l = document.getElementById('live-table-body');
+            const h = document.getElementById('history-table');
+            l.innerHTML = ''; h.innerHTML = ''; allOrders = [];
+
+            snap.forEach(docSnap => {
+                const d = docSnap.data(); d.id = docSnap.id; allOrders.push(d);
+                if(d.status === 4) {
+                    h.innerHTML += `<tr><td>${d.targetDate}</td><td>${d.name}</td><td>${d.address}</td><td>${d.driverName}</td><td><button class="btn btn-sm btn-outline-danger" onclick="del('${d.id}')">X</button></td></tr>`;
+                } else {
+                    l.innerHTML += `<tr><td>${d.orgId||'--'}</td><td class="text-primary fw-bold">${d.targetTime}</td><td><b>${d.name}</b></td><td>${d.address}</td><td>${d.driverName}<br><small>${d.deliveryType}</small></td><td><button class="btn btn-sm btn-light" onclick="edit('${d.id}')">ערוך</button> <button class="btn btn-sm btn-success" onclick="done('${d.id}')">✓</button></td></tr>`;
+                }
+            });
+        });
+
+        // 2. טעינת לקוחות (ותיקון הכפתורים!)
+        onSnapshot(collection(db, "clients"), (snap) => {
+            const grid = document.getElementById('quick-grid');
+            const table = document.getElementById('clients-table');
+            grid.innerHTML = ''; table.innerHTML = ''; allClients = [];
+
+            snap.forEach(docSnap => {
+                const c = docSnap.data(); c.id = docSnap.id; allClients.push(c);
+
+                // יצירת כרטיס לחיץ
+                grid.innerHTML += `
+                    <div class="quick-card" onclick="launchClient('${c.id}')">
+                        <div class="qc-icon"><i class="material-icons">touch_app</i></div>
+                        <div class="qc-name">${c.name}</div>
+                        <div class="qc-sub">${c.type}</div>
+                    </div>`;
+
+                // יצירת שורה בטבלה
+                table.innerHTML += `
+                    <tr>
+                        <td><b>${c.name}</b></td>
+                        <td>${c.address}</td>
+                        <td>${c.type}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="launchClient('${c.id}')">🚀 שיגור</button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="delClient('${c.id}')">מחק</button>
+                        </td>
+                    </tr>`;
+            });
+        });
+
+        // 3. פונקציית השיגור (החשובה!)
+        window.launchClient = (clientId) => {
+            const c = allClients.find(x => x.id === clientId);
+            if (!c) { alert('שגיאה: לקוח לא נמצא'); return; }
+
+            // פתיחת המודאל ומילוי פרטים
+            window.openOrderModal();
+            document.getElementById('o-name').value = c.name;
+            document.getElementById('o-addr').value = c.address;
+            document.getElementById('o-type').value = c.type;
+            
+            // תאריך ושעה אוטומטיים (עכשיו)
+            const now = new Date();
+            document.getElementById('o-date').valueAsDate = now;
+            document.getElementById('o-time').value = now.toTimeString().substring(0,5);
         };
 
-        if(id) { await updateDoc(doc(db,"users",id), d); }
-        else { d.status = 1; await addDoc(collection(db,"users"), d); }
+        // פונקציות מערכת
+        window.switchTab = (t, b) => { document.querySelectorAll('.tab-pane').forEach(e => e.style.display='none'); document.getElementById('tab-'+t).style.display='block'; document.querySelectorAll('.nav-btn').forEach(e=>e.classList.remove('active')); if(b)b.classList.add('active'); };
         
-        bootstrap.Modal.getInstance(document.getElementById('orderModal')).hide();
-    };
-
-    // ניהול סטטוסים ומחיקה
-    window.markDone = async (id) => updateDoc(doc(db,"users",id), {status: 4});
-    window.del = async (id) => { if(confirm('למחוק לצמיתות?')) deleteDoc(doc(db,"users",id)); };
-
-    // ניהול לקוחות
-    window.openClientModal = () => new bootstrap.Modal(document.getElementById('clientModal')).show();
-    
-    document.getElementById('clientForm').onsubmit = async (e) => {
-        e.preventDefault();
-        await addDoc(collection(db, "clients"), {
-            name: document.getElementById('c-name').value,
-            address: document.getElementById('c-addr').value,
-            type: document.getElementById('c-type').value
-        });
-        bootstrap.Modal.getInstance(document.getElementById('clientModal')).hide();
-    };
-    
-    window.delClient = async (id) => { if(confirm('למחוק לקוח?')) deleteDoc(doc(db,"clients",id)); };
-
-    // חדשות
-    window.publishNews = async () => {
-        const txt = document.getElementById('news-text').value;
-        const col = document.getElementById('news-color').value;
-        let typ='info', tit='עדכונים', icon='campaign';
+        window.openOrderModal = () => { document.getElementById('orderForm').reset(); document.getElementById('o-id').value=''; document.getElementById('o-date').valueAsDate=new Date(); new bootstrap.Modal(document.getElementById('orderModal')).show(); };
         
-        if(col==='red') { typ='alert'; tit='אזהרה'; icon='warning'; }
-        if(col==='green') { typ='success'; tit='הודעה'; icon='celebration'; }
+        window.edit = (id) => { const o=allOrders.find(x=>x.id===id); window.openOrderModal(); document.getElementById('o-id').value=id; document.getElementById('o-name').value=o.name; document.getElementById('o-oid').value=o.orgId; document.getElementById('o-addr').value=o.address; document.getElementById('o-drv').value=o.driverName; document.getElementById('o-type').value=o.deliveryType; document.getElementById('o-date').value=o.targetDate; document.getElementById('o-time').value=o.targetTime; };
 
-        await setDoc(doc(db, "settings", "news"), { text: txt, type: typ, title: tit, icon: icon });
-        bootstrap.Modal.getInstance(document.getElementById('newsModal')).hide();
-    };
+        document.getElementById('orderForm').onsubmit = async(e) => { e.preventDefault(); const id=document.getElementById('o-id').value; const d={ name:document.getElementById('o-name').value, orgId:document.getElementById('o-oid').value, address:document.getElementById('o-addr').value, driverName:document.getElementById('o-drv').value, deliveryType:document.getElementById('o-type').value, targetDate:document.getElementById('o-date').value, targetTime:document.getElementById('o-time').value, lastUpdate:new Date() }; if(id) await updateDoc(doc(db,"users",id),d); else { d.status=1; await addDoc(collection(db,"users"),d); } bootstrap.Modal.getInstance(document.getElementById('orderModal')).hide(); };
+        
+        window.openClientModal = () => new bootstrap.Modal(document.getElementById('clientModal')).show();
+        document.getElementById('clientForm').onsubmit = async(e) => { e.preventDefault(); await addDoc(collection(db,"clients"), {name:document.getElementById('c-name').value, address:document.getElementById('c-addr').value, type:document.getElementById('c-type').value}); bootstrap.Modal.getInstance(document.getElementById('clientModal')).hide(); };
+        
+        window.done = async(id) => updateDoc(doc(db,"users",id),{status:4});
+        window.del = async(id) => { if(confirm('למחוק?')) deleteDoc(doc(db,"users",id)); };
+        window.delClient = async(id) => { if(confirm('למחוק לקוח?')) deleteDoc(doc(db,"clients",id)); };
 
-</script>
+        // סטודיו
+        window.setImg = (u) => document.getElementById('pop-img').value = u;
+        window.updateNews = async(c) => { let t='info'; if(c==='red')t='alert'; if(c==='green')t='success'; await setDoc(doc(db,"settings","news"),{text:document.getElementById('news-input').value, type:t}); alert('פס עודכן'); };
+        window.togglePopup = async(act) => { await setDoc(doc(db,"settings","popup"),{ active:act, title:document.getElementById('pop-title').value, text:document.getElementById('pop-body').value, icon:document.getElementById('pop-icon').value, theme:document.getElementById('pop-theme').value, imageUrl:document.getElementById('pop-img').value }); alert(act?'שודר':'כובה'); };
+    </script>
 </body>
 </html>
