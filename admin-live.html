@@ -3,146 +3,213 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ח.סבן - מערכת ניהול מתקדמת</title>
+    <title>ח.סבן - מאסטר ניהול</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
-        body { background-color: #f4f6f8; font-family: 'Segoe UI', sans-serif; }
-        .sidebar { background: #263238; min-height: 100vh; color: white; padding: 20px; }
-        .nav-link { color: #b0bec5; margin-bottom: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 8px; }
-        .nav-link:hover, .nav-link.active { background: #37474f; color: white; }
-        .nav-link i { font-size: 20px; }
+        body { background-color: #f0f2f5; font-family: 'Segoe UI', sans-serif; padding-bottom: 100px; }
         
-        .main-content { padding: 30px; }
-        .card-custom { border: none; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); background: white; }
+        /* סרגל צד */
+        .sidebar {
+            background: #263238; min-height: 100vh; color: white; padding: 20px;
+            position: fixed; right: 0; top: 0; width: 250px; z-index: 1000;
+        }
+        .main-content { margin-right: 250px; padding: 30px; }
         
-        /* טבלה */
-        .table th { border-top: none; color: #555; font-size: 0.9rem; }
+        .nav-btn {
+            width: 100%; text-align: right; padding: 12px; margin-bottom: 8px;
+            background: transparent; border: none; color: #b0bec5; border-radius: 8px;
+            display: flex; align-items: center; gap: 10px; transition: 0.3s;
+        }
+        .nav-btn:hover, .nav-btn.active { background: #37474f; color: white; }
+        .nav-btn i { font-size: 22px; }
+
+        /* כרטיסים וטבלאות */
+        .card-box { background: white; border-radius: 12px; box-shadow: 0 2px 15px rgba(0,0,0,0.05); border: none; overflow: hidden; }
+        .table thead th { background: #f8f9fa; border-bottom: 2px solid #e9ecef; color: #495057; font-weight: 600; }
         .table td { vertical-align: middle; }
         
-        /* באדג'ים */
-        .badge-type { padding: 5px 10px; border-radius: 6px; font-weight: normal; font-size: 0.85rem; }
-        .b-crane { background: #e3f2fd; color: #1976d2; }
-        .b-truck { background: #e8f5e9; color: #2e7d32; }
-        .b-cont { background: #fff3e0; color: #ef6c00; }
+        /* כפתורי שיגור מהיר */
+        .quick-client-btn {
+            background: white; border: 1px solid #ddd; padding: 10px 15px; border-radius: 10px;
+            cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; min-width: 120px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .quick-client-btn:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); border-color: #008069; }
+        .qc-icon { background: #e0f2f1; color: #00695c; width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-bottom: 5px; }
+        .qc-name { font-weight: bold; font-size: 0.9rem; }
+        .qc-sub { font-size: 0.75rem; color: #777; }
 
-        /* מודאל */
-        .modal-header { background: #008069; color: white; }
-        .btn-saban { background: #008069; color: white; border: none; }
-        .btn-saban:hover { background: #00695c; color: white; }
+        /* כפתורים בטבלה */
+        .btn-icon { padding: 5px 10px; border-radius: 6px; }
     </style>
 </head>
 <body>
 
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-md-2 sidebar">
-            <h4 class="mb-4 fw-bold text-center">ח.סבן ניהול</h4>
-            <div class="nav-link active" onclick="switchTab('live')"><i class="material-icons">dvr</i> לוח חי</div>
-            <div class="nav-link" onclick="switchTab('history')"><i class="material-icons">history</i> ארכיון והיסטוריה</div>
-        </div>
-
-        <div class="col-md-10 main-content">
-            
-            <div id="tab-live">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h3>📋 הזמנות פעילות</h3>
-                    <button class="btn btn-saban" data-bs-toggle="modal" data-bs-target="#editModal" onclick="resetForm()">
-                        <i class="material-icons" style="vertical-align:middle">add</i> הזמנה חדשה
-                    </button>
-                </div>
-                
-                <div class="card card-custom p-3">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>לקוח</th>
-                                <th>כתובת</th>
-                                <th>סוג</th>
-                                <th>נהג</th>
-                                <th>שעת אספקה</th>
-                                <th>פעולות</th>
-                            </tr>
-                        </thead>
-                        <tbody id="live-table">
-                            </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div id="tab-history" style="display:none;">
-                <h3 class="mb-4">📜 ארכיון ביצועים</h3>
-                <div class="card card-custom p-3">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>תאריך</th>
-                                <th>לקוח</th>
-                                <th>סוג</th>
-                                <th>נהג</th>
-                                <th>ניהול</th>
-                            </tr>
-                        </thead>
-                        <tbody id="history-table">
-                            </tbody>
-                    </table>
-                </div>
-            </div>
-
-        </div>
+<div class="sidebar">
+    <h3 class="mb-4 text-center fw-bold" style="color:#00e676;">ח.סבן לוגיסטיקה</h3>
+    <button class="nav-btn active" onclick="showTab('live')"><i class="material-icons">dvr</i> לוח פעיל</button>
+    <button class="nav-btn" onclick="showTab('history')"><i class="material-icons">history</i> ארכיון והיסטוריה</button>
+    <button class="nav-btn" onclick="showTab('clients')"><i class="material-icons">people</i> ניהול לקוחות</button>
+    
+    <div style="margin-top: 50px; border-top: 1px solid #444; padding-top: 20px;">
+        <small class="text-muted">סטודיו חדשות:</small>
+        <button class="btn btn-outline-light w-100 mt-2 btn-sm" data-bs-toggle="modal" data-bs-target="#newsModal">
+            <i class="material-icons" style="vertical-align:middle; font-size:16px;">campaign</i> ערוך פס חדשות
+        </button>
     </div>
 </div>
 
-<div class="modal fade" id="editModal" tabindex="-1">
+<div class="main-content">
+
+    <div id="tab-live">
+        <div class="mb-4">
+            <h5 class="text-muted mb-3"><i class="material-icons" style="vertical-align:middle">rocket_launch</i> שיגור מהיר (לקוחות קבועים)</h5>
+            <div class="d-flex gap-3 flex-wrap" id="quick-bar">
+                <div class="text-muted p-2">טוען לקוחות...</div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3 class="fw-bold">📋 הזמנות פעילות</h3>
+            <button class="btn btn-primary" onclick="openOrderModal()">
+                <i class="material-icons" style="vertical-align:middle">add</i> הזמנה חדשה (ידני)
+            </button>
+        </div>
+
+        <div class="card-box">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>תעודה</th>
+                            <th>לקוח</th>
+                            <th>נהג</th>
+                            <th>כתובת מלאה</th>
+                            <th>סוג</th>
+                            <th>זמן יעד</th>
+                            <th>פעולות</th>
+                        </tr>
+                    </thead>
+                    <tbody id="live-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-history" style="display:none;">
+        <h3 class="fw-bold mb-3">📜 ארכיון ביצועים</h3>
+        <div class="alert alert-info">כאן מוצגות כל ההזמנות שסופקו. מחיקה מכאן היא סופית.</div>
+        <div class="card-box">
+            <table class="table table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>תאריך ביצוע</th>
+                        <th>לקוח</th>
+                        <th>נהג</th>
+                        <th>סוג</th>
+                        <th>כתובת</th>
+                        <th>ניהול</th>
+                    </tr>
+                </thead>
+                <tbody id="history-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="tab-clients" style="display:none;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3 class="fw-bold">👥 מאגר לקוחות לשיגור מהיר</h3>
+            <button class="btn btn-success" onclick="openClientModal()">
+                <i class="material-icons" style="vertical-align:middle">person_add</i> הוסף לקוח
+            </button>
+        </div>
+        <div class="card-box p-3">
+            <table class="table">
+                <thead><tr><th>שם לקוח</th><th>כתובת ברירת מחדל</th><th>סוג ברירת מחדל</th><th>פעולות</th></tr></thead>
+                <tbody id="clients-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<div class="modal fade" id="orderModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="modalTitle">הזמנה חדשה</h5>
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalTitle">פרטי הזמנה</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <form id="orderForm">
-                    <input type="hidden" id="edit-id"> <div class="mb-3">
-                        <label>שם לקוח</label>
-                        <input type="text" id="in-name" class="form-control" required>
+                    <input type="hidden" id="o-id">
+                    <div class="row g-2 mb-2">
+                        <div class="col-4"><label>מס' תעודה</label><input type="text" id="o-oid" class="form-control" placeholder="1001"></div>
+                        <div class="col-8"><label>שם לקוח</label><input type="text" id="o-name" class="form-control" required></div>
                     </div>
-                    <div class="row">
-                        <div class="col-6 mb-3">
-                            <label>מספר הזמנה</label>
-                            <input type="text" id="in-orgId" class="form-control">
-                        </div>
-                        <div class="col-6 mb-3">
-                            <label>סוג הובלה</label>
-                            <select id="in-type" class="form-select">
+                    <div class="mb-2">
+                        <label>כתובת מלאה (חובה למפה!)</label>
+                        <input type="text" id="o-addr" class="form-control" placeholder="עיר, רחוב ומספר">
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6"><label>נהג משובץ</label><input type="text" id="o-driver" class="form-control"></div>
+                        <div class="col-6"><label>סוג הובלה</label>
+                            <select id="o-type" class="form-select">
                                 <option>מנוף 10 מטר</option>
                                 <option>מנוף 15 מטר</option>
+                                <option>מנוף זרוע</option>
                                 <option>מכולה 8 קוב</option>
+                                <option>מכולה 24 קוב</option>
                                 <option>משאית חומרים</option>
                             </select>
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <label>כתובת</label>
-                        <input type="text" id="in-addr" class="form-control">
+                    <div class="row g-2 mb-3">
+                        <div class="col-6"><label>תאריך יעד</label><input type="date" id="o-date" class="form-control"></div>
+                        <div class="col-6"><label>שעת יעד</label><input type="time" id="o-time" class="form-control"></div>
                     </div>
-                    <div class="mb-3">
-                        <label>שם נהג</label>
-                        <input type="text" id="in-driver" class="form-control">
-                    </div>
-                    <div class="row">
-                        <div class="col-6 mb-3">
-                            <label>תאריך אספקה</label>
-                            <input type="date" id="in-date" class="form-control">
-                        </div>
-                        <div class="col-6 mb-3">
-                            <label>שעת יעד</label>
-                            <input type="time" id="in-time" class="form-control">
-                        </div>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-saban w-100">שמור שינויים</button>
+                    <button type="submit" class="btn btn-primary w-100">שמור ושלח למסכים</button>
                 </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="clientModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white"><h5 class="modal-title">לקוח חדש</h5><button class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <form id="clientForm">
+                    <div class="mb-2"><label>שם לקוח</label><input type="text" id="c-name" class="form-control" required></div>
+                    <div class="mb-2"><label>כתובת קבועה</label><input type="text" id="c-addr" class="form-control"></div>
+                    <div class="mb-2"><label>סוג קבוע</label>
+                        <select id="c-type" class="form-select">
+                            <option>מנוף 10 מטר</option><option>מכולה 8 קוב</option><option>משאית חומרים</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100 mt-2">שמור לקוח</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="newsModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white"><h5 class="modal-title">עורך פס חדשות</h5><button class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <label>הודעה:</label>
+                <input type="text" id="news-text" class="form-control mb-2">
+                <label>צבע:</label>
+                <select id="news-color" class="form-select mb-2">
+                    <option value="blue">כחול (רגיל)</option>
+                    <option value="red">אדום (דחוף/אזהרה)</option>
+                    <option value="green">ירוק (הודעה משמחת)</option>
+                </select>
+                <button onclick="publishNews()" class="btn btn-dark w-100">עדכן מסכים</button>
             </div>
         </div>
     </div>
@@ -151,148 +218,193 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy } 
+    import { getFirestore, collection, addDoc, updateDoc, deleteDoc, setDoc, doc, onSnapshot, query, orderBy } 
     from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60",
-        projectId: "app-saban94-57361",
-        appId: "1:275366913167:web:f0c6f808e12f2aeb58fcfa"
-    };
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    const config = { apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60", projectId: "app-saban94-57361", appId: "1:275366913167:web:f0c6f808e12f2aeb58fcfa" };
+    const db = getFirestore(initializeApp(config));
+    
     let allOrders = [];
+    let allClients = [];
 
-    // --- האזנה לנתונים ---
-    const q = query(collection(db, "users"), orderBy("lastUpdate", "desc"));
-    onSnapshot(q, (snap) => {
+    // --- 1. טעינת הזמנות (Live & History) ---
+    onSnapshot(query(collection(db, "users"), orderBy("lastUpdate", "desc")), (snap) => {
         allOrders = [];
-        const liveTbody = document.getElementById('live-table');
-        const histTbody = document.getElementById('history-table');
-        liveTbody.innerHTML = ''; histTbody.innerHTML = '';
+        const live = document.getElementById('live-body');
+        const hist = document.getElementById('history-body');
+        live.innerHTML = ''; hist.innerHTML = '';
 
         snap.forEach(docSnap => {
-            const d = docSnap.data();
-            d.id = docSnap.id;
-            allOrders.push(d);
-
-            // סגנון תגית
-            let badgeClass = 'b-truck';
-            if(d.deliveryType.includes('מנוף')) badgeClass = 'b-crane';
-            if(d.deliveryType.includes('מכולה')) badgeClass = 'b-cont';
-
-            const row = document.createElement('tr');
+            const d = docSnap.data(); d.id = docSnap.id; allOrders.push(d);
             
             if(d.status === 4) {
                 // היסטוריה
-                row.innerHTML = `
-                    <td>${d.targetDate || '-'}</td>
-                    <td>${d.name}</td>
-                    <td><span class="badge-type ${badgeClass}">${d.deliveryType}</span></td>
-                    <td>${d.driverName || '-'}</td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-secondary" onclick="window.editOrder('${d.id}')"><i class="material-icons" style="font-size:16px">edit</i></button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="window.deleteOrder('${d.id}')"><i class="material-icons" style="font-size:16px">delete</i></button>
-                    </td>
+                hist.innerHTML += `
+                    <tr>
+                        <td>${d.targetDate || '-'}</td>
+                        <td><b>${d.name}</b></td>
+                        <td>${d.driverName || '-'}</td>
+                        <td>${d.deliveryType}</td>
+                        <td class="text-muted small">${d.address || ''}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-danger btn-icon" onclick="window.del('${d.id}')" title="מחק לצמיתות">
+                                <i class="material-icons" style="font-size:16px">delete</i>
+                            </button>
+                        </td>
+                    </tr>
                 `;
-                histTbody.appendChild(row);
             } else {
                 // פעיל
-                row.innerHTML = `
-                    <td>${d.orgId || '---'}</td>
-                    <td class="fw-bold">${d.name}</td>
-                    <td>${d.address || ''}</td>
-                    <td><span class="badge-type ${badgeClass}">${d.deliveryType}</span></td>
-                    <td>${d.driverName || '<span class="text-muted">טרם שובץ</span>'}</td>
-                    <td class="fw-bold text-success">${d.targetTime || ''}</td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-primary" onclick="window.editOrder('${d.id}')">ערוך</button>
-                        <button class="btn btn-sm btn-outline-success" onclick="window.markDone('${d.id}')">סופק</button>
-                    </td>
+                live.innerHTML += `
+                    <tr>
+                        <td>${d.orgId || '--'}</td>
+                        <td><b>${d.name}</b></td>
+                        <td>${d.driverName || '<span class="badge bg-secondary">--</span>'}</td>
+                        <td>${d.address || '<span class="text-danger">חסר</span>'}</td>
+                        <td><span class="badge bg-light text-dark border">${d.deliveryType}</span></td>
+                        <td class="text-success fw-bold">${d.targetTime || ''}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary btn-icon" onclick="window.edit('${d.id}')"><i class="material-icons" style="font-size:16px">edit</i></button>
+                            <button class="btn btn-sm btn-success btn-icon" onclick="window.markDone('${d.id}')"><i class="material-icons" style="font-size:16px">check</i></button>
+                        </td>
+                    </tr>
                 `;
-                liveTbody.appendChild(row);
             }
         });
     });
 
-    // --- פונקציות גלובליות ---
-    
-    // מעבר טאבים
-    window.switchTab = (tab) => {
-        document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+    // --- 2. טעינת לקוחות (Clients) ---
+    onSnapshot(collection(db, "clients"), (snap) => {
+        allClients = [];
+        const bar = document.getElementById('quick-bar');
+        const list = document.getElementById('clients-body');
+        bar.innerHTML = ''; list.innerHTML = '';
+
+        snap.forEach(docSnap => {
+            const c = docSnap.data(); c.id = docSnap.id; allClients.push(c);
+            
+            // כפתור שיגור מהיר
+            bar.innerHTML += `
+                <div class="quick-client-btn" onclick="window.quickLaunch('${c.id}')">
+                    <div class="qc-icon"><i class="material-icons">person</i></div>
+                    <div class="qc-name">${c.name}</div>
+                    <div class="qc-sub">${c.type}</div>
+                </div>
+            `;
+
+            // שורה בטבלת ניהול
+            list.innerHTML += `
+                <tr>
+                    <td><b>${c.name}</b></td>
+                    <td>${c.address}</td>
+                    <td>${c.type}</td>
+                    <td><button class="btn btn-sm btn-outline-danger" onclick="window.delClient('${c.id}')">מחק</button></td>
+                </tr>
+            `;
+        });
+    });
+
+    // --- לוגיקה ופונקציות ---
+
+    window.showTab = (tab) => {
+        document.getElementById('tab-live').style.display = tab==='live'?'block':'none';
+        document.getElementById('tab-history').style.display = tab==='history'?'block':'none';
+        document.getElementById('tab-clients').style.display = tab==='clients'?'block':'none';
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         event.currentTarget.classList.add('active');
-        document.getElementById('tab-live').style.display = tab === 'live' ? 'block' : 'none';
-        document.getElementById('tab-history').style.display = tab === 'history' ? 'block' : 'none';
     };
 
-    // איפוס טופס להוספה
-    window.resetForm = () => {
+    // הזמנה חדשה / עריכה
+    window.openOrderModal = () => {
         document.getElementById('orderForm').reset();
-        document.getElementById('edit-id').value = '';
+        document.getElementById('o-id').value = '';
+        document.getElementById('o-date').valueAsDate = new Date();
         document.getElementById('modalTitle').innerText = 'הזמנה חדשה';
-        document.getElementById('in-date').valueAsDate = new Date();
+        new bootstrap.Modal(document.getElementById('orderModal')).show();
     };
 
-    // פתיחת עריכה (מילוי הטופס בנתונים קיימים)
-    window.editOrder = (id) => {
-        const order = allOrders.find(o => o.id === id);
-        if(!order) return;
-
-        document.getElementById('edit-id').value = id;
-        document.getElementById('in-name').value = order.name;
-        document.getElementById('in-orgId').value = order.orgId || '';
-        document.getElementById('in-type').value = order.deliveryType;
-        document.getElementById('in-addr').value = order.address || '';
-        document.getElementById('in-driver').value = order.driverName || '';
-        document.getElementById('in-date').value = order.targetDate || '';
-        document.getElementById('in-time').value = order.targetTime || '';
-
+    window.edit = (id) => {
+        const o = allOrders.find(x => x.id === id);
+        if(!o) return;
+        document.getElementById('o-id').value = id;
+        document.getElementById('o-name').value = o.name;
+        document.getElementById('o-oid').value = o.orgId || '';
+        document.getElementById('o-addr').value = o.address || '';
+        document.getElementById('o-driver').value = o.driverName || '';
+        document.getElementById('o-type').value = o.deliveryType;
+        document.getElementById('o-date').value = o.targetDate || '';
+        document.getElementById('o-time').value = o.targetTime || '';
         document.getElementById('modalTitle').innerText = 'עריכת הזמנה';
-        const modal = new bootstrap.Modal(document.getElementById('editModal'));
-        modal.show();
+        new bootstrap.Modal(document.getElementById('orderModal')).show();
     };
 
-    // שמירה (הוספה או עדכון)
-    document.getElementById('orderForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const id = document.getElementById('edit-id').value;
+    // שיגור מהיר
+    window.quickLaunch = (cid) => {
+        const c = allClients.find(x => x.id === cid);
+        if(!c) return;
         
-        const data = {
-            name: document.getElementById('in-name').value,
-            orgId: document.getElementById('in-orgId').value,
-            deliveryType: document.getElementById('in-type').value,
-            address: document.getElementById('in-addr').value,
-            driverName: document.getElementById('in-driver').value,
-            targetDate: document.getElementById('in-date').value,
-            targetTime: document.getElementById('in-time').value,
+        // פותח מודאל וממלא אותו
+        openOrderModal();
+        document.getElementById('o-name').value = c.name;
+        document.getElementById('o-addr').value = c.address;
+        document.getElementById('o-type').value = c.type;
+        // ממלא תאריך ושעה אוטומטית לעכשיו + שעה
+        const now = new Date();
+        now.setHours(now.getHours() + 1);
+        document.getElementById('o-time').value = now.toTimeString().substring(0,5);
+    };
+
+    // שמירת הזמנה
+    document.getElementById('orderForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('o-id').value;
+        const d = {
+            name: document.getElementById('o-name').value,
+            orgId: document.getElementById('o-oid').value,
+            address: document.getElementById('o-addr').value,
+            driverName: document.getElementById('o-driver').value,
+            deliveryType: document.getElementById('o-type').value,
+            targetDate: document.getElementById('o-date').value,
+            targetTime: document.getElementById('o-time').value,
             lastUpdate: new Date()
         };
 
-        if(id) {
-            // עדכון
-            await updateDoc(doc(db, "users", id), data);
-        } else {
-            // חדש
-            data.status = 1;
-            await addDoc(collection(db, "users"), data);
-        }
-
-        // סגירת מודאל
-        const modalEl = document.getElementById('editModal');
-        const modal = bootstrap.Modal.getInstance(modalEl);
-        modal.hide();
-    });
-
-    // מחיקה
-    window.deleteOrder = async (id) => {
-        if(confirm('למחוק לצמיתות מההיסטוריה?')) {
-            await deleteDoc(doc(db, "users", id));
-        }
+        if(id) { await updateDoc(doc(db,"users",id), d); }
+        else { d.status = 1; await addDoc(collection(db,"users"), d); }
+        
+        bootstrap.Modal.getInstance(document.getElementById('orderModal')).hide();
     };
 
-    // העברה להיסטוריה (סופק)
-    window.markDone = async (id) => {
-        await updateDoc(doc(db, "users", id), { status: 4 });
+    // ניהול סטטוסים ומחיקה
+    window.markDone = async (id) => updateDoc(doc(db,"users",id), {status: 4});
+    window.del = async (id) => { if(confirm('למחוק לצמיתות?')) deleteDoc(doc(db,"users",id)); };
+
+    // ניהול לקוחות
+    window.openClientModal = () => new bootstrap.Modal(document.getElementById('clientModal')).show();
+    
+    document.getElementById('clientForm').onsubmit = async (e) => {
+        e.preventDefault();
+        await addDoc(collection(db, "clients"), {
+            name: document.getElementById('c-name').value,
+            address: document.getElementById('c-addr').value,
+            type: document.getElementById('c-type').value
+        });
+        bootstrap.Modal.getInstance(document.getElementById('clientModal')).hide();
+    };
+    
+    window.delClient = async (id) => { if(confirm('למחוק לקוח?')) deleteDoc(doc(db,"clients",id)); };
+
+    // חדשות
+    window.publishNews = async () => {
+        const txt = document.getElementById('news-text').value;
+        const col = document.getElementById('news-color').value;
+        let typ='info', tit='עדכונים', icon='campaign';
+        
+        if(col==='red') { typ='alert'; tit='אזהרה'; icon='warning'; }
+        if(col==='green') { typ='success'; tit='הודעה'; icon='celebration'; }
+
+        await setDoc(doc(db, "settings", "news"), { text: txt, type: typ, title: tit, icon: icon });
+        bootstrap.Modal.getInstance(document.getElementById('newsModal')).hide();
     };
 
 </script>
