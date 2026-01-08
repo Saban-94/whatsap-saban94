@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SabanConnect OS</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+
+    <style>
+        :root { 
+            --app-bg: #0f2027; /* רקע שולחן עבודה */
+            --wa-sidebar: #111b21; 
+            --wa-chat: #0b141a; 
+            --wa-green: #00a884; 
+            --wa-bubble-in: #202c33; 
+            --wa-bubble-out: #005c4b;
+            --glass: rgba(30, 40, 50, 0.85);
+        }
+        
+        body { margin: 0; background: linear-gradient(to right, #0f2027, #203a43, #2c5364); font-family: 'Rubik', sans-serif; height: 100vh; overflow: hidden; color: #e9edef; }
+
+        /* --- מסך כניסה (Login) --- */
+        #login-overlay {
+            position: fixed; inset: 0; z-index: 9999; background: #000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+        .user-card {
+            background: #222; padding: 20px; border-radius: 15px; width: 280px; text-align: center;
+            margin: 10px; cursor: pointer; border: 1px solid #333; transition: 0.3s;
+        }
+        .user-card:hover { border-color: var(--wa-green); transform: scale(1.05); }
+        .user-avatar-lg { width: 80px; height: 80px; border-radius: 50%; margin-bottom: 10px; border: 2px solid var(--wa-green); object-fit: cover; }
+
+        /* --- שולחן עבודה (Desktop) --- */
+        #desktop { height: 100%; display: flex; flex-direction: column; display: none; }
+        
+        /* חלון האפליקציה (WhatsApp Clone) */
+        .window-frame {
+            flex: 1; margin: 20px; background: var(--wa-sidebar); border-radius: 12px;
+            display: flex; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* סרגל צד (רשימת צ'אטים) */
+        .wa-sidebar { width: 30%; border-left: 1px solid #333; display: flex; flex-direction: column; background: var(--wa-sidebar); }
+        .wa-header { height: 60px; background: #202c33; padding: 10px 15px; display: flex; align-items: center; justify-content: space-between; }
+        .user-avatar { width: 40px; height: 40px; border-radius: 50%; cursor: pointer; }
+        .chat-list { flex: 1; overflow-y: auto; }
+        .chat-item { padding: 12px 15px; display: flex; align-items: center; gap: 15px; cursor: pointer; border-bottom: 1px solid #222; transition: 0.2s; }
+        .chat-item:hover, .chat-item.active { background: #2a3942; }
+        .chat-info { flex: 1; }
+        .chat-name { font-weight: 500; font-size: 1rem; color: #e9edef; }
+        .chat-preview { font-size: 0.85rem; color: #8696a0; }
+        .chat-time { font-size: 0.75rem; color: #8696a0; }
+
+        /* אזור הצ'אט הראשי */
+        .wa-main { flex: 1; display: flex; flex-direction: column; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-color: var(--wa-chat); position: relative; }
+        .wa-main-header { height: 60px; background: #202c33; padding: 10px 20px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid rgba(0,0,0,0.2); }
+        
+        .messages-area { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; }
+        .msg { max-width: 60%; padding: 8px 12px; border-radius: 8px; font-size: 0.9rem; position: relative; margin-bottom: 5px; line-height: 1.4; box-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+        .msg-in { align-self: flex-start; background: var(--wa-bubble-in); border-top-right-radius: 0; }
+        .msg-out { align-self: flex-end; background: var(--wa-bubble-out); border-top-left-radius: 0; }
+        .msg-time { font-size: 0.7rem; color: #8696a0; text-align: left; margin-top: 2px; display: block; }
+
+        /* שורת הקלדה + כפתור הפעולה */
+        .input-area { height: 65px; background: #202c33; padding: 10px 20px; display: flex; align-items: center; gap: 15px; }
+        .input-box { flex: 1; background: #2a3942; border-radius: 8px; padding: 12px; color: white; border: none; outline: none; }
+        
+        .action-btn-glow {
+            width: 45px; height: 45px; background: var(--wa-green); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            box-shadow: 0 0 15px var(--wa-green); transition: 0.3s; animation: pulse-green 2s infinite;
+        }
+        .action-btn-glow:hover { transform: scale(1.1); }
+        @keyframes pulse-green { 0% { box-shadow: 0 0 0 0 rgba(0, 168, 132, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(0, 168, 132, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 168, 132, 0); } }
+
+        /* --- המודאל החכם (טופס הזמנה) --- */
+        .smart-modal {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9);
+            width: 450px; background: #222; border-radius: 15px; padding: 25px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.8); z-index: 2000; border: 1px solid #444;
+            display: none; opacity: 0; transition: 0.3s;
+        }
+        .smart-modal.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1999; display: none; backdrop-filter: blur(5px); }
+
+        .form-control-dark { background: #333; border: 1px solid #555; color: white; margin-bottom: 15px; }
+        .form-control-dark:focus { background: #444; color: white; border-color: var(--wa-green); box-shadow: none; }
+        .btn-wa { background: var(--wa-green); color: white; font-weight: bold; width: 100%; padding: 12px; border: none; border-radius: 8px; }
+        
+        /* דשבורד אישי */
+        .personal-stats { position: absolute; right: 0; top: 60px; bottom: 0; width: 300px; background: #111b21; border-right: 1px solid #333; transform: translateX(100%); transition: 0.3s; z-index: 100; padding: 20px; overflow-y: auto; }
+        .personal-stats.open { transform: translateX(0); }
+        .stat-box { background: #202c33; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-right: 4px solid var(--wa-green); }
+
+        /* פס תחתון (Taskbar) */
+        .taskbar { height: 40px; background: rgba(0,0,0,0.8); display: flex; align-items: center; padding: 0 20px; gap: 15px; border-top: 1px solid #333; }
+        .win-btn { color: white; font-size: 20px; cursor: pointer; }
+        .clock-tray { margin-right: auto; color: #ccc; font-size: 0.8rem; }
+
+    </style>
+</head>
+<body>
+
+    <audio id="msg-sound" src="https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3"></audio>
+
+    <div id="login-overlay">
+        <h2 class="text-white mb-5">בחר משתמש לכניסה</h2>
+        <div class="d-flex flex-wrap justify-content-center">
+            <div class="user-card" onclick="login('itzik')">
+                <img src="https://randomuser.me/api/portraits/men/32.jpg" class="user-avatar-lg">
+                <h4 class="text-white">איציק זהבי</h4>
+                <div class="text-muted small">מנהל סניף החרש</div>
+            </div>
+            <div class="user-card" onclick="login('netanel')">
+                <img src="https://randomuser.me/api/portraits/men/45.jpg" class="user-avatar-lg">
+                <h4 class="text-white">נתנאל הקניין</h4>
+                <div class="text-muted small">רכש ולוגיסטיקה</div>
+            </div>
+            <div class="user-card" onclick="login('harel')">
+                <img src="https://randomuser.me/api/portraits/men/11.jpg" class="user-avatar-lg">
+                <h4 class="text-white">הראל אידלסון</h4>
+                <div class="text-muted small">מנכ"ל</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="desktop">
+        <div class="window-frame">
+            <div class="wa-sidebar">
+                <div class="wa-header">
+                    <img id="my-avatar" src="" class="user-avatar" onclick="toggleStats()" title="הביצועים שלי">
+                    <div class="d-flex gap-3 text-secondary">
+                        <i class="material-icons">donut_large</i>
+                        <i class="material-icons">chat</i>
+                        <i class="material-icons">more_vert</i>
+                    </div>
+                </div>
+                <div class="p-2 bg-dark"><input class="form-control form-control-sm bg-secondary border-0 text-white" placeholder="חפש או התחל צ'אט חדש"></div>
+                
+                <div class="chat-list">
+                    <div class="chat-item active" onclick="switchChat('bot')">
+                        <img src="https://cdn-icons-png.flaticon.com/512/4712/4712035.png" class="user-avatar">
+                        <div class="chat-info">
+                            <div class="d-flex justify-content-between"><span class="chat-name">בוט הסידור 🤖</span><span class="chat-time">עכשיו</span></div>
+                            <div class="chat-preview text-success">✔ זמין לקבלת בקשות</div>
+                        </div>
+                    </div>
+                    <div class="chat-item" onclick="switchChat('logistics')">
+                        <div class="user-avatar bg-warning d-flex align-items-center justify-content-center fw-bold text-dark">לוג</div>
+                        <div class="chat-info">
+                            <div class="d-flex justify-content-between"><span class="chat-name">🏗️ לוגיסטיקה וסידור</span><span class="chat-time">10:45</span></div>
+                            <div class="chat-preview">אבי: מתי המנוף מגיע?</div>
+                        </div>
+                    </div>
+                    <div class="chat-item">
+                        <img src="https://randomuser.me/api/portraits/men/45.jpg" class="user-avatar">
+                        <div class="chat-info">
+                            <div class="d-flex justify-content-between"><span class="chat-name">נתנאל הקניין</span><span class="chat-time">אתמול</span></div>
+                            <div class="chat-preview">הזמנתי את המשטחים</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="wa-main">
+                <div class="wa-main-header">
+                    <img src="https://cdn-icons-png.flaticon.com/512/4712/4712035.png" class="user-avatar" id="header-avatar">
+                    <div>
+                        <div class="chat-name" id="header-name">בוט הסידור 🤖</div>
+                        <div class="chat-time text-success" id="header-status">מחובר - הקש (+) להזמנה</div>
+                    </div>
+                </div>
+
+                <div class="messages-area" id="msg-container">
+                    <div class="msg msg-in">שלום! אני המוח הלוגיסטי של ח.סבן.<br>איך אפשר לעזור היום? 🚚</div>
+                </div>
+
+                <div class="input-area">
+                    <i class="material-icons text-secondary">sentiment_satisfied_alt</i>
+                    <i class="material-icons text-secondary">attach_file</i>
+                    <input class="input-box" type="text" placeholder="הקלד הודעה..." id="chat-input" onkeypress="handleEnter(event)">
+                    
+                    <div class="action-btn-glow" onclick="openRequestModal()" title="פתח הזמנה/העברה">
+                        <i class="material-icons text-white">add</i>
+                    </div>
+                </div>
+
+                <div class="personal-stats" id="stats-panel">
+                    <h5 class="text-white mb-4">הביצועים שלי 📊</h5>
+                    <div class="stat-box">
+                        <div class="text-muted small">בקשות פתוחות</div>
+                        <div class="fs-4 fw-bold text-white">3</div>
+                    </div>
+                    <div class="stat-box" style="border-color:#00bcd4">
+                        <div class="text-muted small">בוצעו החודש</div>
+                        <div class="fs-4 fw-bold text-white">42</div>
+                    </div>
+                    <div class="stat-box" style="border-color:#fbc02d">
+                        <div class="text-muted small">ממתין לאישור</div>
+                        <div class="fs-4 fw-bold text-white">1</div>
+                    </div>
+                    
+                    <h6 class="text-muted mt-4 mb-2">היסטוריה אחרונה:</h6>
+                    <div id="my-history-list" class="small text-secondary">
+                        </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="taskbar">
+            <i class="material-icons win-btn">grid_view</i>
+            <i class="material-icons win-btn ms-3">search</i>
+            <div class="clock-tray" id="win-clock">12:00</div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-overlay" onclick="closeModal()"></div>
+    <div class="smart-modal" id="request-modal">
+        <h4 class="text-white mb-3 fw-bold border-bottom pb-2 border-secondary">📝 בקשה חדשה לסידור</h4>
+        
+        <form id="req-form">
+            <label class="text-secondary small">מה הצורך?</label>
+            <select class="form-select form-control-dark" id="req-type" onchange="toggleFields()">
+                <option value="client">🚚 הזמנה ללקוח</option>
+                <option value="transfer">🔄 העברה בין סניפים</option>
+            </select>
+
+            <div id="field-client">
+                <label class="text-secondary small">שם לקוח</label>
+                <input type="text" class="form-control form-control-dark" id="req-client-name" placeholder="שם מלא...">
+            </div>
+
+            <div id="field-transfer" style="display:none;">
+                <div class="row">
+                    <div class="col-6">
+                        <label class="text-secondary small">מאיפה?</label>
+                        <input type="text" class="form-control form-control-dark" id="req-from" readonly>
+                    </div>
+                    <div class="col-6">
+                        <label class="text-secondary small">לאן?</label>
+                        <select class="form-select form-control-dark" id="req-to">
+                            <option>סניף התלמיד</option>
+                            <option>סניף החרש</option>
+                            <option>מחסן ראשי</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-dark p-2 rounded mb-3 border border-secondary">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="req-ready" onchange="toggleRefField()">
+                    <label class="form-check-label text-white" for="req-ready">הסחורה מוכנה / ליקוט הושלם</label>
+                </div>
+                <div id="ref-container" style="display:none; margin-top:10px;">
+                    <label class="text-success small fw-bold">חובה להזין מספר תעודה/העברה:</label>
+                    <input type="number" class="form-control form-control-dark border-success" id="req-ref" placeholder="100...">
+                </div>
+            </div>
+
+            <label class="text-secondary small">תזמון</label>
+            <select class="form-select form-control-dark" id="req-urgent" onchange="checkUrgency()">
+                <option value="false">📅 שגר ושכח (מחר/רגיל)</option>
+                <option value="true">🔥 דחוף להיום!</option>
+            </select>
+
+            <div id="takeover-warning" class="alert alert-danger p-2 small mb-3" style="display:none;">
+                <i class="material-icons" style="font-size:14px">campaign</i> 
+                זהירות: זה יקפיץ התראה מתפרצת בכל מסכי החברה!
+            </div>
+
+            <button type="button" class="btn-wa" onclick="submitRequest()">שגר לסידור 🚀</button>
+        </form>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, doc, setDoc, onSnapshot, query, where, orderBy } 
+        from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const db = getFirestore(initializeApp({ apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60", projectId: "app-saban94-57361", appId: "1:275366913167:web:f0c6f808e12f2aeb58fcfa" }));
+
+        // OneSignal Initialization
+        window.OneSignalDeferred = window.OneSignalDeferred || [];
+        OneSignalDeferred.push(function(OneSignal) {
+            OneSignal.init({ appId: "YOUR-APP-ID", safari_web_id: "web.onesignal.auto.xxx" });
+        });
+
+        let currentUser = null;
+
+        // --- 1. מערכת כניסה ---
+        window.login = (userKey) => {
+            const users = {
+                'itzik': { name: 'איציק זהבי', role: 'מנהל החרש', avatar: 'https://randomuser.me/api/portraits/men/32.jpg' },
+                'netanel': { name: 'נתנאל', role: 'קניין', avatar: 'https://randomuser.me/api/portraits/men/45.jpg' },
+                'harel': { name: 'הראל', role: 'מנכ"ל', avatar: 'https://randomuser.me/api/portraits/men/11.jpg' }
+            };
+            
+            currentUser = users[userKey];
+            document.getElementById('login-overlay').style.display = 'none';
+            document.getElementById('desktop').style.display = 'flex';
+            document.getElementById('my-avatar').src = currentUser.avatar;
+            document.getElementById('req-from').value = currentUser.role; // אוטומטי לטופס
+            
+            // השמעת צליל כניסה
+            document.getElementById('msg-sound').play().catch(()=>{});
+            
+            // הרשמה להתראות
+            OneSignalDeferred.push(function(OneSignal) { OneSignal.login(userKey); });
+
+            // טעינת היסטוריה אישית
+            loadMyHistory();
+        };
+
+        // --- 2. לוגיקה של הטופס החכם ---
+        window.openRequestModal = () => {
+            document.getElementById('modal-overlay').style.display = 'block';
+            setTimeout(() => document.getElementById('request-modal').classList.add('show'), 10);
+        };
+
+        window.closeModal = () => {
+            document.getElementById('request-modal').classList.remove('show');
+            setTimeout(() => document.getElementById('modal-overlay').style.display = 'none', 300);
+        };
+
+        window.toggleFields = () => {
+            const type = document.getElementById('req-type').value;
+            document.getElementById('field-client').style.display = type === 'client' ? 'block' : 'none';
+            document.getElementById('field-transfer').style.display = type === 'transfer' ? 'block' : 'none';
+        };
+
+        window.toggleRefField = () => {
+            const isReady = document.getElementById('req-ready').checked;
+            document.getElementById('ref-container').style.display = isReady ? 'block' : 'none';
+        };
+
+        window.checkUrgency = () => {
+            const isUrgent = document.getElementById('req-urgent').value === 'true';
+            document.getElementById('takeover-warning').style.display = isUrgent ? 'block' : 'none';
+        };
+
+        // --- 3. שליחת הבקשה (המוח) ---
+        window.submitRequest = async () => {
+            const type = document.getElementById('req-type').value;
+            const isReady = document.getElementById('req-ready').checked;
+            const refNum = document.getElementById('req-ref').value;
+            const isUrgent = document.getElementById('req-urgent').value === 'true';
+
+            // בדיקת חסימה: אם מוכן - חייב מספר
+            if (isReady && !refNum) {
+                alert("⚠️ שגיאה: סימנת שהסחורה מוכנה, חובה להזין מספר תעודה/העברה!");
+                return;
+            }
+
+            // יצירת האובייקט
+            const requestData = {
+                requesterName: currentUser.name,
+                requesterRole: currentUser.role,
+                requesterAvatar: currentUser.avatar,
+                type: type === 'client' ? 'הזמנה ללקוח' : 'העברה בין סניפים',
+                targetName: type === 'client' ? document.getElementById('req-client-name').value : document.getElementById('req-to').value,
+                isReady: isReady,
+                refNumber: refNum || null,
+                isUrgent: isUrgent,
+                status: isReady ? 1 : 0, // 1=פעיל לסידור, 0=טיוטה/לא מוכן
+                createdAt: new Date(),
+                lastUpdate: new Date(),
+                // שדות תצוגה למפה
+                name: type === 'client' ? document.getElementById('req-client-name').value : `העברה ל${document.getElementById('req-to').value}`,
+                deliveryType: type === 'client' ? 'משאית' : 'העברה פנימית',
+                address: '', // ימולא ע"י הסדרן
+                targetTime: isUrgent ? 'דחוף!' : '--:--'
+            };
+
+            // שמירה ב-Firestore
+            await addDoc(collection(db, "users"), requestData);
+
+            // אם דחוף -> הפעלת פופ-אפ משתלט במסכים
+            if (isUrgent) {
+                await setDoc(doc(db, "settings", "popup"), {
+                    active: true,
+                    title: `בקשה דחופה מ${currentUser.name}`,
+                    text: `נדרש איסוף דחוף! ${requestData.name} (מס' ${refNum || 'ללא'})`,
+                    icon: 'warning',
+                    theme: 'alert',
+                    imageUrl: currentUser.avatar
+                });
+            }
+
+            // סגירה ופידבק בוואטסאפ
+            closeModal();
+            addChatMessage("out", `בקשה נשלחה: ${requestData.name} (${isUrgent ? 'דחוף 🔥' : 'רגיל'})`);
+            setTimeout(() => addChatMessage("in", "קיבלתי. הבקשה הועברה לסדרן לאישור. אעדכן כשיהיה נהג. 👍"), 1000);
+        };
+
+        // --- 4. ממשק צ'אט ---
+        function addChatMessage(dir, text) {
+            const container = document.getElementById('msg-container');
+            const div = document.createElement('div');
+            div.className = `msg msg-${dir}`;
+            div.innerHTML = `${text} <span class="msg-time">${new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+            if(dir==='in') document.getElementById('msg-sound').play().catch(()=>{});
+        }
+
+        window.handleEnter = (e) => {
+            if (e.key === 'Enter') {
+                const txt = document.getElementById('chat-input').value;
+                if(txt) {
+                    addChatMessage('out', txt);
+                    document.getElementById('chat-input').value = '';
+                    // תגובה אוטומטית פשוטה
+                    setTimeout(() => addChatMessage('in', "אני בוט לוגיסטי, נא להשתמש בכפתור (+) להזמנות."), 1500);
+                }
+            }
+        };
+
+        window.toggleStats = () => document.getElementById('stats-panel').classList.toggle('open');
+
+        // --- 5. היסטוריה אישית ---
+        function loadMyHistory() {
+            // מאזין רק לבקשות של המשתמש הנוכחי
+            const q = query(collection(db, "users"), where("requesterName", "==", currentUser.name), orderBy("createdAt", "desc"));
+            onSnapshot(q, (snap) => {
+                const list = document.getElementById('my-history-list');
+                list.innerHTML = '';
+                snap.forEach(d => {
+                    const data = d.data();
+                    let icon = 'schedule'; let color = 'text-warning';
+                    if(data.status === 4) { icon = 'check_circle'; color = 'text-success'; } // בוצע
+                    if(data.driverName) { icon = 'local_shipping'; color = 'text-info'; } // בדרך
+                    
+                    list.innerHTML += `
+                        <div class="d-flex justify-content-between mb-2 border-bottom border-secondary pb-1">
+                            <span>${data.name}</span>
+                            <i class="material-icons ${color}" style="font-size:16px">${icon}</i>
+                        </div>
+                    `;
+                });
+            });
+        }
+
+        // שעון
+        setInterval(() => document.getElementById('win-clock').innerText = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}), 1000);
+
+    </script>
+</body>
+</html>
