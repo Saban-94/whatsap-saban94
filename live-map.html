@@ -3,64 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ח.סבן - מפת שליטה (בהיר)</title>
+    <title>מפת שליטה - ח.סבן</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;700;900&display=swap" rel="stylesheet">
     
     <style>
-        body { margin: 0; padding: 0; background: #f5f5f5; font-family: 'Rubik', sans-serif; overflow: hidden; }
-        
-        /* עיצוב כותרת צפה (בהיר) */
+        body { margin: 0; background: #e0e0e0; font-family: 'Rubik', sans-serif; overflow: hidden; }
+
+        /* כותרת צפה */
         .map-header {
             position: absolute; top: 20px; right: 20px; z-index: 1000;
-            background: rgba(255, 255, 255, 0.95); /* לבן חצי שקוף */
-            padding: 15px 25px; border-radius: 12px;
-            color: #333; /* טקסט כהה */
-            border: 1px solid #ddd;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15); /* צל עדין */
-            backdrop-filter: blur(5px);
-            min-width: 250px;
+            background: rgba(255,255,255,0.95); padding: 10px 20px; border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2); border: 2px solid #008069;
         }
-        .header-title { margin: 0; font-weight: 700; color: #2c3e50; display: flex; align-items: center; gap: 10px; }
-        .stats { font-size: 0.9rem; color: #666; margin-top: 5px; font-weight: 500; }
-        .live-indicator { display: inline-block; width: 12px; height: 12px; background: #00c853; border-radius: 50%; box-shadow: 0 0 0 3px rgba(0, 200, 83, 0.2); }
 
-        /* המפה תופסת את כל המסך */
-        #map { width: 100vw; height: 100vh; background: #e0e0e0; }
+        #map { width: 100vw; height: 100vh; }
 
-        /* עיצוב בועות מידע (Popup) - בהיר */
-        .leaflet-popup-content-wrapper { 
-            background: #ffffff; 
-            color: #333; 
-            border-radius: 10px; 
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            padding: 5px;
+        /* --- עיצוב הסיכה והנחש --- */
+        .pin-wrapper {
+            position: relative;
+            display: flex; justify-content: center; align-items: center;
         }
-        .leaflet-popup-tip { background: #ffffff; }
-        .popup-title { font-weight: 700; font-size: 1.1rem; color: #008069; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
-        .popup-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 0.95rem; color: #444; }
+
+        /* העיגול המרכזי (אימוג'י) */
+        .emoji-circle {
+            width: 44px; height: 44px; background: white; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 24px; position: relative; z-index: 2;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        /* אפקט הנחש הזוחל (טבעת מסתובבת) */
+        .snake-ring {
+            position: absolute; top: -6px; left: -6px; right: -6px; bottom: -6px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            border-top-color: #00e676; /* ירוק ניאון */
+            border-right-color: #008069; /* ירוק כהה */
+            animation: spin 1.5s linear infinite;
+            z-index: 1;
+        }
+        .snake-ring.urgent {
+            border-top-color: #ff3b30; /* אדום למקרה דחוף */
+            border-right-color: #b71c1c;
+            animation: spin 0.8s linear infinite; /* מהיר יותר */
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* --- השלט המרובע המתחלף --- */
+        .floating-sign {
+            position: absolute; bottom: 55px; /* מעל הסיכה */
+            background: white; color: #333;
+            padding: 8px 12px; border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            text-align: center; width: 140px;
+            font-size: 0.9rem; font-weight: bold;
+            border-bottom: 3px solid #008069;
+            transform: translateX(-35%); /* מרכוז */
+        }
         
-        /* תגיות סטטוס */
-        .chip { padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .st-1 { background: #2196f3; } /* ממתין - כחול */
-        .st-2 { background: #fbc02d; color: #333; } /* בטיפול - צהוב */
-        .st-3 { background: #4caf50; } /* בדרך - ירוק */
-        .st-urgent { background: #f44336; animation: pulse 1.5s infinite; }
+        /* המשולש הקטן למטה של הבועה */
+        .floating-sign::after {
+            content: ''; position: absolute; bottom: -8px; left: 50%;
+            margin-left: -8px; border-width: 8px 8px 0; border-style: solid;
+            border-color: #008069 transparent transparent transparent;
+        }
 
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+        /* אנימציית החלפת טקסט */
+        .sign-content {
+            display: block;
+            animation: fadeSwitch 8s infinite; /* מחזור של 8 שניות */
+        }
+        
+        /* שכבות תוכן - נשתמש ב-JS להחלפה חכמה יותר, או CSS פשוט */
+        .info-mode { display: block; }
+        .timer-mode { display: none; color: #d32f2f; font-family: monospace; font-size: 1.1rem; }
 
-        /* אנימציה לסיכות */
-        .custom-pin { transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .custom-pin:hover { transform: scale(1.15) translateY(-5px); z-index: 1000 !important; }
+        /* מחלקות להחלפה ב-JS */
+        .show-timer .info-mode { display: none; }
+        .show-timer .timer-mode { display: block; }
+
     </style>
 </head>
 <body>
 
     <div class="map-header">
-        <h2 class="header-title"><span class="live-indicator"></span> ח.סבן לוגיסטיקה</h2>
-        <div class="stats" id="status-text">מערכת מתחברת...</div>
+        <h2 style="margin:0; font-weight:900; color:#008069;">
+            <i class="material-icons" style="vertical-align:middle;">map</i> ח.סבן לוגיסטיקה
+        </h2>
+        <div id="status-line" style="font-size:0.9rem; color:#555; margin-top:5px;">מערכת מחוברת...</div>
     </div>
 
     <div id="map"></div>
@@ -72,145 +105,151 @@
         import { getFirestore, collection, onSnapshot, query } 
         from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // --- הגדרות Firebase שלך ---
         const firebaseConfig = {
             apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60",
             authDomain: "app-saban94-57361.firebaseapp.com",
             projectId: "app-saban94-57361",
             storageBucket: "app-saban94-57361.firebasestorage.app",
             messagingSenderId: "275366913167",
-            appId: "1:275366913167:web:f0c6f808e12f2aeb58fcfa",
-            measurementId: "G-E297QYKZKQ"
+            appId: "1:275366913167:web:f0c6f808e12f2aeb58fcfa"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- אתחול המפה (גרסה בהירה) ---
-        const map = L.map('map', {
-            zoomControl: false // מסתירים את הפלוס/מינוס למראה נקי (אפשר להחזיר אם רוצים)
-        }).setView([32.3215, 34.8532], 12); // מרכז ברירת מחדל (נתניה)
-
-        // שימוש במפת CartoDB Positron (מפה בהירה ונקייה מאוד)
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; OpenStreetMap &copy; CARTO',
-            subdomains: 'abcd',
-            maxZoom: 19
+        // שימוש במפת OpenStreetMap רגילה (עברית!)
+        const map = L.map('map', { zoomControl: false }).setView([32.3215, 34.8532], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
         }).addTo(map);
 
-        // פונקציה ליצירת אייקון הסיכה
-        const createIcon = (type, color) => {
-            let iconShape = 'local_shipping'; // משאית כברירת מחדל
-            if(type && type.includes('מנוף')) iconShape = 'construction';
-            if(type && type.includes('מכולה')) iconShape = 'delete_outline';
-
-            return L.divIcon({
-                className: 'custom-pin',
-                html: `<div style="
-                    background-color: ${color};
-                    width: 40px; height: 40px;
-                    border-radius: 50% 50% 50% 0; /* צורת טיפה */
-                    transform: rotate(-45deg);
-                    display: flex; justify-content: center; align-items: center;
-                    border: 3px solid white; /* מסגרת לבנה בולטת */
-                    box-shadow: 0 3px 10px rgba(0,0,0,0.3);">
-                    <span class="material-icons" style="
-                        font-size: 22px; 
-                        color: white; 
-                        transform: rotate(45deg);">
-                        ${iconShape}
-                    </span>
-                </div>`,
-                iconSize: [40, 40],
-                iconAnchor: [20, 40], // הקצה התחתון של הסיכה
-                popupAnchor: [0, -45]
-            });
-        };
-
-        // Cache וזיכרון
-        const geoCache = {}; 
         const markersLayer = L.layerGroup().addTo(map);
+        const geoCache = {};
 
-        // --- שירות המרת כתובות (Geocoding) ---
+        // המרת כתובת לקואורדינטות
         async function getCoords(address) {
             if (!address) return null;
-            if (geoCache[address]) return geoCache[address]; // שליפה מהזיכרון
-
+            if (geoCache[address]) return geoCache[address];
             try {
-                // הוספת 'Israel' לחיפוש מדויק יותר
-                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address + ', Israel')}&limit=1`);
-                const data = await response.json();
-                
-                if (data && data.length > 0) {
-                    const coords = { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
-                    geoCache[address] = coords;
-                    return coords;
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address + ', Israel')}&limit=1`);
+                const data = await res.json();
+                if (data.length > 0) {
+                    const c = { lat: data[0].lat, lon: data[0].lon };
+                    geoCache[address] = c;
+                    return c;
                 }
-            } catch (e) {
-                console.error("Geocoding error:", address);
-            }
+            } catch (e) {}
             return null;
         }
 
-        // --- האזנה לנתונים בזמן אמת ---
+        // זיהוי אימוג'י
+        function getEmoji(type) {
+            if(!type) return '📦';
+            if(type.includes('מנוף')) return '🏗️';
+            if(type.includes('מכולה')) return '🗑️';
+            if(type.includes('משאית')) return '🚚';
+            return '📦';
+        }
+
+        // חישוב זמן נותר
+        function getTimeRemaining(targetDate, targetTime) {
+            if(!targetTime) return null;
+            
+            const now = new Date();
+            // אם אין תאריך, נניח שהכוונה להיום
+            let target = new Date();
+            if(targetDate) target = new Date(targetDate);
+            
+            const [hours, minutes] = targetTime.split(':');
+            target.setHours(hours, minutes, 0, 0);
+
+            const diff = target - now;
+            if (diff < 0) return "הגיע הזמן!";
+            
+            const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((diff % (1000 * 60)) / 1000);
+            return `${h}:${m < 10 ? '0'+m : m}:${s < 10 ? '0'+s : s}`;
+        }
+
+        // האזנה להזמנות
         const q = query(collection(db, "users"));
-        
-        onSnapshot(q, async (snapshot) => {
+        onSnapshot(q, async (snap) => {
             markersLayer.clearLayers();
-            let activeCount = 0;
+            let count = 0;
             const bounds = [];
 
-            const promises = snapshot.docs.map(async (docSnap) => {
+            const promises = snap.docs.map(async docSnap => {
                 const d = docSnap.data();
-                
-                // רק הזמנות פעילות עם כתובת
-                if (d.status >= 4 || !d.address) return;
+                if(d.status >= 4 || !d.address) return;
+                count++;
 
-                activeCount++;
                 const coords = await getCoords(d.address);
-                
-                if (coords) {
-                    // בחירת צבע לפי סטטוס
-                    let color = '#2196f3'; // כחול
-                    let statusTxt = 'ממתין לשיבוץ';
-                    
-                    if (d.status == 2) { color = '#fbc02d'; statusTxt = 'בטיפול'; }
-                    if (d.status == 3) { color = '#4caf50'; statusTxt = 'יצא לדרך'; }
-                    if (d.isUrgent) { color = '#f44336'; statusTxt = 'דחוף!'; }
+                if(coords) {
+                    const emoji = getEmoji(d.deliveryType);
+                    const isUrgent = d.isUrgent;
+                    const ringClass = isUrgent ? 'snake-ring urgent' : 'snake-ring';
 
-                    const marker = L.marker([coords.lat, coords.lon], {
-                        icon: createIcon(d.deliveryType, color)
-                    });
-
-                    // תוכן הבועה
-                    const popupContent = `
-                        <div class="popup-title">${d.name}</div>
-                        <div class="popup-row">
-                            <span class="chip" style="background:${color}">${statusTxt}</span>
-                            ${d.isUrgent ? '<span class="chip st-urgent">🔥</span>' : ''}
+                    // יצירת הסיכה המורכבת (נחש + אימוג'י + שלט)
+                    const iconHTML = `
+                        <div class="pin-wrapper">
+                            <div class="floating-sign" id="sign-${docSnap.id}">
+                                <div class="info-mode">
+                                    <div>${d.name}</div>
+                                    <div style="font-size:0.8rem; color:#666;">${d.deliveryType}</div>
+                                </div>
+                                <div class="timer-mode" data-date="${d.targetDate||''}" data-time="${d.targetTime||''}">
+                                    --:--:--
+                                </div>
+                            </div>
+                            
+                            <div class="${ringClass}"></div>
+                            
+                            <div class="emoji-circle">${emoji}</div>
                         </div>
-                        <div class="popup-row"><i class="material-icons" style="font-size:16px;color:#777;">category</i> ${d.deliveryType || 'לא צוין'}</div>
-                        <div class="popup-row"><i class="material-icons" style="font-size:16px;color:#777;">location_on</i> ${d.address}</div>
-                        ${d.notes ? `<div style="margin-top:5px; padding:5px; background:#ffebee; color:#d32f2f; border-radius:4px; font-size:0.85rem;">${d.notes}</div>` : ''}
                     `;
 
-                    marker.bindPopup(popupContent);
-                    markersLayer.addLayer(marker);
+                    const icon = L.divIcon({
+                        className: 'custom-div-icon',
+                        html: iconHTML,
+                        iconSize: [60, 60],
+                        iconAnchor: [30, 30] // מרכז הסיכה
+                    });
+
+                    L.marker([coords.lat, coords.lon], { icon: icon }).addTo(markersLayer);
                     bounds.push([coords.lat, coords.lon]);
                 }
             });
 
             await Promise.all(promises);
-
-            // עדכון כותרת
-            document.getElementById('status-text').innerText = activeCount > 0 ? 
-                `מציג ${activeCount} הזמנות פעילות` : 'אין הזמנות פעילות כרגע';
-
-            // מרכוז המפה אוטומטית אם יש סיכות
-            if (bounds.length > 0) {
-                map.fitBounds(bounds, { padding: [80, 80], maxZoom: 15 });
-            }
+            document.getElementById('status-line').innerText = `מציג ${count} הזמנות פעילות בשטח`;
+            if(bounds.length) map.fitBounds(bounds, { padding: [100, 100] });
         });
+
+        // לוגיקה גלובלית להחלפת טקסט וטיימר
+        setInterval(() => {
+            // 1. החלפה בין מידע לטיימר (כל 5 שניות)
+            const nowSec = Math.floor(Date.now() / 1000);
+            const showTimer = (nowSec % 10) > 5; // חצי מהזמן מידע, חצי זמן טיימר
+
+            document.querySelectorAll('.floating-sign').forEach(el => {
+                if(showTimer) el.classList.add('show-timer');
+                else el.classList.remove('show-timer');
+            });
+
+            // 2. עדכון המספרים בטיימר
+            document.querySelectorAll('.timer-mode').forEach(el => {
+                const date = el.getAttribute('data-date');
+                const time = el.getAttribute('data-time');
+                if(time) {
+                    el.innerText = getTimeRemaining(date, time) || "אין שעה";
+                } else {
+                    el.innerText = "ללא זמן";
+                }
+            });
+
+        }, 1000);
 
     </script>
 </body>
