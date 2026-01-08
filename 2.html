@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ח.סבן - דשבורד מלא</title>
+    <title>ח.סבן - מצב טיסה מלא</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -34,7 +34,7 @@
         .main-stage { flex: 1; position: relative; overflow: hidden; }
         #map { width: 100%; height: 100%; }
 
-        /* סרגל צד צף (רשימות כהות) */
+        /* סרגל צד צף */
         .sidebar-float {
             position: absolute; top: 20px; left: 20px; bottom: 20px; width: 380px;
             display: flex; flex-direction: column; gap: 20px; z-index: 500; pointer-events: none;
@@ -50,8 +50,11 @@
         /* כרטיס הזמנה במטבח */
         .kitchen-card {
             background: #2a2a2a; border-radius: 6px; padding: 10px; margin-bottom: 8px;
-            border-left: 4px solid #555; position: relative;
+            border-left: 4px solid #555; position: relative; transition: transform 0.3s;
         }
+        /* הדגשה לכרטיס שכרגע בטיסה */
+        .highlight-card { transform: scale(1.02); box-shadow: 0 0 15px rgba(255,255,255,0.1); border: 1px solid white; }
+
         .st-green { border-left-color: #00e676; } .st-yellow { border-left-color: #fbc02d; } .st-red { border-left-color: #ff3b30; animation: flash 1s infinite; }
         @keyframes flash { 50% { background: #3a1c1c; } }
 
@@ -60,7 +63,7 @@
         .kc-meta { font-size: 0.8rem; color: #aaa; }
         .kc-timer { font-family: monospace; font-weight: 900; font-size: 1.2rem; color: #00e676; }
 
-        /* --- 3. פס חדשות (Yammer Style) --- */
+        /* --- 3. פס חדשות --- */
         .news-ticker {
             height: 50px; background: #0078d4; color: white; display: flex; align-items: center;
             box-shadow: 0 -5px 20px rgba(0,0,0,0.3); z-index: 2000; position: relative;
@@ -70,10 +73,9 @@
         @keyframes move { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
         .theme-alert { background: #d32f2f !important; } .theme-success { background: #2e7d32 !important; }
 
-        /* --- 4. הסיכה המושלמת (עם כל הנתונים) --- */
+        /* --- 4. הסיכה --- */
         .pin-container { position: relative; display: flex; justify-content: center; align-items: center; }
         
-        /* שלט מרחף עם כל המידע */
         .info-bubble {
             position: absolute; bottom: 65px;
             background: #1e1e1e; color: white; border-radius: 8px;
@@ -86,7 +88,6 @@
             border-width: 8px 8px 0; border-style: solid; border-color: #1e1e1e transparent transparent transparent;
         }
 
-        /* נחש ניאון */
         .snake-border {
             position: absolute; inset: -2px; border-radius: 10px;
             background: conic-gradient(from 0deg, transparent, #00e676, transparent 30%);
@@ -95,7 +96,6 @@
         .snake-inner { position: absolute; inset: 2px; background: #1e1e1e; border-radius: 8px; z-index: 0; }
         @keyframes rotate { 100% { transform: rotate(360deg); } }
 
-        /* תוכן השלט - מתחלף */
         .bubble-content { position: relative; z-index: 1; }
         .row-top { font-size: 0.8rem; color: #00e676; border-bottom: 1px solid #333; padding-bottom: 2px; margin-bottom: 2px; display: flex; justify-content: space-between; }
         .row-main { font-weight: bold; font-size: 1rem; margin-bottom: 2px; line-height: 1.1; }
@@ -103,21 +103,22 @@
         
         .mode-info { display: block; }
         .mode-timer { display: none; font-family: monospace; font-size: 1.5rem; color: #fbc02d; font-weight: bold; }
-        
         .show-timer .mode-info { display: none; }
         .show-timer .mode-timer { display: block; }
 
         .urgent .snake-border { background: conic-gradient(from 0deg, transparent, #ff3b30, transparent 30%); }
         
-        /* האייקון */
         .map-icon {
             width: 48px; height: 48px; background: white; border-radius: 50%;
             background-size: 70%; background-repeat: no-repeat; background-position: center;
-            border: 3px solid white; box-shadow: 0 5px 15px rgba(0,0,0,0.4); z-index: 50;
+            border: 3px solid white; box-shadow: 0 5px 15px rgba(0,0,0,0.4); z-index: 50; transition: transform 0.5s;
         }
+        /* הדגשה לסיכה בטיסה */
+        .pin-highlight .map-icon { transform: scale(1.3); box-shadow: 0 0 30px #00e676; border-color: #00e676; }
+
         .ic-crane { background-image: url('https://cdn-icons-png.flaticon.com/512/2675/2675860.png'); border-color: #fbc02d; }
-        .ic-truck { background-image: url('https://saban-94.github.io/whatsap-saban94/track.png'); border-color: #2196f3; }
-        .ic-cont { background-image: url('https://saban-94.github.io/whatsap-saban94/3d-truck%20(2).png'); border-color: #ff9800; }
+        .ic-truck { background-image: url('https://cdn-icons-png.flaticon.com/512/9420/9420542.png'); border-color: #2196f3; }
+        .ic-cont { background-image: url('https://cdn-icons-png.flaticon.com/512/9630/9630364.png'); border-color: #ff9800; }
 
     </style>
 </head>
@@ -165,13 +166,18 @@
         const markersLayer = L.layerGroup().addTo(map);
         const geoCache = {};
 
+        // משתנים למצב טיסה
+        let activeLocations = []; 
+        let currentFlyIndex = 0;
+        let isUserInteracting = false;
+
         async function getCoords(address) {
             if(!address) return null;
             if(geoCache[address]) return geoCache[address];
             try{
                 const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address+', Israel')}&limit=1`);
                 const data = await res.json();
-                if(data.length){ const c = {lat:data[0].lat, lon:data[0].lon}; geoCache[address]=c; return c; }
+                if(data.length){ const c = {lat:parseFloat(data[0].lat), lon:parseFloat(data[0].lon)}; geoCache[address]=c; return c; }
             }catch(e){} return null;
         }
 
@@ -191,11 +197,12 @@
             document.getElementById('list-active').innerHTML = '';
             document.getElementById('list-done').innerHTML = '';
             let act=0, don=0, minS=99999;
+            activeLocations = []; // איפוס יעדי טיסה
 
             const promises = snap.docs.map(async docSnap => {
                 const d = docSnap.data();
-                const oid = d.orgId || '---'; // מספר תעודה
-                const driver = d.driverName || 'ללא נהג'; // נהג
+                const oid = d.orgId || '---'; 
+                const driver = d.driverName || 'ללא נהג';
 
                 if(d.status === 4) {
                     don++;
@@ -208,24 +215,27 @@
                 if(sec<minS) minS=sec;
                 let st='st-green'; if(sec<1800) st='st-yellow'; if(sec<0) st='st-red';
 
-                // רשימה בצד
+                // רשימה
+                const cardId = `card-${docSnap.id}`;
                 document.getElementById('list-active').innerHTML += `
-                    <div class="kitchen-card ${st}">
+                    <div class="kitchen-card ${st}" id="${cardId}">
                         <div class="kc-row"><span>#${oid}</span><span>${d.targetTime}</span></div>
                         <div class="kc-row"><div><div class="kc-name">${d.name}</div><div class="kc-meta">${d.deliveryType}</div><div class="kc-driver">${driver}</div></div>
                         <div class="kc-timer" data-s="${sec}">${fmt(sec)}</div></div>
                     </div>`;
 
-                // מפה
                 if(d.address) {
                     const c = await getCoords(d.address);
                     if(c) {
+                        // שמירת יעד למצב טיסה
+                        activeLocations.push({lat:c.lat, lon:c.lon, id:docSnap.id});
+
                         const ic = getIconClass(d.deliveryType);
                         const urg = sec<1800?'urgent':'';
-                        
-                        // כאן כל הנתונים בסיכה
+                        const pinId = `pin-${docSnap.id}`; // זיהוי לסיכה
+
                         const html = `
-                            <div class="pin-container ${urg}">
+                            <div class="pin-container ${urg}" id="${pinId}">
                                 <div class="info-bubble">
                                     <div class="snake-border"></div>
                                     <div class="snake-inner"></div>
@@ -250,7 +260,7 @@
             if(minS!==99999) { const n=new Date(); n.setSeconds(n.getSeconds()+minS); document.getElementById('val-next').innerText = n.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
         });
 
-        // חדשות Yammer
+        // חדשות
         onSnapshot(doc(db, "settings", "news"), (d) => {
             if(d.exists()){
                 const dat=d.data();
@@ -262,6 +272,34 @@
             }
         });
 
+        // --- מנוע הטיסה (Cinematic Flight) ---
+        setInterval(() => {
+            if(activeLocations.length === 0 || isUserInteracting) return;
+            
+            const target = activeLocations[currentFlyIndex];
+            
+            // זום והתמקדות
+            map.flyTo([target.lat, target.lon], 15, { animate: true, duration: 4 });
+            
+            // הדגשה ויזואלית ברשימה ובמפה
+            document.querySelectorAll('.kitchen-card').forEach(el => el.classList.remove('highlight-card'));
+            document.querySelectorAll('.pin-container').forEach(el => el.classList.remove('pin-highlight'));
+            
+            const cardEl = document.getElementById(`card-${target.id}`);
+            if(cardEl) {
+                cardEl.classList.add('highlight-card');
+                cardEl.scrollIntoView({ behavior: "smooth", block: "center" });
+            }
+            // הערה: הדגשת סיכה דרך ID קצת מורכבת ב-Leaflet divIcon, אז נסתפק בזום
+
+            currentFlyIndex = (currentFlyIndex + 1) % activeLocations.length;
+
+        }, 10000); // כל 10 שניות
+
+        // זיהוי מגע משתמש לעצירת טיסה
+        map.on('mousedown touchstart', () => { isUserInteracting = true; setTimeout(() => isUserInteracting = false, 30000); });
+
+        // טיימרים
         setInterval(() => {
             document.getElementById('val-clock').innerText = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
             const showTimer = (Math.floor(Date.now()/1000)%10)>5;
