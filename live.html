@@ -1,49 +1,300 @@
-/* --- MEGA POPUP משודרג --- */
-.mega-popup-overlay {
-    position: absolute; inset: 0; z-index: 9999;
-    background: rgba(0,0,0,0.85); /* רקע כהה יותר */
-    display: none; justify-content: center; align-items: center;
-    backdrop-filter: blur(15px);
-}
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ח.סבן - מרכז שליטה משולב</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    
+    <style>
+        /* --- הגדרות בסיס --- */
+        body { margin: 0; background: #e0e0e0; font-family: 'Rubik', sans-serif; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
 
-.popup-card {
-    background: #1e1e1e; color: white; border-radius: 20px;
-    box-shadow: 0 20px 80px rgba(0,0,0,0.8);
-    overflow: hidden; position: relative;
-    max-width: 900px; width: 90%;
-    animation: zoomIn 0.5s;
-    display: flex; flex-direction: column; /* ברירת מחדל */
-}
+        /* --- בר מדדים עליון --- */
+        .top-bar {
+            height: 90px; padding: 10px 25px;
+            background: linear-gradient(135deg, #1e1e1e 0%, #2c3e50 100%);
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4); z-index: 1000; position: relative;
+        }
+        .metric-card {
+            background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
+            color: white; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            backdrop-filter: blur(5px); position: relative; overflow: hidden;
+        }
+        .m-val { font-size: 2.2rem; font-weight: 900; line-height: 1; text-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        .m-sub { font-size: 0.8rem; opacity: 0.8; margin-top: 5px; letter-spacing: 1px; }
+        .border-bot { position: absolute; bottom: 0; left: 0; width: 100%; height: 4px; }
+        .c-1 { background: #fbc02d; } .c-2 { background: #00e676; } .c-3 { background: #29b6f6; } .c-4 { background: #ff3b30; }
 
-/* מצב "פוסטר" (עם תמונה) */
-.popup-poster-mode {
-    flex-direction: row; /* תמונה לצד טקסט */
-    text-align: right;
-    height: 500px;
-}
+        /* --- במת המפה --- */
+        .main-stage { flex: 1; position: relative; overflow: hidden; }
+        #map { width: 100%; height: 100%; }
 
-.pop-image-side {
-    flex: 1; background-size: cover; background-position: center;
-    position: relative;
-    border-right: 4px solid; /* הצבע ייקבע לפי הנושא */
-}
+        /* --- סרגלי צד --- */
+        .glass-panel {
+            background: rgba(20, 20, 20, 0.95); color: white; border-radius: 12px; overflow: hidden; pointer-events: auto;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column;
+        }
+        .ph-title { padding: 12px; background: rgba(255,255,255,0.05); font-weight: 700; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .scroll-area { flex: 1; overflow-y: auto; padding: 10px; }
 
-.pop-content-side {
-    flex: 1; padding: 40px;
-    display: flex; flex-direction: column; justify-content: center;
-}
+        /* צד שמאל: פעיל + סופקו */
+        .sidebar-left {
+            position: absolute; top: 20px; left: 20px; bottom: 20px; width: 360px;
+            display: flex; flex-direction: column; gap: 20px; z-index: 500; pointer-events: none;
+        }
+        .panel-active { flex: 2; } 
+        .panel-done { flex: 1; }
 
-/* נושאים */
-.theme-gold .pop-image-side { border-color: #ffd700; }
-.theme-gold .pop-title { color: #ffd700; text-shadow: 0 2px 10px rgba(255,215,0,0.3); }
+        /* צד ימין: עתיד + Viva Engage */
+        .sidebar-right {
+            position: absolute; top: 20px; right: 20px; bottom: 70px; width: 320px;
+            display: flex; flex-direction: column; gap: 20px; z-index: 500; pointer-events: none;
+        }
+        .panel-future { height: 35%; background: rgba(10, 30, 40, 0.95); }
+        .panel-viva { flex: 1; background: white; pointer-events: auto; }
 
-.theme-neon .pop-image-side { border-color: #00e676; }
-.theme-neon .pop-title { color: #00e676; text-shadow: 0 0 20px rgba(0,230,118,0.5); }
+        /* כרטיסי הזמנה */
+        .kitchen-card {
+            background: #2a2a2a; border-radius: 6px; padding: 10px; margin-bottom: 8px;
+            border-left: 4px solid #555; position: relative; transition: transform 0.3s; color: white;
+        }
+        .highlight-card { transform: scale(1.02); box-shadow: 0 0 15px rgba(255,255,255,0.1); border: 1px solid white; }
+        .st-green { border-left-color: #00e676; } .st-yellow { border-left-color: #fbc02d; } .st-red { border-left-color: #ff3b30; animation: flash 1s infinite; }
+        @keyframes flash { 50% { background: #3a1c1c; } }
 
-.theme-alert .pop-image-side { border-color: #ff3b30; }
-.theme-alert .pop-title { color: #ff3b30; text-transform: uppercase; letter-spacing: 3px; }
+        .kc-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        .kc-name { font-weight: bold; font-size: 1rem; }
+        .kc-meta { font-size: 0.8rem; color: #aaa; }
+        .kc-timer { font-family: monospace; font-weight: 900; font-size: 1.2rem; color: #00e676; }
 
-/* טקסטים */
-.pop-icon { font-size: 60px; margin-bottom: 20px; }
-.pop-title { font-size: 3.5rem; font-weight: 900; margin-bottom: 20px; line-height: 1; }
-.pop-body { font-size: 1.6rem; color: #e0e0e0; line-height: 1.5; font-weight: 300; }
+        .future-card { background: #263238; border-radius: 6px; padding: 10px; margin-bottom: 8px; border-right: 4px solid #78909c; opacity: 0.8; color: #ccc; }
+        .future-tomorrow { border-right-color: #00bcd4; background: #37474f; opacity: 1; color: white; }
+        .fc-date { font-weight: bold; color: #00bcd4; font-size: 0.85rem; }
+
+        /* --- סיכות מפה (הנחש) --- */
+        .pin-container { position: relative; display: flex; justify-content: center; align-items: center; }
+        .info-bubble {
+            position: absolute; bottom: 65px;
+            background: #1e1e1e; color: white; border-radius: 8px;
+            min-width: 170px; text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 100; padding: 8px;
+        }
+        .info-bubble::after { content: ''; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); border-width: 8px 8px 0; border-style: solid; border-color: #1e1e1e transparent transparent transparent; }
+        .snake-border {
+            position: absolute; inset: -2px; border-radius: 10px;
+            background: conic-gradient(from 0deg, transparent, #00e676, transparent 30%);
+            animation: rotate 2s linear infinite; z-index: -1;
+        }
+        .snake-inner { position: absolute; inset: 2px; background: #1e1e1e; border-radius: 8px; z-index: 0; }
+        @keyframes rotate { 100% { transform: rotate(360deg); } }
+        .bubble-content { position: relative; z-index: 1; }
+        .row-top { font-size: 0.8rem; color: #00e676; border-bottom: 1px solid #333; padding-bottom: 2px; margin-bottom: 2px; display: flex; justify-content: space-between; }
+        .row-main { font-weight: bold; font-size: 1rem; margin-bottom: 2px; line-height: 1.1; }
+        .row-sub { font-size: 0.8rem; color: #bbb; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .mode-info { display: block; } .mode-timer { display: none; font-family: monospace; font-size: 1.5rem; color: #fbc02d; font-weight: bold; }
+        .show-timer .mode-info { display: none; } .show-timer .mode-timer { display: block; }
+        .urgent .snake-border { background: conic-gradient(from 0deg, transparent, #ff3b30, transparent 30%); }
+        .map-icon {
+            width: 48px; height: 48px; background: white; border-radius: 50%;
+            background-size: 70%; background-repeat: no-repeat; background-position: center;
+            border: 3px solid white; box-shadow: 0 5px 15px rgba(0,0,0,0.4); z-index: 50; transition: transform 0.5s;
+        }
+        .pin-highlight .map-icon { transform: scale(1.3); box-shadow: 0 0 30px #00e676; border-color: #00e676; }
+        .ic-crane { background-image: url('https://cdn-icons-png.flaticon.com/512/2675/2675860.png'); border-color: #fbc02d; }
+        .ic-truck { background-image: url('https://cdn-icons-png.flaticon.com/512/9420/9420542.png'); border-color: #2196f3; }
+        .ic-cont { background-image: url('https://cdn-icons-png.flaticon.com/512/9630/9630364.png'); border-color: #ff9800; }
+
+        /* --- MEGA POPUP משודרג (Saban Poster Engine) --- */
+        .mega-popup-overlay {
+            position: absolute; inset: 0; z-index: 9999;
+            background: rgba(0,0,0,0.85);
+            display: none; justify-content: center; align-items: center;
+            backdrop-filter: blur(15px);
+        }
+        .popup-card {
+            background: #1e1e1e; color: white; border-radius: 20px;
+            box-shadow: 0 20px 80px rgba(0,0,0,0.8);
+            overflow: hidden; position: relative;
+            max-width: 900px; width: 90%;
+            animation: zoomIn 0.5s;
+            display: flex; flex-direction: column; /* ברירת מחדל */
+        }
+        /* מצב פוסטר (תמונה) */
+        .popup-poster-mode { flex-direction: row; text-align: right; height: 500px; }
+        .pop-image-side { flex: 1; background-size: cover; background-position: center; position: relative; border-right: 4px solid; }
+        .pop-content-side { flex: 1; padding: 40px; display: flex; flex-direction: column; justify-content: center; }
+
+        .theme-gold .pop-image-side { border-color: #ffd700; }
+        .theme-gold .pop-title { color: #ffd700; text-shadow: 0 2px 10px rgba(255,215,0,0.3); }
+        .theme-neon .pop-image-side { border-color: #00e676; }
+        .theme-neon .pop-title { color: #00e676; text-shadow: 0 0 20px rgba(0,230,118,0.5); }
+        .theme-alert .pop-image-side { border-color: #ff3b30; }
+        .theme-alert .pop-title { color: #ff3b30; text-transform: uppercase; letter-spacing: 3px; }
+
+        .pop-icon { font-size: 60px; margin-bottom: 20px; }
+        .pop-title { font-size: 3.5rem; font-weight: 900; margin-bottom: 20px; line-height: 1; }
+        .pop-body { font-size: 1.6rem; color: #e0e0e0; line-height: 1.5; font-weight: 300; }
+        @keyframes zoomIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* --- פס חדשות --- */
+        .news-ticker {
+            height: 50px; background: #0078d4; color: white; display: flex; align-items: center;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.3); z-index: 2000; position: relative;
+        }
+        .ticker-label { background: #005a9e; height: 100%; display: flex; align-items: center; padding: 0 20px; font-weight: 900; z-index: 2; }
+        .ticker-content { position: absolute; line-height: 50px; font-size: 1.3rem; font-weight: 500; white-space: nowrap; animation: move 20s linear infinite; padding-left: 100%; }
+        @keyframes move { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
+        .theme-alert { background: #d32f2f !important; } .theme-success { background: #2e7d32 !important; }
+
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <div class="metric-card"><span class="m-val" id="val-hist">0</span><span class="m-sub">ארכיון</span><div class="border-bot c-1"></div></div>
+        <div class="metric-card"><span class="m-val" id="val-next" style="color:#29b6f6">--:--</span><span class="m-sub">משימה הבאה</span><div class="border-bot c-3"></div></div>
+        <div class="metric-card"><span class="m-val" id="val-clock">00:00</span><span class="m-sub">שעון</span><div class="border-bot c-2"></div></div>
+        <div class="metric-card"><span class="m-val" id="val-active">0</span><span class="m-sub">פעילים היום</span><div class="border-bot c-4"></div></div>
+    </div>
+
+    <div class="main-stage">
+        <div id="map"></div>
+        
+        <div class="sidebar-left">
+            <div class="glass-panel panel-active">
+                <div class="ph-title"><span>🔥 משימות להיום</span><span id="cnt-active">0</span></div>
+                <div class="scroll-area" id="list-active"></div>
+            </div>
+            <div class="glass-panel panel-done">
+                <div class="ph-title" style="color:#aaa;"><span>✅ סופקו</span><span id="cnt-done">0</span></div>
+                <div class="scroll-area" id="list-done" style="font-size:0.85rem; color:#ccc;"></div>
+            </div>
+        </div>
+
+        <div class="sidebar-right">
+            <div class="glass-panel panel-future">
+                <div class="ph-title" style="color:#00bcd4;"><span>📅 תכנון עתידי</span><span id="cnt-future">0</span></div>
+                <div class="scroll-area" id="list-future"></div>
+            </div>
+            
+            <div class="glass-panel panel-viva">
+                <div class="ph-title" style="background:#f3f2f1; color:#333; border-bottom:1px solid #ddd;">
+                    <span><i class="material-icons" style="color:#0078d4; vertical-align:middle;">forum</i> חדשות הצוות</span>
+                </div>
+                <iframe name="embed-feed" title="Viva Engage" src="https://engage.cloud.microsoft/embed/groups/eyJfdHlwZSI6Ikdyb3VwIiwiaWQiOiIwIn0" style="border:0; width:100%; height:100%;"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <div id="mega-popup" class="mega-popup-overlay">
+        <div class="popup-card" id="popup-inner">
+            </div>
+    </div>
+
+    <div class="news-ticker" id="ticker-bar">
+        <div class="ticker-label"><i class="material-icons">campaign</i>&nbsp;<span id="news-title">עדכונים</span></div>
+        <div class="ticker-content-wrapper" style="flex:1; position:relative; overflow:hidden;">
+            <div class="ticker-content" id="news-text">טוען...</div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, query, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const db = getFirestore(initializeApp({ apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60", projectId: "app-saban94-57361", appId: "1:275366913167:web:f0c6f808e12f2aeb58fcfa" }));
+
+        const map = L.map('map', { zoomControl: false }).setView([32.3215, 34.8532], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+        const markersLayer = L.layerGroup().addTo(map);
+        const geoCache = {};
+
+        let activeLocations = []; let currentFlyIndex = 0; let isUserInteracting = false;
+
+        async function getCoords(address) {
+            if(!address) return null;
+            if(geoCache[address]) return geoCache[address];
+            try{
+                const jitter = (Math.random()-0.5)*0.0003;
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address+', Israel')}&limit=1`);
+                const data = await res.json();
+                if(data.length){ const c={lat:parseFloat(data[0].lat)+jitter, lon:parseFloat(data[0].lon)+jitter}; geoCache[address]=c; return c; }
+            }catch(e){} return null;
+        }
+
+        function getIconClass(t) { if(!t)return 'ic-truck'; if(t.includes('מנוף'))return 'ic-crane'; if(t.includes('מכולה'))return 'ic-cont'; return 'ic-truck'; }
+        function getSec(t) { if(!t) return 99999; const now=new Date(); const [h,m]=t.split(':'); const d=new Date(); d.setHours(h,m,0); return Math.floor((d-now)/1000); }
+        function fmt(s) { const h=Math.floor(Math.abs(s)/3600), m=Math.floor((Math.abs(s)%3600)/60), sc=Math.abs(s)%60; return `${s<0?'-':''}${h<10?'0'+h:h}:${m<10?'0'+m:m}:${sc<10?'0'+sc:sc}`; }
+
+        // האזנה להזמנות
+        onSnapshot(query(collection(db, "users")), async (snap) => {
+            markersLayer.clearLayers();
+            document.getElementById('list-active').innerHTML=''; 
+            document.getElementById('list-done').innerHTML=''; 
+            document.getElementById('list-future').innerHTML='';
+            
+            let act=0, don=0, fut=0, minS=99999;
+            activeLocations=[]; 
+            const today = new Date().toISOString().split('T')[0];
+            const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate()+1);
+            const tmrStr = tomorrow.toISOString().split('T')[0];
+            let todayOrders=[]; let futureOrders=[];
+
+            snap.docs.forEach(docSnap => {
+                const d = docSnap.data(); d.id=docSnap.id;
+                if(d.status === 4) {
+                    don++;
+                    document.getElementById('list-done').innerHTML += `<div style="border-bottom:1px solid #444; padding:5px; display:flex; justify-content:space-between;"><span>${d.name}</span><span>${d.deliveryType}</span></div>`;
+                } else {
+                    const oDate = d.targetDate || today;
+                    if(oDate > today) futureOrders.push(d); else todayOrders.push(d);
+                }
+            });
+
+            todayOrders.sort((a,b)=>getSec(a.targetTime)-getSec(b.targetTime));
+            for(const d of todayOrders) {
+                act++;
+                const sec = getSec(d.targetTime);
+                if(sec<minS) minS=sec;
+                let st='st-green'; if(sec<1800)st='st-yellow'; if(sec<0)st='st-red';
+                const oid=d.orgId||'--'; const drv=d.driverName||'ללא נהג';
+
+                document.getElementById('list-active').innerHTML += `
+                    <div class="kitchen-card ${st}" id="card-${d.id}">
+                        <div class="kc-row"><span>#${oid}</span><span>${d.targetTime}</span></div>
+                        <div class="kc-row"><div><div class="kc-name">${d.name}</div><div class="kc-meta">${d.deliveryType} | ${drv}</div></div>
+                        <div class="kc-timer" data-s="${sec}">${fmt(sec)}</div></div>
+                    </div>`;
+
+                if(d.address) {
+                    const c = await getCoords(d.address);
+                    if(c) {
+                        activeLocations.push({lat:c.lat, lon:c.lon, id:d.id});
+                        const ic=getIconClass(d.deliveryType);
+                        const urg=sec<1800?'urgent':'';
+                        const html = `
+                            <div class="pin-container ${urg}" id="pin-${d.id}">
+                                <div class="info-bubble"><div class="snake-border"></div><div class="snake-inner"></div>
+                                    <div class="bubble-content mode-info"><div class="row-top"><span>#${oid}</span><span>${d.targetTime}</span></div><div class="row-main">${d.name}</div><div class="row-sub">${drv}</div><div class="row-sub" style="font-size:0.7rem; color:#888;">${d.address.split(',')[0]}</div></div>
+                                    <div class="bubble-content mode-timer" data-s="${sec}">${fmt(sec)}</div>
+                                </div><div class="map-icon ${ic}"></div></div>`;
+                        L.marker([c.lat,c.lon], {icon:L.divIcon({className:'c', html:html, iconSize:[48,48], iconAnchor:[24,24]})}).addTo(markersLayer);
+                    }
+                }
+            }
+
+            futureOrders.sort((a,b)=>a.targetDate.localeCompare(b.targetDate));
+            futureOrders.forEach(d => {
+                fut++;
+                const isTmr = d.targetDate === tmrStr;
+                const cls = isTmr ? 'future-tomorrow' : '';
+                const dateTxt = isTmr ? 'מחר!' : d.targetDate.split('-').reverse().join('/');
+                document.getElementById('list-future').innerHTML += `
+                    <div class="future-card ${cls}"><div class="kc-row"><span class="fc-date">${dateTxt
