@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ח.סבן - לוח תצוגה</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-primary: #ffffff;
+            --accent-green: #008069;
+            --status-new: #34B7F1;
+            --status-working: #fbc02d;
+            --status-delivery: #00e676;
+            --urgent-flash: #ff3b30;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: 'Rubik', sans-serif;
+            overflow: hidden; /* מונע גלילה של כל העמוד */
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- Header --- */
+        .top-bar {
+            height: 80px;
+            background: linear-gradient(90deg, #0f2027, #203a43, #2c5364);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+        .brand { font-size: 2rem; font-weight: 900; color: var(--accent-green); text-shadow: 0 0 10px rgba(0,128,105,0.4); }
+        .clock { font-size: 2.5rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+        /* --- Main Content --- */
+        .content-area {
+            flex: 1;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-auto-rows: min-content;
+            gap: 20px;
+            overflow-y: auto; /* גלילה רק לאזור הכרטיסים */
+        }
+
+        /* --- Cards --- */
+        .order-card {
+            background-color: var(--card-bg);
+            border-radius: 15px;
+            padding: 20px;
+            border-right: 6px solid #555;
+            box-shadow: 0 10px 15px rgba(0,0,0,0.3);
+            position: relative;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: transform 0.3s;
+        }
+        .order-card:hover { transform: translateY(-5px); background-color: #252525; }
+
+        /* סטטוסים - צבעים */
+        .status-1 { border-right-color: var(--status-new); }
+        .status-2 { border-right-color: var(--status-working); }
+        .status-3 { border-right-color: var(--status-delivery); }
+        
+        /* דחוף - הבהוב */
+        .urgent {
+            border: 2px solid var(--urgent-flash);
+            animation: flashBorder 2s infinite;
+        }
+        @keyframes flashBorder { 0% { box-shadow: 0 0 5px var(--urgent-flash); } 50% { box-shadow: 0 0 20px var(--urgent-flash); } 100% { box-shadow: 0 0 5px var(--urgent-flash); } }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+
+        .card-header-row { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .client-name { font-size: 1.4rem; font-weight: bold; }
+        .order-type { font-size: 0.9rem; background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 4px; }
+        .address-row { font-size: 1.1rem; color: #aaa; display: flex; align-items: center; gap: 5px; margin-bottom: 15px; }
+        
+        .status-badge {
+            padding: 5px 10px; border-radius: 5px; font-weight: bold; font-size: 0.9rem; width: fit-content;
+        }
+
+        /* --- Ticker Footer --- */
+        .ticker-wrap {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            height: 60px;
+            background-color: #D32F2F; /* ברירת מחדל אדום, משתנה דינמית */
+            color: white;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+            z-index: 20;
+            border-top: 4px solid rgba(0,0,0,0.2);
+        }
+        .ticker-content {
+            display: inline-block;
+            white-space: nowrap;
+            padding-left: 100%;
+            animation: ticker 30s linear infinite;
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+        @keyframes ticker { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(100%, 0, 0); } } /* RTL: הולך ימינה */
+
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <div class="brand"><i class="material-icons" style="vertical-align: sub;">local_shipping</i> ח.סבן לוגיסטיקה</div>
+        <div class="clock" id="clock">00:00</div>
+    </div>
+
+    <div class="content-area" id="orders-grid">
+        </div>
+
+    <div class="ticker-wrap" id="ticker-container" style="display:none;">
+        <div class="ticker-content" id="ticker-text"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, query, orderBy, doc } 
+        from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60",
+            authDomain: "app-saban94-57361.firebaseapp.com",
+            projectId: "app-saban94-57361",
+            storageBucket: "app-saban94-57361.firebasestorage.app",
+            messagingSenderId: "275366913167",
+            appId: "1:275366913167:web:f0c6f808e12f2aeb58fcfa",
+            measurementId: "G-E297QYKZKQ"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // --- 1. האזנה לפס חדשות (Ticker) ---
+        onSnapshot(doc(db, "settings", "ticker"), (doc) => {
+            const data = doc.data();
+            const container = document.getElementById('ticker-container');
+            const textEl = document.getElementById('ticker-text');
+
+            if (data && data.active && data.message) {
+                container.style.display = 'flex';
+                textEl.innerText = data.message;
+            } else {
+                container.style.display = 'none';
+            }
+        });
+
+        // --- 2. האזנה להזמנות (Live Orders) ---
+        const q = query(collection(db, "users"), orderBy("lastUpdate", "desc"));
+        
+        onSnapshot(q, (snap) => {
+            const grid = document.getElementById('orders-grid');
+            grid.innerHTML = ''; // ניקוי ובנייה מחדש
+
+            snap.forEach(doc => {
+                const d = doc.data();
+                
+                // מציג רק הזמנות פעילות (סטטוס 1, 2, 3)
+                if (d.status === 4 || d.status > 4) return;
+
+                const card = document.createElement('div');
+                card.className = `order-card status-${d.status} ${d.isUrgent ? 'urgent' : ''}`;
+                
+                // טקסט סטטוס
+                let statusText = 'ממתין';
+                let statusBg = 'var(--status-new)';
+                if(d.status == 2) { statusText = 'בטיפול'; statusBg = 'var(--status-working)'; }
+                if(d.status == 3) { statusText = 'בדרך'; statusBg = 'var(--status-delivery)'; }
+
+                card.innerHTML = `
+                    <div class="card-header-row">
+                        <div class="client-name">${d.name}</div>
+                        <div class="order-type">${d.deliveryType || 'כללי'}</div>
+                    </div>
+                    <div class="address-row">
+                        <i class="material-icons">location_on</i> ${d.address || 'לא צוינה כתובת'}
+                    </div>
+                    ${d.notes ? `<div style="color:#ff5252; font-weight:bold; margin-bottom:10px;">⚠️ ${d.notes}</div>` : ''}
+                    
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px;">
+                        <span class="status-badge" style="background:${statusBg}; color:black;">${statusText}</span>
+                        <span style="font-size:0.8rem; opacity:0.6;">${d.lastUpdate ? new Date(d.lastUpdate.toDate()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : ''}</span>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        });
+
+        // --- 3. שעון ---
+        setInterval(() => {
+            document.getElementById('clock').innerText = new Date().toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'});
+        }, 1000);
+
+    </script>
+</body>
+</html>
