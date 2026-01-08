@@ -3,120 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ח.סבן - ניהול + סטודיו</title>
+    <title>ניהול ח.סבן</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
-        body { background-color: #f4f6f8; font-family: 'Segoe UI', sans-serif; padding-bottom: 250px; /* מקום לפאנל התחתון */ }
-        .sidebar { background: #263238; min-height: 100vh; color: white; padding: 20px; }
-        .nav-link { color: #b0bec5; cursor: pointer; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 10px; margin-bottom: 5px; }
-        .nav-link:hover, .nav-link.active { background: #37474f; color: white; }
-        .nav-link i { font-size: 20px; }
-        
-        .main-content { padding: 30px; }
-        .card-custom { border: none; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); background: white; }
-        
-        /* --- סטודיו להודעות (תחתון) --- */
-        .news-studio {
-            position: fixed; bottom: 0; left: 0; width: 100%;
-            background: white; border-top: 1px solid #ddd;
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
-            padding: 15px; z-index: 2000;
-            display: flex; gap: 20px; align-items: flex-start;
-        }
-        
-        .preview-box {
-            flex: 1; background: #f0f2f5; border-radius: 8px; padding: 15px;
-            display: flex; flex-direction: column; gap: 10px; border: 1px dashed #ccc;
-        }
-        .ticker-preview {
-            background: #0078d4; color: white; padding: 10px 15px; border-radius: 4px;
-            display: flex; align-items: center; gap: 10px; font-weight: 500;
-        }
-        .ticker-preview.alert { background: #d32f2f; }
-        .ticker-preview.success { background: #2e7d32; }
-        
-        .tools-box { width: 400px; display: flex; flex-direction: column; gap: 10px; }
-        .color-btn { width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
-        .color-btn.selected { border-color: #333; transform: scale(1.1); }
-        .bg-blue { background: #0078d4; } .bg-red { background: #d32f2f; } .bg-green { background: #2e7d32; }
-
+        body { background: #f4f6f8; padding-bottom: 250px; }
+        .sidebar { background: #263238; color: white; min-height: 100vh; padding: 20px; }
+        .news-studio { position: fixed; bottom: 0; left: 0; width: 100%; background: white; padding: 15px; border-top: 2px solid #008069; z-index: 2000; box-shadow: 0 -5px 20px rgba(0,0,0,0.1); display: flex; gap: 20px; }
+        .color-btn { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
+        .selected { border-color: black; transform: scale(1.1); }
+        .bg-b { background: #0078d4; } .bg-r { background: #d32f2f; } .bg-g { background: #2e7d32; }
     </style>
 </head>
 <body>
-
 <div class="container-fluid">
     <div class="row">
         <div class="col-md-2 sidebar">
-            <h4 class="mb-4 text-center fw-bold">מערכת ניהול</h4>
-            <div class="nav-link active" onclick="switchTab('live')"><i class="material-icons">dvr</i> לוח חי</div>
-            <div class="nav-link" onclick="switchTab('history')"><i class="material-icons">history</i> ארכיון</div>
+            <h4>ניהול</h4>
+            <br>
+            <div><i class="material-icons">dvr</i> לוח חי</div>
         </div>
-
-        <div class="col-md-10 main-content">
-            <div id="tab-live">
-                <div class="d-flex justify-content-between mb-3">
-                    <h3>📋 ניהול הזמנות</h3>
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editModal" onclick="resetForm()">
-                        <i class="material-icons" style="vertical-align:middle">add</i> חדש
-                    </button>
-                </div>
-                <div class="card card-custom p-3">
-                    <table class="table">
-                        <thead><tr><th>לקוח</th><th>סוג</th><th>נהג</th><th>שעה</th><th>פעולות</th></tr></thead>
-                        <tbody id="live-table"></tbody>
-                    </table>
-                </div>
+        <div class="col-md-10 p-4">
+            <div class="d-flex justify-content-between">
+                <h3>📋 הזמנות</h3>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editModal" onclick="resetForm()">+ חדש</button>
             </div>
-            
-            <div id="tab-history" style="display:none;">
-                <h3>📜 ארכיון</h3>
-                <div class="card card-custom p-3">
-                    <table class="table table-striped"><tbody id="history-table"></tbody></table>
-                </div>
+            <div class="card mt-3 p-3 border-0 shadow-sm">
+                <table class="table">
+                    <thead><tr><th># תעודה</th><th>לקוח</th><th>נהג</th><th>כתובת</th><th>פעולות</th></tr></thead>
+                    <tbody id="table-body"></tbody>
+                </table>
             </div>
         </div>
     </div>
 </div>
 
 <div class="news-studio">
-    <div class="tools-box">
-        <h6 style="margin:0;"><i class="material-icons" style="font-size:16px; vertical-align:middle;">palette</i> סטודיו להודעות מסך</h6>
-        
-        <input type="text" id="studio-text" class="form-control" placeholder="הקלד את ההודעה כאן..." oninput="updatePreview()">
-        
-        <div class="d-flex align-items-center gap-2">
-            <span style="font-size:0.9rem;">צבע:</span>
-            <div class="color-btn bg-blue selected" onclick="setColor('blue', this)"></div>
-            <div class="color-btn bg-red" onclick="setColor('red', this)"></div>
-            <div class="color-btn bg-green" onclick="setColor('green', this)"></div>
-            
-            <span style="font-size:0.9rem; margin-right:10px;">אייקון:</span>
-            <select id="studio-icon" class="form-select form-select-sm" style="width:120px;" onchange="updatePreview()">
-                <option value="campaign">📢 כריזה</option>
-                <option value="cake">🎂 יום הולדת</option>
-                <option value="warning">⚠️ אזהרה</option>
-                <option value="celebration">🎉 חגיגה</option>
-                <option value="info">ℹ️ מידע</option>
+    <div style="width: 400px;">
+        <h6>📢 עורך חדשות מסך</h6>
+        <input id="news-in" class="form-control mb-2" placeholder="הקלד הודעה..." oninput="upd()">
+        <div class="d-flex gap-2 mb-2">
+            <div class="color-btn bg-b selected" onclick="setC('blue',this)"></div>
+            <div class="color-btn bg-r" onclick="setC('red',this)"></div>
+            <div class="color-btn bg-g" onclick="setC('green',this)"></div>
+            <select id="icon-in" class="form-select form-select-sm" style="width:100px;" onchange="upd()">
+                <option value="campaign">📢</option><option value="warning">⚠️</option><option value="celebration">🎉</option>
             </select>
         </div>
-        
-        <button class="btn btn-dark w-100" onclick="publishNews()">
-            <i class="material-icons" style="vertical-align:middle">send</i> שלח למסכים
-        </button>
+        <button class="btn btn-dark w-100" onclick="sendNews()">עדכן מסכים</button>
     </div>
-
-    <div class="preview-box">
-        <small class="text-muted">תצוגה מקדימה (איך זה ייראה בטלוויזיה):</small>
-        <div id="ticker-preview" class="ticker-preview">
-            <i class="material-icons" id="prev-icon">campaign</i>
-            <span id="prev-title" style="background:rgba(255,255,255,0.2); padding:2px 6px; border-radius:4px;">עדכונים</span>
-            <span id="prev-text">הקלד הודעה...</span>
+    <div style="flex:1; background:#eee; padding:10px; border-radius:8px;">
+        <small>תצוגה מקדימה:</small>
+        <div id="prev-bar" style="background:#0078d4; color:white; padding:10px; margin-top:5px; border-radius:4px; display:flex; align-items:center; gap:10px;">
+            <i class="material-icons" id="prev-ic">campaign</i><b id="prev-tit">עדכונים</b> | <span id="prev-txt">...</span>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="editModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">הזמנה</h5><button class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="orderForm"><input type="hidden" id="edit-id"><div class="mb-3"><label>לקוח</label><input type="text" id="in-name" class="form-control" required></div><div class="mb-3"><label>סוג</label><select id="in-type" class="form-select"><option>מנוף 10 מטר</option><option>מנוף 15 מטר</option><option>משאית חומרים</option><option>מכולה 8 קוב</option></select></div><div class="row"><div class="col-6"><label>נהג</label><input type="text" id="in-driver" class="form-control"></div><div class="col-6"><label>שעה</label><input type="time" id="in-time" class="form-control"></div></div><button type="submit" class="btn btn-primary w-100 mt-3">שמור</button></form></div></div></div></div>
+<div class="modal fade" id="editModal"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">עריכה/הוספה</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">
+    <form id="frm">
+        <input type="hidden" id="eid">
+        <div class="row">
+            <div class="col-6 mb-2"><label>מספר תעודה/הזמנה</label><input type="text" id="e-oid" class="form-control" placeholder="1025"></div>
+            <div class="col-6 mb-2"><label>שם לקוח</label><input type="text" id="e-name" class="form-control" required></div>
+        </div>
+        <div class="mb-2"><label>כתובת מלאה (חובה למפה!)</label><input type="text" id="e-addr" class="form-control" placeholder="עיר, רחוב ומספר"></div>
+        <div class="row">
+            <div class="col-6 mb-2"><label>שם נהג</label><input type="text" id="e-drv" class="form-control"></div>
+            <div class="col-6 mb-2"><label>סוג</label><select id="e-typ" class="form-select"><option>מנוף 10 מטר</option><option>מכולה 8 קוב</option><option>משאית חומרים</option></select></div>
+        </div>
+        <div class="row">
+            <div class="col-6"><label>תאריך</label><input type="date" id="e-date" class="form-control"></div>
+            <div class="col-6"><label>שעה</label><input type="time" id="e-time" class="form-control"></div>
+        </div>
+        <button class="btn btn-success w-100 mt-3">שמור</button>
+    </form>
+</div></div></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script type="module">
@@ -124,107 +86,49 @@
     import { getFirestore, collection, addDoc, updateDoc, deleteDoc, setDoc, doc, onSnapshot, query, orderBy } 
     from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    const firebaseConfig = { apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60", projectId: "app-saban94-57361", appId: "1:275366913167:web:f0c6f808e12f2aeb58fcfa" };
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    let allOrders = [];
-    let selectedColor = 'blue';
+    const db = getFirestore(initializeApp({ apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60", projectId: "app-saban94-57361", appId: "1:275366913167:web:f0c6f808e12f2aeb58fcfa" }));
+    let orders=[], col='blue';
 
-    // --- לוגיקת סטודיו ---
-    window.setColor = (color, btn) => {
-        selectedColor = color;
-        document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-        updatePreview();
+    // חדשות
+    window.setC=(c,el)=>{ col=c; document.querySelectorAll('.color-btn').forEach(b=>b.classList.remove('selected')); el.classList.add('selected'); upd(); };
+    window.upd=()=>{
+        const t=document.getElementById('news-in').value, i=document.getElementById('icon-in').value;
+        const p=document.getElementById('prev-bar');
+        document.getElementById('prev-txt').innerText=t; document.getElementById('prev-ic').innerText=i;
+        p.style.background = col==='red'?'#d32f2f':col==='green'?'#2e7d32':'#0078d4';
+        document.getElementById('prev-tit').innerText = col==='red'?'אזהרה':col==='green'?'הודעה':'עדכונים';
+    };
+    window.sendNews=async()=>{
+        let typ='info', tit='עדכונים'; if(col==='red'){typ='alert';tit='אזהרה';} if(col==='green'){typ='success';tit='הודעה';}
+        await setDoc(doc(db,"settings","news"), { text:document.getElementById('news-in').value, icon:document.getElementById('icon-in').value, type:typ, title:tit });
+        alert('עודכן!');
     };
 
-    window.updatePreview = () => {
-        const text = document.getElementById('studio-text').value || "הקלד הודעה...";
-        const icon = document.getElementById('studio-icon').value;
-        const prev = document.getElementById('ticker-preview');
-        
-        document.getElementById('prev-text').innerText = text;
-        document.getElementById('prev-icon').innerText = icon;
-        
-        prev.className = 'ticker-preview'; // Reset
-        if(selectedColor === 'red') prev.classList.add('alert');
-        if(selectedColor === 'green') prev.classList.add('success');
-        
-        // כותרת
-        let title = "עדכונים";
-        if(selectedColor === 'red') title = "אזהרה";
-        if(selectedColor === 'green') title = "הודעה משמחת";
-        document.getElementById('prev-title').innerText = title;
-    };
-
-    window.publishNews = async () => {
-        const text = document.getElementById('studio-text').value;
-        if(!text) return alert("אחי, תכתוב משהו!");
-        
-        let type = 'info';
-        if(selectedColor === 'red') type = 'alert';
-        if(selectedColor === 'green') type = 'success';
-        
-        let title = document.getElementById('prev-title').innerText;
-
-        await setDoc(doc(db, "settings", "news"), {
-            text: text,
-            icon: document.getElementById('studio-icon').value,
-            type: type,
-            title: title,
-            timestamp: new Date()
-        });
-        alert("ההודעה שודרה בהצלחה למסכים! 🚀");
-    };
-
-    // --- ניהול טבלאות (רגיל) ---
-    const q = query(collection(db, "users"), orderBy("lastUpdate", "desc"));
-    onSnapshot(q, (snap) => {
-        const live = document.getElementById('live-table');
-        const hist = document.getElementById('history-table');
-        live.innerHTML = ''; hist.innerHTML = '';
-        allOrders = [];
-
-        snap.forEach(docSnap => {
-            const d = docSnap.data(); d.id = docSnap.id; allOrders.push(d);
-            const row = document.createElement('tr');
-            
-            if(d.status === 4) {
-                row.innerHTML = `<td>${d.targetDate||'-'}</td><td>${d.name}</td><td>${d.deliveryType}</td><td>${d.driverName||'-'}</td>
-                <td><button class="btn btn-sm btn-outline-danger" onclick="window.del('${d.id}')"><i class="material-icons">delete</i></button></td>`;
-                hist.appendChild(row);
-            } else {
-                row.innerHTML = `<td><b>${d.name}</b></td><td>${d.deliveryType}</td><td>${d.driverName||'-'}</td><td class="text-success fw-bold">${d.targetTime||''}</td>
-                <td><button class="btn btn-sm btn-primary" onclick="window.edit('${d.id}')">ערוך</button> <button class="btn btn-sm btn-success" onclick="window.done('${d.id}')">סופק</button></td>`;
-                live.appendChild(row);
-            }
+    // הזמנות
+    onSnapshot(query(collection(db,"users"),orderBy("lastUpdate","desc")), s=>{
+        document.getElementById('table-body').innerHTML=''; orders=[];
+        s.forEach(d=>{
+            const o=d.data(); o.id=d.id; orders.push(o);
+            if(o.status!==4) document.getElementById('table-body').innerHTML += `<tr><td>${o.orgId||'-'}</td><td><b>${o.name}</b></td><td>${o.driverName||'-'}</td><td>${o.address||'<b class="text-danger">חסר!</b>'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="ed('${o.id}')">ערוך</button> <button class="btn btn-sm btn-success" onclick="ok('${o.id}')">סופק</button></td></tr>`;
         });
     });
 
-    // פונקציות עזר גלובליות
-    window.switchTab = (t) => {
-        document.getElementById('tab-live').style.display = t==='live'?'block':'none';
-        document.getElementById('tab-history').style.display = t==='history'?'block':'none';
-    };
-    window.resetForm = () => { document.getElementById('orderForm').reset(); document.getElementById('edit-id').value=''; };
-    window.edit = (id) => {
-        const o = allOrders.find(x=>x.id===id);
-        document.getElementById('edit-id').value=id; document.getElementById('in-name').value=o.name;
-        document.getElementById('in-type').value=o.deliveryType; document.getElementById('in-driver').value=o.driverName||'';
-        document.getElementById('in-time').value=o.targetTime||'';
+    window.resetForm=()=>{ document.getElementById('frm').reset(); document.getElementById('eid').value=''; };
+    window.ed=(id)=>{
+        const o=orders.find(x=>x.id===id);
+        document.getElementById('eid').value=id; document.getElementById('e-oid').value=o.orgId||'';
+        document.getElementById('e-name').value=o.name; document.getElementById('e-addr').value=o.address||'';
+        document.getElementById('e-drv').value=o.driverName||''; document.getElementById('e-typ').value=o.deliveryType;
+        document.getElementById('e-time').value=o.targetTime||'';
         new bootstrap.Modal(document.getElementById('editModal')).show();
     };
-    document.getElementById('orderForm').onsubmit = async (e) => {
-        e.preventDefault();
-        const id = document.getElementById('edit-id').value;
-        const d = { name:document.getElementById('in-name').value, deliveryType:document.getElementById('in-type').value, driverName:document.getElementById('in-driver').value, targetTime:document.getElementById('in-time').value, lastUpdate:new Date() };
-        if(id) await updateDoc(doc(db,"users",id), d);
-        else { d.status=1; await addDoc(collection(db,"users"), d); }
+    document.getElementById('frm').onsubmit=async(e)=>{
+        e.preventDefault(); const id=document.getElementById('eid').value;
+        const d={ orgId:document.getElementById('e-oid').value, name:document.getElementById('e-name').value, address:document.getElementById('e-addr').value, driverName:document.getElementById('e-drv').value, deliveryType:document.getElementById('e-typ').value, targetTime:document.getElementById('e-time').value, lastUpdate:new Date() };
+        if(id) await updateDoc(doc(db,"users",id),d); else { d.status=1; await addDoc(collection(db,"users"),d); }
         bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
     };
-    window.done = async (id) => updateDoc(doc(db,"users",id), {status:4});
-    window.del = async (id) => { if(confirm('למחוק?')) deleteDoc(doc(db,"users",id)); };
-
+    window.ok=async(id)=>updateDoc(doc(db,"users",id),{status:4});
 </script>
 </body>
 </html>
