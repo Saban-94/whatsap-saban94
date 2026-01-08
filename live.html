@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ח.סבן - דשבורד מתוקן</title>
+    <title>ח.סבן - מרכז שליטה משולב</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -11,9 +11,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     
     <style>
+        /* --- הגדרות בסיס --- */
         body { margin: 0; background: #e0e0e0; font-family: 'Rubik', sans-serif; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
 
-        /* בר עליון */
+        /* --- בר מדדים עליון --- */
         .top-bar {
             height: 90px; padding: 10px 25px;
             background: linear-gradient(135deg, #1e1e1e 0%, #2c3e50 100%);
@@ -23,36 +24,50 @@
         .metric-card {
             background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
             color: white; display: flex; flex-direction: column; justify-content: center; align-items: center;
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(5px); position: relative; overflow: hidden;
         }
-        .m-val { font-size: 2.2rem; font-weight: 900; line-height: 1; }
-        .m-sub { font-size: 0.8rem; opacity: 0.8; margin-top: 5px; }
+        .m-val { font-size: 2.2rem; font-weight: 900; line-height: 1; text-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        .m-sub { font-size: 0.8rem; opacity: 0.8; margin-top: 5px; letter-spacing: 1px; }
+        .border-bot { position: absolute; bottom: 0; left: 0; width: 100%; height: 4px; }
+        .c-1 { background: #fbc02d; } .c-2 { background: #00e676; } .c-3 { background: #29b6f6; } .c-4 { background: #ff3b30; }
 
+        /* --- במת המפה --- */
         .main-stage { flex: 1; position: relative; overflow: hidden; }
         #map { width: 100%; height: 100%; }
 
-        /* סרגלי צד */
-        .sidebar-left {
-            position: absolute; top: 20px; left: 20px; bottom: 20px; width: 360px;
-            display: flex; flex-direction: column; gap: 20px; z-index: 500; pointer-events: none;
-        }
-        .sidebar-right {
-            position: absolute; top: 20px; right: 20px; bottom: 100px; width: 300px;
-            display: flex; flex-direction: column; z-index: 500; pointer-events: none;
-        }
-
+        /* --- סרגלי צד --- */
         .glass-panel {
             background: rgba(20, 20, 20, 0.95); color: white; border-radius: 12px; overflow: hidden; pointer-events: auto;
             box-shadow: 0 20px 50px rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column;
         }
-        .panel-active { flex: 2; } .panel-done { flex: 1; } .panel-future { flex: 1; background: rgba(10, 30, 40, 0.95); }
-        .ph-title { padding: 12px; background: rgba(255,255,255,0.05); font-weight: 700; display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .ph-title { padding: 12px; background: rgba(255,255,255,0.05); font-weight: 700; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
         .scroll-area { flex: 1; overflow-y: auto; padding: 10px; }
 
-        /* כרטיסים */
-        .kitchen-card { background: #2a2a2a; border-radius: 6px; padding: 10px; margin-bottom: 8px; border-left: 4px solid #555; position: relative; transition: transform 0.3s; color: white; }
+        /* צד שמאל: פעיל + סופקו */
+        .sidebar-left {
+            position: absolute; top: 20px; left: 20px; bottom: 20px; width: 360px;
+            display: flex; flex-direction: column; gap: 20px; z-index: 500; pointer-events: none;
+        }
+        .panel-active { flex: 2; } 
+        .panel-done { flex: 1; }
+
+        /* צד ימין: עתיד + Viva Engage */
+        .sidebar-right {
+            position: absolute; top: 20px; right: 20px; bottom: 70px; width: 320px;
+            display: flex; flex-direction: column; gap: 20px; z-index: 500; pointer-events: none;
+        }
+        .panel-future { height: 35%; background: rgba(10, 30, 40, 0.95); }
+        .panel-viva { flex: 1; background: white; pointer-events: auto; } /* Viva צריך רקע לבן */
+
+        /* כרטיסי הזמנה (מטבח) */
+        .kitchen-card {
+            background: #2a2a2a; border-radius: 6px; padding: 10px; margin-bottom: 8px;
+            border-left: 4px solid #555; position: relative; transition: transform 0.3s; color: white;
+        }
         .highlight-card { transform: scale(1.02); box-shadow: 0 0 15px rgba(255,255,255,0.1); border: 1px solid white; }
-        .st-green { border-left-color: #00e676; } .st-yellow { border-left-color: #fbc02d; } .st-red { border-left-color: #ff3b30; }
+        .st-green { border-left-color: #00e676; } .st-yellow { border-left-color: #fbc02d; } .st-red { border-left-color: #ff3b30; animation: flash 1s infinite; }
+        @keyframes flash { 50% { background: #3a1c1c; } }
+
         .kc-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
         .kc-name { font-weight: bold; font-size: 1rem; }
         .kc-meta { font-size: 0.8rem; color: #aaa; }
@@ -63,18 +78,9 @@
         .future-tomorrow { border-right-color: #00bcd4; background: #37474f; opacity: 1; color: white; }
         .fc-date { font-weight: bold; color: #00bcd4; font-size: 0.85rem; }
 
-        /* חדשות */
-        .news-ticker {
-            height: 50px; background: #0078d4; color: white; display: flex; align-items: center;
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.3); z-index: 2000; position: relative;
-        }
-        .ticker-label { background: #005a9e; height: 100%; display: flex; align-items: center; padding: 0 20px; font-weight: 900; z-index: 2; }
-        .ticker-content { position: absolute; line-height: 50px; font-size: 1.3rem; font-weight: 500; white-space: nowrap; animation: move 20s linear infinite; padding-left: 100%; }
-        @keyframes move { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
-        .theme-alert { background: #d32f2f !important; } .theme-success { background: #2e7d32 !important; }
-
-        /* --- עיצוב סיכות (הנחש) --- */
+        /* --- סיכות מפה (הנחש) --- */
         .pin-container { position: relative; display: flex; justify-content: center; align-items: center; }
+        
         .info-bubble {
             position: absolute; bottom: 65px;
             background: #1e1e1e; color: white; border-radius: 8px;
@@ -82,6 +88,7 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 100; padding: 8px;
         }
         .info-bubble::after { content: ''; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); border-width: 8px 8px 0; border-style: solid; border-color: #1e1e1e transparent transparent transparent; }
+        
         .snake-border {
             position: absolute; inset: -2px; border-radius: 10px;
             background: conic-gradient(from 0deg, transparent, #00e676, transparent 30%);
@@ -89,10 +96,12 @@
         }
         .snake-inner { position: absolute; inset: 2px; background: #1e1e1e; border-radius: 8px; z-index: 0; }
         @keyframes rotate { 100% { transform: rotate(360deg); } }
+        
         .bubble-content { position: relative; z-index: 1; }
         .row-top { font-size: 0.8rem; color: #00e676; border-bottom: 1px solid #333; padding-bottom: 2px; margin-bottom: 2px; display: flex; justify-content: space-between; }
         .row-main { font-weight: bold; font-size: 1rem; margin-bottom: 2px; line-height: 1.1; }
         .row-sub { font-size: 0.8rem; color: #bbb; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        
         .mode-info { display: block; } .mode-timer { display: none; font-family: monospace; font-size: 1.5rem; color: #fbc02d; font-weight: bold; }
         .show-timer .mode-info { display: none; } .show-timer .mode-timer { display: block; }
         .urgent .snake-border { background: conic-gradient(from 0deg, transparent, #ff3b30, transparent 30%); }
@@ -108,7 +117,7 @@
         .ic-truck { background-image: url('https://cdn-icons-png.flaticon.com/512/9420/9420542.png'); border-color: #2196f3; }
         .ic-cont { background-image: url('https://cdn-icons-png.flaticon.com/512/9630/9630364.png'); border-color: #ff9800; }
 
-        /* MEGA POPUP */
+        /* --- MEGA POPUP --- */
         .mega-popup-overlay { position: absolute; inset: 0; z-index: 9999; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; backdrop-filter: blur(8px); }
         .popup-card { width: 700px; padding: 40px; border-radius: 30px; text-align: center; color: white; position: relative; box-shadow: 0 0 100px rgba(0,0,0,0.8); animation: zoomIn 0.5s; }
         .theme-gold { background: linear-gradient(135deg, #1c1c1c, #4a4a4a); border: 4px solid #ffd700; box-shadow: 0 0 50px rgba(255, 215, 0, 0.3); }
@@ -122,15 +131,25 @@
         .pop-body { font-size: 1.8rem; margin-bottom: 40px; color: #eee; }
         @keyframes zoomIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
+        /* --- פס חדשות --- */
+        .news-ticker {
+            height: 50px; background: #0078d4; color: white; display: flex; align-items: center;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.3); z-index: 2000; position: relative;
+        }
+        .ticker-label { background: #005a9e; height: 100%; display: flex; align-items: center; padding: 0 20px; font-weight: 900; z-index: 2; }
+        .ticker-content { position: absolute; line-height: 50px; font-size: 1.3rem; font-weight: 500; white-space: nowrap; animation: move 20s linear infinite; padding-left: 100%; }
+        @keyframes move { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
+        .theme-alert { background: #d32f2f !important; } .theme-success { background: #2e7d32 !important; }
+
     </style>
 </head>
 <body>
 
     <div class="top-bar">
-        <div class="metric-card"><span class="m-val" id="val-hist">0</span><span class="m-sub">ארכיון</span></div>
-        <div class="metric-card"><span class="m-val" id="val-next" style="color:#29b6f6">--:--</span><span class="m-sub">הבאה</span></div>
-        <div class="metric-card"><span class="m-val" id="val-clock">00:00</span><span class="m-sub">שעון</span></div>
-        <div class="metric-card"><span class="m-val" id="val-active">0</span><span class="m-sub">פעילים היום</span></div>
+        <div class="metric-card"><span class="m-val" id="val-hist">0</span><span class="m-sub">ארכיון</span><div class="border-bot c-1"></div></div>
+        <div class="metric-card"><span class="m-val" id="val-next" style="color:#29b6f6">--:--</span><span class="m-sub">משימה הבאה</span><div class="border-bot c-3"></div></div>
+        <div class="metric-card"><span class="m-val" id="val-clock">00:00</span><span class="m-sub">שעון</span><div class="border-bot c-2"></div></div>
+        <div class="metric-card"><span class="m-val" id="val-active">0</span><span class="m-sub">פעילים היום</span><div class="border-bot c-4"></div></div>
     </div>
 
     <div class="main-stage">
@@ -152,6 +171,13 @@
                 <div class="ph-title" style="color:#00bcd4;"><span>📅 תכנון עתידי</span><span id="cnt-future">0</span></div>
                 <div class="scroll-area" id="list-future"></div>
             </div>
+            
+            <div class="glass-panel panel-viva">
+                <div class="ph-title" style="background:#f3f2f1; color:#333; border-bottom:1px solid #ddd;">
+                    <span><i class="material-icons" style="color:#0078d4; vertical-align:middle;">forum</i> חדשות הצוות</span>
+                </div>
+                <iframe name="embed-feed" title="Viva Engage" src="https://engage.cloud.microsoft/embed/groups/eyJfdHlwZSI6Ikdyb3VwIiwiaWQiOiIwIn0" style="border:0; width:100%; height:100%;"></iframe>
+            </div>
         </div>
     </div>
 
@@ -159,14 +185,14 @@
         <div class="popup-card" id="popup-inner">
             <i class="material-icons pop-icon" id="pop-icon">verified</i>
             <div class="pop-title" id="pop-title">הודעה</div>
-            <div class="pop-body" id="pop-body">...</div>
+            <div class="pop-body" id="pop-body">תוכן...</div>
         </div>
     </div>
 
     <div class="news-ticker" id="ticker-bar">
         <div class="ticker-label"><i class="material-icons">campaign</i>&nbsp;<span id="news-title">עדכונים</span></div>
         <div class="ticker-content-wrapper" style="flex:1; position:relative; overflow:hidden;">
-            <div class="ticker-content" id="news-text">טוען...</div>
+            <div class="ticker-content" id="news-text">טוען נתונים...</div>
         </div>
     </div>
 
@@ -191,7 +217,8 @@
             if(!address) return null;
             if(geoCache[address]) return geoCache[address];
             try{
-                const jitter = (Math.random()-0.5)*0.0003; // רעידה למניעת חפיפה
+                // Jitter למניעת חפיפה
+                const jitter = (Math.random()-0.5)*0.0003;
                 const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address+', Israel')}&limit=1`);
                 const data = await res.json();
                 if(data.length){ const c={lat:parseFloat(data[0].lat)+jitter, lon:parseFloat(data[0].lon)+jitter}; geoCache[address]=c; return c; }
@@ -202,7 +229,7 @@
         function getSec(t) { if(!t) return 99999; const now=new Date(); const [h,m]=t.split(':'); const d=new Date(); d.setHours(h,m,0); return Math.floor((d-now)/1000); }
         function fmt(s) { const h=Math.floor(Math.abs(s)/3600), m=Math.floor((Math.abs(s)%3600)/60), sc=Math.abs(s)%60; return `${s<0?'-':''}${h<10?'0'+h:h}:${m<10?'0'+m:m}:${sc<10?'0'+sc:sc}`; }
 
-        // האזנה להזמנות - תיקון לוגיקה
+        // האזנה להזמנות - הפרדה חכמה
         onSnapshot(query(collection(db, "users")), async (snap) => {
             markersLayer.clearLayers();
             document.getElementById('list-active').innerHTML=''; 
@@ -224,21 +251,20 @@
                     don++;
                     document.getElementById('list-done').innerHTML += `<div style="border-bottom:1px solid #444; padding:5px; display:flex; justify-content:space-between;"><span>${d.name}</span><span>${d.deliveryType}</span></div>`;
                 } else {
-                    // לוגיקת הפרדה: עתיד מול הווה
                     const oDate = d.targetDate || today;
                     if(oDate > today) futureOrders.push(d);
                     else todayOrders.push(d);
                 }
             });
 
-            // עיבוד הזמנות היום (כולל איחורים)
+            // הזמנות היום - יצירת סיכות וכרטיסים
             todayOrders.sort((a,b)=>getSec(a.targetTime)-getSec(b.targetTime));
             for(const d of todayOrders) {
                 act++;
                 const sec = getSec(d.targetTime);
                 if(sec<minS) minS=sec;
                 let st='st-green'; if(sec<1800)st='st-yellow'; if(sec<0)st='st-red';
-                const oid=d.orgId||'--'; const drv=d.driverName||'ללא';
+                const oid=d.orgId||'--'; const drv=d.driverName||'ללא נהג';
 
                 document.getElementById('list-active').innerHTML += `
                     <div class="kitchen-card ${st}" id="card-${d.id}">
@@ -273,7 +299,7 @@
                 }
             }
 
-            // הזמנות עתידיות
+            // הזמנות עתיד
             futureOrders.sort((a,b)=>a.targetDate.localeCompare(b.targetDate));
             futureOrders.forEach(d => {
                 fut++;
@@ -288,6 +314,7 @@
                     </div>`;
             });
 
+            // עדכון מונים
             document.getElementById('val-active').innerText=act; document.getElementById('cnt-active').innerText=act;
             document.getElementById('val-hist').innerText=don; document.getElementById('cnt-done').innerText=don;
             document.getElementById('cnt-future').innerText=fut;
@@ -300,13 +327,14 @@
                 const d=s.data(); const el=document.getElementById('mega-popup'); const c=document.getElementById('popup-inner');
                 if(d.active){
                     document.getElementById('pop-title').innerText=d.title; document.getElementById('pop-body').innerText=d.text;
+                    document.getElementById('pop-icon').innerText=d.icon || 'verified';
                     c.className='popup-card animate__animated animate__zoomIn theme-'+(d.theme||'neon');
                     el.style.display='flex';
                 } else el.style.display='none';
             }
         });
 
-        // NEWS - תיקון: מחובר עכשיו
+        // NEWS
         onSnapshot(doc(db, "settings", "news"), (s)=>{
             if(s.exists()){
                 const d=s.data();
@@ -317,20 +345,25 @@
             }
         });
 
-        // טיסה
+        // מנוע טיסה
         setInterval(()=>{
             if(!activeLocations.length || isUserInteracting) return;
             const t = activeLocations[currentFlyIndex];
             map.flyTo([t.lat,t.lon], 15, {animate:true, duration:4});
+            
+            // הדגשה ויזואלית
             document.querySelectorAll('.kitchen-card').forEach(e=>e.classList.remove('highlight-card'));
             document.querySelectorAll('.pin-container').forEach(e=>e.classList.remove('pin-highlight'));
+            
             const c=document.getElementById('card-'+t.id); if(c){ c.classList.add('highlight-card'); c.scrollIntoView({behavior:"smooth",block:"center"}); }
             const p=document.getElementById('pin-'+t.id); if(p) p.classList.add('pin-highlight');
+            
             currentFlyIndex=(currentFlyIndex+1)%activeLocations.length;
         }, 10000);
+
         map.on('mousedown', ()=>{isUserInteracting=true; setTimeout(()=>isUserInteracting=false,30000);});
 
-        // שעון
+        // שעון וטיימרים
         setInterval(()=>{
             document.getElementById('val-clock').innerText=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
             const show=(Math.floor(Date.now()/1000)%10)>5;
