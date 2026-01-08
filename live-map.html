@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ח.סבן - מסך שידור לוגיסטי</title>
+    <title>ח.סבן - בקרת משימה אוטומטית</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;700;900&display=swap" rel="stylesheet">
@@ -22,17 +22,17 @@
 
         #map { width: 100vw; height: 100vh; }
 
-        /* --- 1. רשימת "סופקו היום" (צד שמאל + גלילה) --- */
+        /* --- רשימת "סופקו היום" נגללת --- */
         .completed-panel {
-            position: absolute; bottom: 20px; left: 20px; /* עבר לצד שמאל */
+            position: absolute; bottom: 20px; left: 20px;
             z-index: 500;
-            width: 320px; height: 35vh; /* גובה קבוע כדי לאפשר גלילה */
+            width: 320px; height: 40vh;
             background: rgba(255,255,255,0.9);
             border-radius: 12px;
             box-shadow: 0 5px 20px rgba(0,0,0,0.2);
             border: 1px solid #ddd;
             display: flex; flex-direction: column;
-            overflow: hidden; /* מסתיר את מה שיוצא מהמסגרת */
+            overflow: hidden;
         }
         
         .panel-header {
@@ -41,98 +41,77 @@
             z-index: 2; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
-        /* מיכל הגלילה */
-        .marquee-container {
-            flex: 1; position: relative; overflow: hidden;
-        }
-
-        /* התוכן שזז */
-        .marquee-content {
-            position: absolute; width: 100%;
-            animation: scrollUp 20s linear infinite; /* מהירות הגלילה */
-        }
-        
-        /* אם הרשימה קצרה, לא צריך אנימציה (JS יטפל בזה, אבל זה הדיפולט) */
-        @keyframes scrollUp {
-            0% { transform: translateY(100%); }
-            100% { transform: translateY(-100%); } 
-        }
+        .marquee-container { flex: 1; position: relative; overflow: hidden; }
+        .marquee-content { position: absolute; width: 100%; top: 0; transition: top 0.5s; }
 
         .completed-item {
             background: #fff; border-bottom: 1px solid #eee;
             padding: 10px; margin: 5px 10px;
             border-radius: 6px; border-right: 4px solid #4caf50;
             display: flex; justify-content: space-between; align-items: center;
+            animation: slideIn 0.5s ease-out;
         }
+        @keyframes slideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+
         .c-name { font-weight: bold; font-size: 0.95rem; color: #333; }
         .c-desc { font-size: 0.8rem; color: #666; }
 
-        /* --- 2. פופ-אפ "מקדונלדס" (Big Alert Overlay) --- */
-        .big-alert-overlay {
-            position: absolute; top: 100px; left: 50%; transform: translateX(-50%);
-            z-index: 2000;
-            display: none; /* מוסתר כברירת מחדל */
-            flex-direction: column; align-items: center;
-            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
+        /* --- עיצוב סיכה + שלט (Radar Pin + Sign) --- */
+        .pin-wrapper { position: relative; display: flex; justify-content: center; align-items: center; }
 
-        .alert-card {
-            background: #fff; width: 500px; text-align: center;
-            border-radius: 20px; overflow: hidden;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-            border: 4px solid #fff;
-        }
-
-        .alert-header {
-            background: #d32f2f; color: white; padding: 15px;
-            font-size: 1.5rem; font-weight: 900;
-            animation: flashHeader 1s infinite alternate;
+        /* גלי המכ"ם */
+        .radar-blip {
+            width: 60px; height: 60px; border-radius: 50%;
+            background: rgba(0, 128, 105, 0.2);
+            border: 2px solid #008069;
+            position: absolute;
+            animation: pulseWave 2s infinite;
         }
         
-        .alert-body { padding: 30px; }
-        .alert-client { font-size: 2.5rem; font-weight: 900; color: #333; margin-bottom: 10px; line-height: 1; }
-        .alert-type { font-size: 1.5rem; color: #666; background: #eee; display: inline-block; padding: 5px 15px; border-radius: 50px; margin-bottom: 20px; }
-        .alert-timer { font-size: 4rem; font-weight: 900; color: #d32f2f; font-family: monospace; letter-spacing: -2px; }
-        .alert-address { margin-top: 15px; font-size: 1.1rem; color: #555; border-top: 1px solid #eee; padding-top: 10px; }
+        .center-dot {
+            width: 44px; height: 44px; background: white; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 24px; position: relative; z-index: 2;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+            border: 2px solid white;
+        }
 
-        @keyframes popIn { from { transform: translateX(-50%) scale(0.5); opacity: 0; } to { transform: translateX(-50%) scale(1); opacity: 1; } }
-        @keyframes flashHeader { from { background: #d32f2f; } to { background: #b71c1c; } }
+        /* מצב דחוף (פחות מ-30 דקות) */
+        .pin-wrapper.urgent .radar-blip {
+            background: rgba(255, 59, 48, 0.3); border-color: #ff3b30;
+            animation: pulseWave 0.8s infinite;
+        }
+        .pin-wrapper.urgent .center-dot { border-color: #ff3b30; }
 
-        /* --- 3. הגדרות סיכות (CSS PINS) --- */
-        /* כאן אתה מכניס את הלינקים שלך לתמונות */
+        @keyframes pulseWave { 0% { transform: scale(0.8); opacity: 1; } 100% { transform: scale(2.5); opacity: 0; } }
+
+        /* --- השלט המרחף מעל הסיכה --- */
+        .floating-sign {
+            position: absolute; bottom: 65px;
+            background: white; color: #333;
+            padding: 6px 12px; border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            text-align: center; min-width: 120px;
+            font-weight: bold; border-bottom: 3px solid #008069;
+            transform: translateX(-0%); /* איזון */
+            z-index: 10;
+        }
         
-        .custom-pin-icon {
-            background-size: cover;
-            background-position: center;
-            border-radius: 50%;
-            border: 3px solid white;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-            transition: transform 0.2s;
+        /* משולש קטן לשלט */
+        .floating-sign::after {
+            content: ''; position: absolute; bottom: -8px; left: 50%;
+            margin-left: -8px; border-width: 8px 8px 0; border-style: solid;
+            border-color: #008069 transparent transparent transparent;
         }
 
-        /* החלף את ה-URL בלינקים האמיתיים שלך */
-        .pin-crane { 
-            background-image: url('https://cdn-icons-png.flaticon.com/512/2329/2329113.png'); /* לינק למנוף */
-            border-color: #fbc02d; 
-        }
-        .pin-truck { 
-            background-image: url('https://cdn-icons-png.flaticon.com/512/2555/2555013.png'); /* לינק למשאית */
-            border-color: #2196f3;
-        }
-        .pin-container { 
-            background-image: url('https://cdn-icons-png.flaticon.com/512/9333/9333994.png'); /* לינק למכולה */
-            border-color: #ff9800;
-        }
-        .pin-default { 
-            background-image: url('https://cdn-icons-png.flaticon.com/512/664/664468.png'); 
-        }
+        .fs-name { font-size: 0.9rem; margin-bottom: 2px; }
+        .fs-timer { font-family: monospace; font-size: 1.1rem; color: #008069; font-weight: 900; }
+        
+        .pin-wrapper.urgent .floating-sign { border-bottom-color: #ff3b30; }
+        .pin-wrapper.urgent .floating-sign::after { border-top-color: #ff3b30; }
+        .pin-wrapper.urgent .fs-timer { color: #ff3b30; animation: flashText 1s infinite; }
 
-        /* אנימציה לסיכה דחופה */
-        .pin-urgent {
-            border-color: #ff3b30 !important;
-            animation: bouncePin 1s infinite;
-        }
-        @keyframes bouncePin { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        @keyframes flashText { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
     </style>
 </head>
@@ -140,7 +119,7 @@
 
     <div class="map-header">
         <div style="font-weight:900; font-size:1.2rem; color:#008069;">
-            <i class="material-icons" style="vertical-align:middle;">tv</i> ח.סבן ON-AIR
+            <i class="material-icons" style="vertical-align:middle;">av_timer</i> ח.סבן - בקרת משימה
         </div>
         <div style="border-right:1px solid #ccc; height:20px; margin:0 15px;"></div>
         <div id="active-count" style="font-weight:bold; color:#555;">טוען...</div>
@@ -148,23 +127,10 @@
 
     <div id="map"></div>
 
-    <div id="big-alert" class="big-alert-overlay">
-        <div class="alert-card">
-            <div class="alert-header">🚨 הזמנה קריטית</div>
-            <div class="alert-body">
-                <div class="alert-client" id="ba-client">ישראל ישראלי</div>
-                <div class="alert-type" id="ba-type">מנוף 10 מטר</div>
-                <div class="alert-timer" id="ba-timer">00:14:59</div>
-                <div class="alert-address" id="ba-addr">הרצל 50, ראשון לציון</div>
-            </div>
-        </div>
-    </div>
-
     <div class="completed-panel">
-        <div class="panel-header">✅ הושלמו היום (<span id="comp-count">0</span>)</div>
+        <div class="panel-header">✅ בוצעו היום (<span id="comp-count">0</span>)</div>
         <div class="marquee-container">
-            <div class="marquee-content" id="completed-list">
-                </div>
+            <div class="marquee-content" id="completed-list"></div>
         </div>
     </div>
 
@@ -172,7 +138,7 @@
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, query } 
+        import { getFirestore, collection, onSnapshot, query, updateDoc, doc } 
         from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -187,17 +153,16 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // מפה
+        // מפה בעברית
         const map = L.map('map', { zoomControl: false }).setView([32.3215, 34.8532], 12);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
         const markersLayer = L.layerGroup().addTo(map);
         const geoCache = {};
 
-        // משתנים לניהול הפופ-אפ המתחלף
-        let criticalOrders = [];
-        let alertIndex = 0;
-        let alertInterval = null;
+        // מערכת ניהול טיימרים מקומית
+        // מפתח = ID של הזמנה, ערך = האובייקט של הטיימר
+        const activeTimers = {};
 
         async function getCoords(address) {
             if (!address) return null;
@@ -214,63 +179,74 @@
             return null;
         }
 
-        function getMinutesLeft(date, time) {
-            if(!time) return 999;
+        function getEmoji(type) {
+            if(!type) return '📦';
+            if(type.includes('מנוף')) return '🏗️';
+            if(type.includes('מכולה')) return '🗑️';
+            if(type.includes('משאית')) return '🚚';
+            return '📦';
+        }
+
+        // חישוב שניות שנותרו
+        function getSecondsRemaining(targetDate, targetTime) {
+            if(!targetTime) return null;
             const now = new Date();
-            let target = date ? new Date(date) : new Date();
-            const [h, m] = time.split(':');
+            let target = targetDate ? new Date(targetDate) : new Date();
+            const [h, m] = targetTime.split(':');
             target.setHours(h, m, 0, 0);
-            return Math.floor((target - now) / 60000);
+            return Math.floor((target - now) / 1000);
         }
 
-        // פונקציה לבחירת CSS Class לפי סוג (עבור התמונות)
-        function getPinClass(type) {
-            if(!type) return 'pin-default';
-            if(type.includes('מנוף')) return 'pin-crane';
-            if(type.includes('מכולה')) return 'pin-container';
-            if(type.includes('משאית')) return 'pin-truck';
-            return 'pin-default';
+        // פורמט לשעון
+        function formatTime(totalSeconds) {
+            if (totalSeconds <= 0) return "00:00:00";
+            const h = Math.floor(totalSeconds / 3600);
+            const m = Math.floor((totalSeconds % 3600) / 60);
+            const s = totalSeconds % 60;
+            return `${h < 10 ? '0'+h : h}:${m < 10 ? '0'+m : m}:${s < 10 ? '0'+s : s}`;
         }
 
-        // ניהול הרוטציה של ההתראות (מקדונלדס)
-        function updateAlertRotation() {
-            const overlay = document.getElementById('big-alert');
-            
-            // אם אין הזמנות קריטיות - סגור
-            if (criticalOrders.length === 0) {
-                overlay.style.display = 'none';
-                return;
+        // פונקציה לסיום משימה (עדכון בסיס נתונים)
+        async function completeOrder(id, name) {
+            console.log(`Order ${name} completed! Updating DB...`);
+            try {
+                // עדכון סטטוס ל-4 (סופק)
+                await updateDoc(doc(db, "users", id), { status: 4 });
+            } catch (e) {
+                console.error("Error completing order:", e);
             }
-
-            // הצג את ההזמנה הנוכחית בתור
-            const order = criticalOrders[alertIndex];
-            overlay.style.display = 'flex';
-            
-            document.getElementById('ba-client').innerText = order.name;
-            document.getElementById('ba-type').innerText = order.deliveryType;
-            document.getElementById('ba-addr').innerText = order.address;
-            
-            // עדכון טיימר חי בפופ-אפ
-            const min = order.minutesLeft;
-            const sign = min < 0 ? '-' : '';
-            const absMin = Math.abs(min);
-            const h = Math.floor(absMin / 60);
-            const m = absMin % 60;
-            document.getElementById('ba-timer').innerText = `${sign}${h < 10 ? '0'+h : h}:${m < 10 ? '0'+m : m}:00`;
-
-            // קידום האינדקס לפעם הבאה (רוטציה)
-            alertIndex = (alertIndex + 1) % criticalOrders.length;
         }
 
-        // התחלת הרוטציה (כל 5 שניות מחליף הזמנה)
-        setInterval(updateAlertRotation, 5000);
+        // --- LOOP ראשי לעדכון טיימרים ---
+        setInterval(() => {
+            document.querySelectorAll('.fs-timer').forEach(el => {
+                const date = el.getAttribute('data-date');
+                const time = el.getAttribute('data-time');
+                const id = el.getAttribute('data-id');
+                const name = el.getAttribute('data-name');
 
-        // --- Snapshot ראשי ---
+                const seconds = getSecondsRemaining(date, time);
+
+                if (seconds !== null) {
+                    el.innerText = formatTime(seconds);
+                    
+                    // === הלוגיקה האוטומטית ===
+                    // אם הזמן נגמר (פחות מ-0) וההזמנה עדיין לא סומנה כטופלה
+                    if (seconds <= 0 && !activeTimers[id]?.completing) {
+                        activeTimers[id] = { completing: true }; // מניעת כפילויות
+                        completeOrder(id, name);
+                    }
+                } else {
+                    el.innerText = "--:--";
+                }
+            });
+        }, 1000);
+
+
+        // --- האזנה לנתונים ---
         const q = query(collection(db, "users"));
         onSnapshot(q, async (snap) => {
             markersLayer.clearLayers();
-            criticalOrders = []; // איפוס רשימת דחופים
-
             const compList = document.getElementById('completed-list');
             compList.innerHTML = ''; 
             
@@ -280,8 +256,8 @@
 
             const promises = snap.docs.map(async docSnap => {
                 const d = docSnap.data();
-
-                // 1. טיפול בהזמנות שסופקו (רשימה נגללת)
+                
+                // 1. רשימת "בוצעו"
                 if (d.status === 4) {
                     completed++;
                     const row = document.createElement('div');
@@ -297,26 +273,37 @@
                     return;
                 }
 
-                // 2. טיפול בהזמנות פעילות (מפה)
+                // 2. הזמנות פעילות למפה
                 if (!d.address) return;
                 active++;
                 const coords = await getCoords(d.address);
 
                 if (coords) {
-                    const minutesLeft = getMinutesLeft(d.targetDate, d.targetTime);
-                    const isUrgent = minutesLeft < 30; // מתחת לחצי שעה זה דחוף
-                    
-                    // הוספה לרשימת הדחופים אם רלוונטי
-                    if (isUrgent || d.isUrgent) {
-                        criticalOrders.push({ ...d, minutesLeft });
-                    }
+                    const secondsLeft = getSecondsRemaining(d.targetDate, d.targetTime);
+                    const isUrgent = secondsLeft !== null && secondsLeft < 1800; // חצי שעה
 
-                    // יצירת הסיכה עם ה-CSS שלך
-                    const pinClass = getPinClass(d.deliveryType);
-                    const urgentClass = (isUrgent || d.isUrgent) ? 'pin-urgent' : '';
+                    const urgentClass = (isUrgent || d.isUrgent) ? 'urgent' : '';
                     
+                    const html = `
+                        <div class="pin-wrapper ${urgentClass}">
+                            <div class="floating-sign">
+                                <div class="fs-name">${d.name}</div>
+                                <div class="fs-timer" 
+                                     data-id="${docSnap.id}" 
+                                     data-name="${d.name}"
+                                     data-date="${d.targetDate || ''}" 
+                                     data-time="${d.targetTime || ''}">
+                                     --:--
+                                </div>
+                            </div>
+                            <div class="radar-blip"></div>
+                            <div class="center-dot">${getEmoji(d.deliveryType)}</div>
+                        </div>
+                    `;
+
                     const icon = L.divIcon({
-                        className: `custom-pin-icon ${pinClass} ${urgentClass}`,
+                        className: 'custom-icon', // לא משתמשים ב-class הזה, העיצוב ב-html
+                        html: html,
                         iconSize: [60, 60],
                         iconAnchor: [30, 30]
                     });
@@ -327,23 +314,27 @@
             });
 
             await Promise.all(promises);
-            
             document.getElementById('active-count').innerText = active;
             document.getElementById('comp-count').innerText = completed;
             
-            // עדכון גובה אנימציית הגלילה לפי כמות הפריטים
-            const contentHeight = compList.scrollHeight;
-            const containerHeight = document.querySelector('.marquee-container').clientHeight;
-            // אם יש מספיק תוכן לגלילה, עדכן את משך האנימציה
-            if (contentHeight > containerHeight) {
-                compList.style.animationDuration = `${contentHeight / 20}s`; // התאמת מהירות
+            // אנימציית גלילה לרשימה
+            const contentH = compList.scrollHeight;
+            const containerH = 300; // גובה משוער
+            if(contentH > containerH) {
+                // גלילה JS פשוטה
+                let pos = 0;
+                if(window.scrollInterval) clearInterval(window.scrollInterval);
+                window.scrollInterval = setInterval(() => {
+                    pos -= 1;
+                    if (Math.abs(pos) >= contentH) pos = containerH; // ריסט למטה
+                    compList.style.top = pos + 'px';
+                }, 50);
             } else {
-                compList.style.animation = 'none'; // בטל גלילה אם קצר
+                 compList.style.top = '0px';
             }
 
-            if (bounds.length) map.fitBounds(bounds, { padding: [80, 80] });
+            if (bounds.length) map.fitBounds(bounds, { padding: [100, 100] });
         });
-
     </script>
 </body>
 </html>
