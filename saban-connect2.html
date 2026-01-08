@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Saban Connect</title>
+    <meta name="theme-color" content="#111b21">
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+
+    <style>
+        /* עיצוב WhatsApp Dark Mode מדוייק */
+        body { background-color: #0b141a; color: #e9edef; font-family: 'Rubik', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        
+        /* אזור עליון */
+        .app-header {
+            background: #202c33; height: 60px; padding: 0 15px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #2f3b43;
+        }
+        .user-info { display: flex; align-items: center; gap: 10px; }
+        .avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+        .status-dot { width: 10px; height: 10px; background: #00a884; border-radius: 50%; position: absolute; bottom: 0; right: 0; border: 2px solid #202c33; }
+
+        /* אזור הצ'אט */
+        .chat-area { 
+            flex: 1; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');
+            background-color: #0b141a; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px;
+        }
+        
+        /* בועות הודעה */
+        .msg { max-width: 75%; padding: 6px 10px; border-radius: 8px; font-size: 0.95rem; position: relative; box-shadow: 0 1px 0.5px rgba(0,0,0,0.13); line-height: 1.4; }
+        .msg-in { align-self: flex-start; background: #202c33; border-top-right-radius: 0; }
+        .msg-out { align-self: flex-end; background: #005c4b; border-top-left-radius: 0; }
+        .msg-sender { font-size: 0.75rem; color: #00a884; font-weight: bold; margin-bottom: 2px; display: block; }
+        .msg-time { font-size: 0.7rem; color: #8696a0; float: left; margin-top: 5px; margin-right: 5px; }
+
+        /* אזור הקלדה + כפתור הפעולה */
+        .input-bar { background: #202c33; padding: 8px 10px; display: flex; align-items: center; gap: 10px; }
+        .input-field { flex: 1; background: #2a3942; border: none; border-radius: 8px; padding: 10px 15px; color: white; outline: none; }
+        
+        /* הכפתור הירוק (הלוגיסטיקה) */
+        .action-btn { 
+            width: 45px; height: 45px; background: #00a884; border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: 0.2s;
+        }
+        .action-btn:active { transform: scale(0.9); }
+
+        /* מודאל הזמנה */
+        .order-modal {
+            position: fixed; bottom: 0; left: 0; width: 100%; background: #111b21; 
+            border-top-left-radius: 20px; border-top-right-radius: 20px;
+            padding: 25px; box-shadow: 0 -5px 50px rgba(0,0,0,0.5); z-index: 1000;
+            transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .order-modal.open { transform: translateY(0); }
+        .modal-drag { width: 50px; height: 5px; background: #37404a; border-radius: 5px; margin: 0 auto 20px; }
+
+        .form-dark { background: #2a3942; border: 1px solid #37404a; color: white; padding: 12px; margin-bottom: 12px; }
+        .form-dark:focus { border-color: #00a884; outline: none; }
+        .btn-submit { background: #00a884; color: white; width: 100%; padding: 12px; font-weight: bold; border-radius: 8px; border: none; }
+
+        /* מסך כניסה */
+        #login-screen { position: fixed; inset: 0; background: #111b21; z-index: 2000; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 30px; text-align: center; }
+        .login-input { background: #2a3942; color: white; border: 1px solid #37404a; padding: 15px; border-radius: 10px; width: 100%; font-size: 1.2rem; text-align: center; letter-spacing: 5px; margin-bottom: 20px; }
+
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <img src="https://cdn-icons-png.flaticon.com/512/2675/2675860.png" width="80" class="mb-4">
+        <h3 class="text-white mb-2">ברוכים הבאים לח.סבן</h3>
+        <p class="text-secondary mb-4">נא להזדהות עם מספר עובד</p>
+        <input type="tel" id="login-id" class="login-input" placeholder="000000000">
+        <button class="btn-submit" onclick="manualLogin()">כניסה למערכת</button>
+        <div id="login-error" class="text-danger mt-3"></div>
+    </div>
+
+    <div id="app-container" style="display:none; height:100%;">
+        
+        <div class="app-header">
+            <div class="user-info">
+                <div style="position:relative;">
+                    <img id="my-avatar" src="" class="avatar">
+                    <div class="status-dot"></div>
+                </div>
+                <div>
+                    <div class="fw-bold" style="font-size:0.95rem;">ח.סבן - חמ"ל ראשי</div>
+                    <div class="text-secondary" style="font-size:0.75rem;" id="user-role-display">...</div>
+                </div>
+            </div>
+            <i class="material-icons text-secondary">more_vert</i>
+        </div>
+
+        <div class="chat-area" id="chat-feed">
+            </div>
+
+        <div class="input-bar">
+            <div class="action-btn" onclick="toggleOrderModal(true)">
+                <i class="material-icons text-white">add</i>
+            </div>
+            
+            <input type="text" class="input-field" id="msg-input" placeholder="הודעה..." onkeypress="if(event.key==='Enter') sendMsg()">
+            <i class="material-icons text-secondary" onclick="sendMsg()">send</i>
+        </div>
+    </div>
+
+    <div class="order-modal" id="order-modal">
+        <div class="modal-drag" onclick="toggleOrderModal(false)"></div>
+        <h4 class="text-white mb-3">📦 בקשה לסידור</h4>
+        
+        <select id="req-type" class="form-select form-dark" onchange="updateForm()">
+            <option value="client">הזמנה ללקוח</option>
+            <option value="transfer">העברה פנימית</option>
+        </select>
+
+        <input id="req-target" class="form-control form-dark" placeholder="שם הלקוח...">
+        
+        <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="req-ready" onchange="updateForm()">
+            <label class="form-check-label text-white" for="req-ready">סחורה מוכנה (חובה מס' אסמכתא)</label>
+        </div>
+
+        <input type="number" id="req-ref" class="form-control form-dark border-success" placeholder="מספר תעודה/העברה (חובה)" style="display:none;">
+
+        <select id="req-urgent" class="form-select form-dark">
+            <option value="false">אספקה רגילה (מחר)</option>
+            <option value="true">🔥 דחוף להיום!</option>
+        </select>
+
+        <button class="btn-submit" onclick="submitRequest()">שגר בקשה 🚀</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, doc, getDoc, onSnapshot, query, orderBy, limit } 
+        from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const db = getFirestore(initializeApp({ apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60", projectId: "app-saban94-57361", appId: "1:275366913167:web:f0c6f808e12f2aeb58fcfa" }));
+
+        // OneSignal
+        window.OneSignalDeferred = window.OneSignalDeferred || [];
+        OneSignalDeferred.push(function(OneSignal) {
+            OneSignal.init({ appId: "YOUR-ONESIGNAL-ID", safari_web_id: "web.onesignal.auto.xxx" });
+        });
+
+        let currentUser = null;
+
+        // --- 1. זיהוי משתמש (Magic Link Logic) ---
+        async function checkAuth() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const uid = urlParams.get('uid');
+
+            if (uid) {
+                // כניסה דרך לינק
+                await loadUser(uid);
+            } else {
+                // בדיקה אם שמור מקומית
+                const savedId = localStorage.getItem('saban_uid');
+                if (savedId) await loadUser(savedId);
+            }
+        }
+
+        window.manualLogin = async () => {
+            const id = document.getElementById('login-id').value;
+            if(id.length > 0) await loadUser(id);
+        };
+
+        async function loadUser(uid) {
+            try {
+                const docSnap = await getDoc(doc(db, "employees", uid));
+                if (docSnap.exists()) {
+                    currentUser = { id: uid, ...docSnap.data() };
+                    localStorage.setItem('saban_uid', uid);
+                    
+                    // כניסה לאפליקציה
+                    document.getElementById('login-screen').style.display = 'none';
+                    document.getElementById('app-container').style.display = 'flex'; // Flex is important for layout
+                    
+                    // עדכון ממשק
+                    document.getElementById('my-avatar').src = currentUser.avatar;
+                    document.getElementById('user-role-display').innerText = `${currentUser.name} | ${currentUser.role}`;
+                    
+                    // הרשמה להתראות
+                    OneSignalDeferred.push(function(OneSignal) { OneSignal.login(uid); });
+
+                    // טעינת צ'אט
+                    loadChat();
+                } else {
+                    document.getElementById('login-error').innerText = "משתמש לא נמצא. פנה למנהל.";
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        // --- 2. מנוע צ'אט ---
+        function loadChat() {
+            const q = query(collection(db, "chats"), orderBy("timestamp", "asc"), limit(50));
+            onSnapshot(q, (snap) => {
+                const feed = document.getElementById('chat-feed');
+                feed.innerHTML = ''; // ניקוי (אפשר לשפר ליעילות)
+                
+                snap.forEach(d => {
+                    const msg = d.data();
+                    const isMe = msg.senderId === currentUser.id;
+                    
+                    // זיהוי הודעות מערכת (הזמנות)
+                    let content = msg.text;
+                    if(msg.type === 'order') {
+                        content = `
+                            <div style="background:#004d40; padding:10px; border-radius:5px; margin-top:5px;">
+                                📦 <b>בקשה לסידור:</b><br>
+                                ${msg.details}
+                                <div style="font-size:0.8rem; margin-top:5px; color:#4db6ac;">סטטוס: נשלח</div>
+                            </div>
+                        `;
+                    }
+
+                    feed.innerHTML += `
+                        <div class="msg ${isMe ? 'msg-out' : 'msg-in'}">
+                            <span class="msg-sender">${msg.senderName}</span>
+                            ${content}
+                            <span class="msg-time">${new Date(msg.timestamp.toDate()).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>
+                        </div>
+                    `;
+                });
+                feed.scrollTop = feed.scrollHeight;
+            });
+        }
+
+        window.sendMsg = async () => {
+            const txt = document.getElementById('msg-input').value;
+            if(!txt) return;
+            
+            await addDoc(collection(db, "chats"), {
+                text: txt,
+                senderId: currentUser.id,
+                senderName: currentUser.name,
+                timestamp: new Date(),
+                type: 'text'
+            });
+            document.getElementById('msg-input').value = '';
+        };
+
+        // --- 3. לוגיקה לוגיסטית (CRM) ---
+        window.toggleOrderModal = (show) => {
+            const m = document.getElementById('order-modal');
+            show ? m.classList.add('open') : m.classList.remove('open');
+        };
+
+        window.updateForm = () => {
+            const type = document.getElementById('req-type').value;
+            const targetInput = document.getElementById('req-target');
+            
+            if(type === 'transfer') targetInput.placeholder = "לאיזה סניף להעביר?";
+            else targetInput.placeholder = "שם הלקוח...";
+
+            const isReady = document.getElementById('req-ready').checked;
+            document.getElementById('req-ref').style.display = isReady ? 'block' : 'none';
+        };
+
+        window.submitRequest = async () => {
+            const type = document.getElementById('req-type').value;
+            const target = document.getElementById('req-target').value;
+            const isReady = document.getElementById('req-ready').checked;
+            const ref = document.getElementById('req-ref').value;
+            const urgent = document.getElementById('req-urgent').value === 'true';
+
+            // ולידציה: אם מוכן, חייב מספר
+            if (isReady && !ref) return alert("חובה להזין מספר תעודה/העברה!");
+            if (!target) return alert("נא למלא יעד/לקוח");
+
+            // 1. הוספה לרשימת ההזמנות (users collection) בשביל המסך הגדול
+            await addDoc(collection(db, "users"), {
+                requesterName: currentUser.name,
+                name: type === 'client' ? target : `העברה ל${target}`,
+                deliveryType: type === 'client' ? 'משאית' : 'העברה פנימית',
+                status: isReady ? 1 : 0, // 1=פעיל, 0=טיוטה
+                orgId: ref || '---',
+                targetTime: urgent ? 'דחוף!' : '--:--',
+                lastUpdate: new Date()
+            });
+
+            // 2. הוספת תיעוד לצ'אט הקבוצתי
+            await addDoc(collection(db, "chats"), {
+                text: "בקשה חדשה",
+                senderId: currentUser.id,
+                senderName: currentUser.name,
+                timestamp: new Date(),
+                type: 'order',
+                details: `${type === 'client' ? 'הזמנה ל' : 'העברה ל'}${target} ${urgent ? '🔥' : ''}`
+            });
+
+            toggleOrderModal(false);
+            alert("הבקשה נשלחה לסידור!");
+        };
+
+        // התחלה
+        checkAuth();
+
+    </script>
+</body>
+</html>
