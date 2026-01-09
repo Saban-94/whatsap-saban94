@@ -2,18 +2,27 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ח.סבן - דשבורד חכם עם תכנון עתידי</title>
+    <meta name="viewport" content="width=1920, height=1080, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    
+    <title>ח.סבן - דשבורד חכם (Samsung Optimized)</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     
     <style>
-        /* --- בסיס --- */
-        body { margin: 0; background: #e0e0e0; font-family: 'Rubik', sans-serif; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
+        /* --- אופטימיזציה לטלוויזיה (GPU Acceleration) --- */
+        * { box-sizing: border-box; }
+        body { 
+            margin: 0; background: #121212; font-family: 'Rubik', sans-serif; 
+            overflow: hidden; display: flex; flex-direction: column; height: 100vh;
+            /* שימוש בכרטיס מסך לרינדור */
+            transform: translateZ(0); -webkit-font-smoothing: antialiased;
+        }
 
-        /* --- 1. בר עליון --- */
+        /* --- בר עליון --- */
         .top-bar {
             height: 90px; padding: 10px 25px;
             background: linear-gradient(135deg, #1e1e1e 0%, #2c3e50 100%);
@@ -23,127 +32,140 @@
         .metric-card {
             background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
             color: white; display: flex; flex-direction: column; justify-content: center; align-items: center;
-            position: relative; overflow: hidden; backdrop-filter: blur(5px);
+            backdrop-filter: blur(5px); position: relative; overflow: hidden;
         }
-        .m-val { font-size: 2.2rem; font-weight: 900; line-height: 1; }
-        .m-sub { font-size: 0.8rem; opacity: 0.8; margin-top: 5px; }
+        .m-val { font-size: 2.2rem; font-weight: 900; line-height: 1; text-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        .m-sub { font-size: 0.8rem; opacity: 0.8; margin-top: 5px; letter-spacing: 1px; }
         .border-bot { position: absolute; bottom: 0; left: 0; width: 100%; height: 4px; }
         .c-1 { background: #fbc02d; } .c-2 { background: #00e676; } .c-3 { background: #29b6f6; } .c-4 { background: #ff3b30; }
 
-        /* --- 2. אזור ראשי --- */
+        /* --- מפה --- */
         .main-stage { flex: 1; position: relative; overflow: hidden; }
-        #map { width: 100%; height: 100%; }
+        #map { width: 100%; height: 100%; background: #222; }
 
-        /* סרגל צד שמאל (היום + סופקו) */
+        /* --- פאנלים מזכוכית (Glass) --- */
+        .glass-panel {
+            background: rgba(15, 20, 25, 0.92); color: white; border-radius: 12px; overflow: hidden; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.08); 
+            display: flex; flex-direction: column;
+            will-change: transform; /* רמז לטלוויזיה לא לרנדר מחדש כל הזמן */
+        }
+        .ph-title { padding: 12px; background: rgba(255,255,255,0.05); font-weight: 700; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .scroll-area { flex: 1; overflow-y: hidden; padding: 10px; } /* הסתרת גלילה בטלוויזיה */
+
         .sidebar-left {
             position: absolute; top: 20px; left: 20px; bottom: 20px; width: 360px;
-            display: flex; flex-direction: column; gap: 20px; z-index: 500; pointer-events: none;
+            display: flex; flex-direction: column; gap: 20px; z-index: 500;
         }
+        .panel-active { flex: 2; } 
+        .panel-done { flex: 1; }
 
-        /* סרגל צד ימין (עתידי) - החדש! */
         .sidebar-right {
-            position: absolute; top: 20px; right: 20px; bottom: 100px; width: 300px;
-            display: flex; flex-direction: column; z-index: 500; pointer-events: none;
+            position: absolute; top: 20px; right: 20px; bottom: 70px; width: 350px;
+            display: flex; flex-direction: column; gap: 20px; z-index: 500;
         }
+        /* פאנל עתיד תופס את כל הגובה ליציבות מקסימלית */
+        .panel-future { flex: 1; background: rgba(10, 30, 40, 0.95); } 
 
-        .glass-panel {
-            background: rgba(20, 20, 20, 0.95); color: white; border-radius: 12px; overflow: hidden; pointer-events: auto;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column;
-        }
-        .panel-active { flex: 2; } .panel-done { flex: 1; } .panel-future { flex: 1; background: rgba(10, 30, 40, 0.95); }
-
-        .ph-title { padding: 12px; background: rgba(255,255,255,0.05); font-weight: 700; display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .scroll-area { flex: 1; overflow-y: auto; padding: 10px; }
-
-        /* כרטיס הזמנה במטבח (היום) */
+        /* כרטיסי משימות */
         .kitchen-card {
             background: #2a2a2a; border-radius: 6px; padding: 10px; margin-bottom: 8px;
-            border-left: 4px solid #555; position: relative; transition: transform 0.3s;
+            border-left: 4px solid #555; position: relative; transition: transform 0.3s; color: white;
         }
-        .highlight-card { transform: scale(1.02); box-shadow: 0 0 15px rgba(255,255,255,0.1); border: 1px solid white; }
-        .st-green { border-left-color: #00e676; } .st-yellow { border-left-color: #fbc02d; } .st-red { border-left-color: #ff3b30; animation: flash 1s infinite; }
-        @keyframes flash { 50% { background: #3a1c1c; } }
-
+        .highlight-card { 
+            transform: scale(1.05); box-shadow: 0 0 20px rgba(0,230,118,0.4); border: 2px solid white; z-index: 10;
+        }
+        .st-green { border-left-color: #00e676; } .st-yellow { border-left-color: #fbc02d; } .st-red { border-left-color: #ff3b30; }
+        
         .kc-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-        .kc-name { font-weight: bold; font-size: 1rem; color: white; }
-        .kc-meta { font-size: 0.8rem; color: #aaa; }
+        .kc-name { font-weight: bold; font-size: 1.1rem; }
+        .kc-meta { font-size: 0.85rem; color: #aaa; }
         .kc-timer { font-family: monospace; font-weight: 900; font-size: 1.2rem; color: #00e676; }
 
-        /* כרטיס עתידי (צד ימין) */
-        .future-card {
-            background: #263238; border-radius: 6px; padding: 10px; margin-bottom: 8px;
-            border-right: 4px solid #78909c; opacity: 0.8;
-        }
-        .future-tomorrow { /* מחר - מובלט */
-            border-right-color: #00bcd4; background: #37474f; opacity: 1;
-            box-shadow: 0 2px 8px rgba(0,188,212,0.2);
-        }
-        .fc-date { font-weight: bold; color: #90a4ae; font-size: 0.85rem; }
-        .future-tomorrow .fc-date { color: #00bcd4; } /* צבע טורקיז למחר */
-        
-        /* --- 3. פס חדשות --- */
-        .news-ticker {
-            height: 50px; background: #0078d4; color: white; display: flex; align-items: center;
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.3); z-index: 2000; position: relative;
-        }
-        .ticker-label { background: #005a9e; height: 100%; display: flex; align-items: center; padding: 0 20px; font-weight: 900; z-index: 2; }
-        .ticker-content { position: absolute; line-height: 50px; font-size: 1.3rem; font-weight: 500; white-space: nowrap; animation: move 20s linear infinite; padding-left: 100%; }
-        @keyframes move { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
-        .theme-alert { background: #d32f2f !important; } .theme-success { background: #2e7d32 !important; }
+        .future-card { background: #263238; border-radius: 6px; padding: 10px; margin-bottom: 8px; border-right: 4px solid #78909c; opacity: 0.9; color: #ccc; }
+        .future-tomorrow { border-right-color: #00bcd4; background: #37474f; opacity: 1; color: white; }
+        .fc-date { font-weight: bold; color: #00bcd4; font-size: 0.9rem; }
 
-        /* --- 4. הסיכה --- */
-        .pin-container { position: relative; display: flex; justify-content: center; align-items: center; }
-        
+        /* --- סיכות מפה (נחש) --- */
+        .pin-container { position: relative; display: flex; justify-content: center; align-items: center; will-change: transform; }
         .info-bubble {
-            position: absolute; bottom: 65px;
-            background: #1e1e1e; color: white; border-radius: 8px;
-            min-width: 160px; text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 100;
-            padding: 8px;
+            position: absolute; bottom: 65px; background: #1e1e1e; color: white; border-radius: 8px;
+            min-width: 180px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 100; padding: 10px;
         }
-        .info-bubble::after {
-            content: ''; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%);
-            border-width: 8px 8px 0; border-style: solid; border-color: #1e1e1e transparent transparent transparent;
-        }
-
+        .info-bubble::after { content: ''; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); border-width: 8px 8px 0; border-style: solid; border-color: #1e1e1e transparent transparent transparent; }
         .snake-border {
-            position: absolute; inset: -2px; border-radius: 10px;
+            position: absolute; inset: -3px; border-radius: 12px;
             background: conic-gradient(from 0deg, transparent, #00e676, transparent 30%);
             animation: rotate 2s linear infinite; z-index: -1;
         }
         .snake-inner { position: absolute; inset: 2px; background: #1e1e1e; border-radius: 8px; z-index: 0; }
         @keyframes rotate { 100% { transform: rotate(360deg); } }
-
         .bubble-content { position: relative; z-index: 1; }
         .row-top { font-size: 0.8rem; color: #00e676; border-bottom: 1px solid #333; padding-bottom: 2px; margin-bottom: 2px; display: flex; justify-content: space-between; }
-        .row-main { font-weight: bold; font-size: 1rem; margin-bottom: 2px; line-height: 1.1; }
-        .row-sub { font-size: 0.8rem; color: #bbb; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .row-main { font-weight: bold; font-size: 1.1rem; margin-bottom: 2px; line-height: 1.1; }
+        .row-sub { font-size: 0.9rem; color: #bbb; }
         
-        .mode-info { display: block; }
-        .mode-timer { display: none; font-family: monospace; font-size: 1.5rem; color: #fbc02d; font-weight: bold; }
-        .show-timer .mode-info { display: none; }
-        .show-timer .mode-timer { display: block; }
-
+        .mode-info { display: block; } .mode-timer { display: none; font-family: monospace; font-size: 1.5rem; color: #fbc02d; font-weight: bold; }
+        .show-timer .mode-info { display: none; } .show-timer .mode-timer { display: block; }
         .urgent .snake-border { background: conic-gradient(from 0deg, transparent, #ff3b30, transparent 30%); }
         
         .map-icon {
-            width: 48px; height: 48px; background: white; border-radius: 50%;
+            width: 50px; height: 50px; background: white; border-radius: 50%;
             background-size: 70%; background-repeat: no-repeat; background-position: center;
             border: 3px solid white; box-shadow: 0 5px 15px rgba(0,0,0,0.4); z-index: 50; transition: transform 0.5s;
         }
-        .pin-highlight .map-icon { transform: scale(1.3); box-shadow: 0 0 30px #00e676; border-color: #00e676; }
-
+        .pin-highlight .map-icon { transform: scale(1.4); box-shadow: 0 0 40px #00e676; border-color: #00e676; }
         .ic-crane { background-image: url('https://cdn-icons-png.flaticon.com/512/2675/2675860.png'); border-color: #fbc02d; }
         .ic-truck { background-image: url('https://cdn-icons-png.flaticon.com/512/9420/9420542.png'); border-color: #2196f3; }
         .ic-cont { background-image: url('https://cdn-icons-png.flaticon.com/512/9630/9630364.png'); border-color: #ff9800; }
+
+        /* --- POSTER ENGINE (Popup) --- */
+        .mega-popup-overlay { 
+            position: absolute; inset: 0; z-index: 9999; background: rgba(0,0,0,0.9); 
+            display: none; justify-content: center; align-items: center; backdrop-filter: blur(10px);
+        }
+        .popup-card { 
+            background: #1e1e1e; color: white; border-radius: 20px; box-shadow: 0 30px 90px rgba(0,0,0,1); 
+            overflow: hidden; position: relative; max-width: 900px; width: 90%; 
+            animation: zoomIn 0.5s; display: flex; flex-direction: column; 
+            border: 1px solid #333;
+        }
+        .popup-poster-mode { flex-direction: row; text-align: right; height: 500px; }
+        .pop-image-side { flex: 1; background-size: cover; background-position: center; position: relative; border-right: 5px solid; }
+        .pop-content-side { flex: 1; padding: 40px; display: flex; flex-direction: column; justify-content: center; }
+        .theme-gold .pop-image-side { border-color: #ffd700; } .theme-gold .pop-title { color: #ffd700; text-shadow: 0 2px 10px rgba(255,215,0,0.3); }
+        .theme-neon .pop-image-side { border-color: #00e676; } .theme-neon .pop-title { color: #00e676; text-shadow: 0 0 20px rgba(0,230,118,0.5); }
+        .theme-alert .pop-image-side { border-color: #ff3b30; } .theme-alert .pop-title { color: #ff3b30; text-transform: uppercase; letter-spacing: 3px; }
+        .pop-icon { font-size: 70px; margin-bottom: 20px; }
+        .pop-title { font-size: 3.5rem; font-weight: 900; margin-bottom: 20px; line-height: 1; }
+        .pop-body { font-size: 1.8rem; color: #e0e0e0; line-height: 1.5; font-weight: 300; }
+        @keyframes zoomIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* --- TICKER --- */
+        .news-ticker { height: 60px; background: #0078d4; color: white; display: flex; align-items: center; box-shadow: 0 -5px 20px rgba(0,0,0,0.3); z-index: 2000; position: relative; }
+        .ticker-label { background: #005a9e; height: 100%; display: flex; align-items: center; padding: 0 30px; font-weight: 900; z-index: 2; font-size: 1.2rem; }
+        .ticker-content { position: absolute; line-height: 60px; font-size: 1.5rem; font-weight: 500; white-space: nowrap; animation: move 25s linear infinite; padding-left: 100%; }
+        @keyframes move { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
+        .theme-alert { background: #d32f2f !important; } .theme-success { background: #2e7d32 !important; }
+
+        /* אינדיקטור חיבור רשת */
+        #net-status {
+            position: absolute; top: 15px; left: 15px; width: 15px; height: 15px; border-radius: 50%;
+            z-index: 2000; box-shadow: 0 0 10px black; transition: 0.5s;
+        }
+        .online { background: #00e676; box-shadow: 0 0 15px #00e676; }
+        .offline { background: #ff3b30; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0.3; } }
 
     </style>
 </head>
 <body>
 
+    <div id="net-status" class="online"></div>
+
     <div class="top-bar">
-        <div class="metric-card"><span class="m-val" id="val-hist">0</span><span class="m-sub">היסטוריה</span><div class="border-bot c-1"></div></div>
-        <div class="metric-card"><span class="m-val" id="val-next" style="color:#29b6f6">--:--</span><span class="m-sub">הזמנה קרובה</span><div class="border-bot c-3"></div></div>
+        <div class="metric-card"><span class="m-val" id="val-hist">0</span><span class="m-sub">ארכיון</span><div class="border-bot c-1"></div></div>
+        <div class="metric-card"><span class="m-val" id="val-next" style="color:#29b6f6">--:--</span><span class="m-sub">משימה הבאה</span><div class="border-bot c-3"></div></div>
         <div class="metric-card"><span class="m-val" id="val-clock">00:00</span><span class="m-sub">שעון</span><div class="border-bot c-2"></div></div>
         <div class="metric-card"><span class="m-val" id="val-active">0</span><span class="m-sub">פעילים היום</span><div class="border-bot c-4"></div></div>
     </div>
@@ -170,214 +192,207 @@
         </div>
     </div>
 
+    <div id="mega-popup" class="mega-popup-overlay">
+        <div class="popup-card" id="popup-inner"></div>
+    </div>
+
     <div class="news-ticker" id="ticker-bar">
         <div class="ticker-label"><i class="material-icons">campaign</i>&nbsp;<span id="news-title">עדכונים</span></div>
         <div class="ticker-content-wrapper" style="flex:1; position:relative; overflow:hidden;">
-            <div class="ticker-content" id="news-text">מערכת ח.סבן לוגיסטיקה</div>
+            <div class="ticker-content" id="news-text">מערכת ח.סבן בטעינה...</div>
         </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, query, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, query, doc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        const firebaseConfig = { apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60", projectId: "app-saban94-57361", appId: "1:275366913167:web:f0c6f808e12f2aeb58fcfa" };
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+        // 1. הגדרות Firebase
+        const db = getFirestore(initializeApp({ apiKey: "AIzaSyBGYsZylsIyeWudp8_SlnLBelkgoNXjU60", projectId: "app-saban94-57361", appId: "1:275366913167:web:f0c6f808e12f2aeb58fcfa" }));
 
-        const map = L.map('map', { zoomControl: false }).setView([32.3215, 34.8532], 12);
+        // 2. אופטימיזציה לטלוויזיה: שמירה מקומית למניעת טעינה מחדש של נתונים אם הרשת נופלת
+        try { enableIndexedDbPersistence(db).catch((err) => console.log("Persistence error", err)); } catch(e){}
+
+        // 3. אתחול מפה
+        const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([32.3215, 34.8532], 12);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
         const markersLayer = L.layerGroup().addTo(map);
         const geoCache = {};
 
-        // משתנים למצב טיסה
+        // משתנים גלובליים
         let activeLocations = []; 
-        let currentFlyIndex = 0;
-        let isUserInteracting = false;
+        let currentFlyIndex = 0; 
 
+        // 4. Samsung Stabilizer (מנגנון ייצוב לטלוויזיה)
+        // רענון מלא של הדפדפן כל שעה עגולה כדי לנקות זיכרון RAM
+        setInterval(() => {
+            console.log("Samsung Stabilizer: Performing hourly maintenance reload...");
+            window.location.reload();
+        }, 3600000); // 3,600,000 מילישניות = שעה
+
+        // ניטור רשת
+        window.addEventListener('offline', () => document.getElementById('net-status').className = 'offline');
+        window.addEventListener('online', () => {
+            document.getElementById('net-status').className = 'online';
+            // אם חזרנו מאופליין, נרענן נתונים
+            setTimeout(() => window.location.reload(), 2000); 
+        });
+
+        // פונקציות עזר
         async function getCoords(address) {
             if(!address) return null;
             if(geoCache[address]) return geoCache[address];
             try{
-                // הוספת Random Jitter מזערי למניעת חפיפה מוחלטת
-                const jitterLat = (Math.random() - 0.5) * 0.0002;
-                const jitterLon = (Math.random() - 0.5) * 0.0002;
-                
+                // הוספת Jitter קטן כדי שסיכות באותה כתובת לא יסתירו אחת את השנייה
+                const jitter = (Math.random()-0.5)*0.0003;
                 const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address+', Israel')}&limit=1`);
                 const data = await res.json();
                 if(data.length){ 
-                    const c = {lat:parseFloat(data[0].lat) + jitterLat, lon:parseFloat(data[0].lon) + jitterLon}; 
-                    geoCache[address]=c; return c; 
+                    const c={lat:parseFloat(data[0].lat)+jitter, lon:parseFloat(data[0].lon)+jitter}; 
+                    geoCache[address]=c; 
+                    return c; 
                 }
             }catch(e){} return null;
         }
 
-        function getIconClass(type) {
-            if(!type) return 'ic-truck';
-            if(type.includes('מנוף')) return 'ic-crane';
-            if(type.includes('מכולה')) return 'ic-cont';
-            return 'ic-truck';
-        }
+        function getIconClass(t) { if(!t)return 'ic-truck'; if(t.includes('מנוף'))return 'ic-crane'; if(t.includes('מכולה'))return 'ic-cont'; return 'ic-truck'; }
+        function getSec(t) { if(!t) return 99999; const now=new Date(); const [h,m]=t.split(':'); const d=new Date(); d.setHours(h,m,0); return Math.floor((d-now)/1000); }
+        function fmt(s) { const h=Math.floor(Math.abs(s)/3600), m=Math.floor((Math.abs(s)%3600)/60), sc=Math.abs(s)%60; return `${s<0?'-':''}${h<10?'0'+h:h}:${m<10?'0'+m:m}:${sc<10?'0'+sc:sc}`; }
 
-        function getSec(time) { if(!time) return 99999; const now=new Date(); const [h,m]=time.split(':'); const t=new Date(); t.setHours(h,m,0); return Math.floor((t-now)/1000); }
-        function fmt(s) { const h=Math.floor(Math.abs(s)/3600), m=Math.floor((Math.abs(s)%3600)/60), sec=Math.abs(s)%60; return `${s<0?'-':''}${h<10?'0'+h:h}:${m<10?'0'+m:m}:${sec<10?'0'+sec:sec}`; }
-
-        const q = query(collection(db, "users"));
-        onSnapshot(q, async (snap) => {
+        // 5. המוח המרכזי (האזנה לנתונים)
+        onSnapshot(query(collection(db, "users")), async (snap) => {
+            // ניקוי לוח כדי למנוע כפילויות
             markersLayer.clearLayers();
-            document.getElementById('list-active').innerHTML = '';
-            document.getElementById('list-done').innerHTML = '';
-            document.getElementById('list-future').innerHTML = '';
+            document.getElementById('list-active').innerHTML=''; 
+            document.getElementById('list-done').innerHTML=''; 
+            document.getElementById('list-future').innerHTML='';
             
             let act=0, don=0, fut=0, minS=99999;
-            activeLocations = []; 
-
-            // תאריכים להשוואה
-            const todayStr = new Date().toISOString().split('T')[0];
-            const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-            const tomorrowStr = tomorrow.toISOString().split('T')[0];
-
-            // מערכים למיון
-            let todayOrders = [];
-            let futureOrders = [];
+            activeLocations=[]; 
+            const today = new Date().toISOString().split('T')[0];
+            const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate()+1);
+            const tmrStr = tomorrow.toISOString().split('T')[0];
+            let todayOrders=[]; let futureOrders=[];
 
             snap.docs.forEach(docSnap => {
-                const d = docSnap.data();
-                d.id = docSnap.id;
+                const d = docSnap.data(); d.id=docSnap.id;
+                // סטטוס 4 = בוצע, סטטוס 0 = טיוטה (לא מציגים), סטטוס 1 = פעיל
+                if(d.status === 0) return; // מתעלמים מטיוטות
                 
-                // 1. סופקו
                 if(d.status === 4) {
                     don++;
-                    document.getElementById('list-done').innerHTML += `<div style="border-bottom:1px solid #333; padding:5px; display:flex; justify-content:space-between;"><span>${d.name}</span><span>${d.deliveryType}</span></div>`;
-                    return;
-                }
-
-                // בדיקת תאריך (היום או עתיד)
-                const orderDate = d.targetDate || todayStr;
-                
-                if (orderDate > todayStr) {
-                    futureOrders.push(d); // לרשימת עתיד
+                    document.getElementById('list-done').innerHTML += `<div style="border-bottom:1px solid #444; padding:5px; display:flex; justify-content:space-between;"><span>${d.name}</span><span>${d.deliveryType}</span></div>`;
                 } else {
-                    todayOrders.push(d); // לרשימה פעילה (היום)
+                    const oDate = d.targetDate || today;
+                    if(oDate > today) futureOrders.push(d); else todayOrders.push(d);
                 }
             });
 
-            // --- טיפול בהזמנות היום (מיון לפי דחיפות) ---
-            todayOrders.sort((a,b) => getSec(a.targetTime) - getSec(b.targetTime));
-
-            for (const d of todayOrders) {
+            // מיון ורינדור היום
+            todayOrders.sort((a,b)=>getSec(a.targetTime)-getSec(b.targetTime));
+            for(const d of todayOrders) {
                 act++;
-                const oid = d.orgId || '---'; 
-                const driver = d.driverName || 'ללא נהג';
                 const sec = getSec(d.targetTime);
-                if(sec < minS) minS = sec; // הכי קרוב
+                if(sec<minS) minS=sec;
+                let st='st-green'; if(sec<1800)st='st-yellow'; if(sec<0)st='st-red';
+                const oid=d.orgId||'--'; const drv=d.driverName||'ללא נהג';
 
-                let st='st-green'; if(sec<1800) st='st-yellow'; if(sec<0) st='st-red';
-
-                // רשימה שמאלית (מטבח)
-                const cardId = `card-${d.id}`;
+                // כרטיס צד
                 document.getElementById('list-active').innerHTML += `
-                    <div class="kitchen-card ${st}" id="${cardId}">
+                    <div class="kitchen-card ${st}" id="card-${d.id}">
                         <div class="kc-row"><span>#${oid}</span><span>${d.targetTime}</span></div>
-                        <div class="kc-row"><div><div class="kc-name">${d.name}</div><div class="kc-meta">${d.deliveryType}</div><div class="kc-driver">${driver}</div></div>
+                        <div class="kc-row"><div><div class="kc-name">${d.name}</div><div class="kc-meta">${d.deliveryType} | ${drv}</div></div>
                         <div class="kc-timer" data-s="${sec}">${fmt(sec)}</div></div>
                     </div>`;
 
-                // מפה (רק להזמנות של היום!)
+                // סיכה על המפה
                 if(d.address) {
                     const c = await getCoords(d.address);
                     if(c) {
-                        activeLocations.push({lat:c.lat, lon:c.lon, id:d.id}); // לטיסה
-                        const ic = getIconClass(d.deliveryType);
-                        const urg = sec<1800?'urgent':'';
-                        
-                        const html = `
-                            <div class="pin-container ${urg}" id="pin-${d.id}">
-                                <div class="info-bubble">
-                                    <div class="snake-border"></div>
-                                    <div class="snake-inner"></div>
-                                    <div class="bubble-content mode-info">
-                                        <div class="row-top"><span>#${oid}</span><span>${d.targetTime}</span></div>
-                                        <div class="row-main">${d.name}</div>
-                                        <div class="row-sub"><i class="material-icons" style="font-size:12px">person</i> ${driver}</div>
-                                        <div class="row-sub" style="font-size:0.7rem; color:#888;">${d.address.split(',')[0]}</div>
-                                    </div>
-                                    <div class="bubble-content mode-timer" data-s="${sec}">${fmt(sec)}</div>
-                                </div>
-                                <div class="map-icon ${ic}"></div>
-                            </div>`;
-                        L.marker([c.lat,c.lon], {icon: L.divIcon({className:'c', html:html, iconSize:[48,48], iconAnchor:[24,24]})}).addTo(markersLayer);
+                        activeLocations.push({lat:c.lat, lon:c.lon, id:d.id});
+                        const ic=getIconClass(d.deliveryType);
+                        const urg=sec<1800?'urgent':'';
+                        const html = `<div class="pin-container ${urg}" id="pin-${d.id}"><div class="info-bubble"><div class="snake-border"></div><div class="snake-inner"></div><div class="bubble-content mode-info"><div class="row-top"><span>#${oid}</span><span>${d.targetTime}</span></div><div class="row-main">${d.name}</div><div class="row-sub">${drv}</div><div class="row-sub" style="font-size:0.8rem; color:#bbb;">${d.address.split(',')[0]}</div></div><div class="bubble-content mode-timer" data-s="${sec}">${fmt(sec)}</div></div><div class="map-icon ${ic}"></div></div>`;
+                        L.marker([c.lat,c.lon], {icon:L.divIcon({className:'c', html:html, iconSize:[48,48], iconAnchor:[24,24]})}).addTo(markersLayer);
                     }
                 }
             }
 
-            // --- טיפול בהזמנות עתידיות (מיון לפי תאריך) ---
-            futureOrders.sort((a,b) => (a.targetDate + a.targetTime).localeCompare(b.targetDate + b.targetTime));
-
-            for (const d of futureOrders) {
+            // רינדור עתיד
+            futureOrders.sort((a,b)=>a.targetDate.localeCompare(b.targetDate));
+            futureOrders.forEach(d => {
                 fut++;
-                const isTomorrow = d.targetDate === tomorrowStr;
-                const tmClass = isTomorrow ? 'future-tomorrow' : '';
-                const dateDisplay = isTomorrow ? 'מחר!' : d.targetDate.split('-').reverse().join('/'); // פורמט יפה
-
-                document.getElementById('list-future').innerHTML += `
-                    <div class="future-card ${tmClass}">
-                        <div class="kc-row"><span class="fc-date">${dateDisplay}</span><span>${d.targetTime}</span></div>
-                        <div class="kc-name" style="font-size:0.9rem;">${d.name}</div>
-                        <div class="kc-meta">${d.deliveryType}</div>
-                    </div>`;
-            }
+                const isTmr = d.targetDate === tmrStr;
+                const cls = isTmr ? 'future-tomorrow' : '';
+                const dateTxt = isTmr ? 'מחר!' : d.targetDate.split('-').reverse().join('/');
+                document.getElementById('list-future').innerHTML += `<div class="future-card ${cls}"><div class="kc-row"><span class="fc-date">${dateTxt}</span><span>${d.targetTime}</span></div><div class="kc-name" style="font-size:1rem">${d.name}</div><div class="kc-meta">${d.deliveryType}</div></div>`;
+            });
 
             // עדכון מונים
-            document.getElementById('val-active').innerText = act; document.getElementById('cnt-active').innerText = act;
-            document.getElementById('val-hist').innerText = don; document.getElementById('cnt-done').innerText = don;
-            document.getElementById('cnt-future').innerText = fut;
-            
-            if(minS!==99999) { const n=new Date(); n.setSeconds(n.getSeconds()+minS); document.getElementById('val-next').innerText = n.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
-            else { document.getElementById('val-next').innerText = "--:--"; }
+            document.getElementById('val-active').innerText=act; document.getElementById('cnt-active').innerText=act;
+            document.getElementById('val-hist').innerText=don; document.getElementById('cnt-done').innerText=don;
+            document.getElementById('cnt-future').innerText=fut;
+            if(minS!==99999){ const n=new Date(); n.setSeconds(n.getSeconds()+minS); document.getElementById('val-next').innerText=n.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
         });
 
-        // חדשות
-        onSnapshot(doc(db, "settings", "news"), (d) => {
-            if(d.exists()){
-                const dat=d.data();
-                document.getElementById('news-text').innerText = dat.text;
-                document.getElementById('news-title').innerText = dat.title || 'עדכונים';
-                const bar=document.getElementById('ticker-bar'); bar.className='news-ticker';
-                if(dat.type==='alert') bar.classList.add('theme-alert');
-                if(dat.type==='success') bar.classList.add('theme-success');
+        // 6. האזנה לפופ-אפ (Poster Engine)
+        onSnapshot(doc(db, "settings", "popup"), (s)=>{
+            if(s.exists()){
+                const d=s.data(); const el=document.getElementById('mega-popup'); const c=document.getElementById('popup-inner');
+                if(d.active){
+                    const hasImage = d.imageUrl && d.imageUrl.length > 5;
+                    let html = '';
+                    if(hasImage) {
+                        c.className = `popup-card popup-poster-mode theme-${d.theme||'neon'}`;
+                        c.style.padding='0';
+                        html = `<div class="pop-image-side" style="background-image: url('${d.imageUrl}');"></div><div class="pop-content-side"><i class="material-icons pop-icon">${d.icon||'verified'}</i><div class="pop-title">${d.title}</div><div class="pop-body">${d.text}</div></div>`;
+                    } else {
+                        c.className = `popup-card theme-${d.theme||'neon'}`;
+                        c.style.padding='50px';
+                        html = `<i class="material-icons pop-icon" style="display:block;margin:0 auto 20px;">${d.icon||'verified'}</i><div class="pop-title">${d.title}</div><div class="pop-body">${d.text}</div>`;
+                    }
+                    c.innerHTML = html;
+                    el.style.display='flex';
+                } else el.style.display='none';
             }
         });
 
-        // מנוע הטיסה
-        setInterval(() => {
-            if(activeLocations.length === 0 || isUserInteracting) return;
-            const target = activeLocations[currentFlyIndex];
-            map.flyTo([target.lat, target.lon], 15, { animate: true, duration: 4 });
-            
-            document.querySelectorAll('.kitchen-card').forEach(el => el.classList.remove('highlight-card'));
-            document.querySelectorAll('.pin-container').forEach(el => el.classList.remove('pin-highlight'));
-            
-            const cardEl = document.getElementById(`card-${target.id}`);
-            if(cardEl) {
-                cardEl.classList.add('highlight-card');
-                cardEl.scrollIntoView({ behavior: "smooth", block: "center" });
+        // 7. האזנה לחדשות
+        onSnapshot(doc(db, "settings", "news"), (s)=>{
+            if(s.exists()){
+                const d=s.data();
+                document.getElementById('news-text').innerText = d.text || '...';
+                const b=document.getElementById('ticker-bar'); b.className='news-ticker';
+                if(d.type==='alert') b.classList.add('theme-alert');
+                if(d.type==='success') b.classList.add('theme-success');
             }
-            const pinEl = document.getElementById(`pin-${target.id}`); // אופציונלי להדגשת סיכה
-            if(pinEl) pinEl.classList.add('pin-highlight');
+        });
 
-            currentFlyIndex = (currentFlyIndex + 1) % activeLocations.length;
-        }, 10000);
+        // 8. מנוע טיסה (Cinematic Mode)
+        setInterval(()=>{
+            if(!activeLocations.length) return;
+            const t = activeLocations[currentFlyIndex];
+            map.flyTo([t.lat,t.lon], 15, {animate:true, duration:4});
+            
+            // הסרת הדגשות קודמות
+            document.querySelectorAll('.kitchen-card').forEach(e=>e.classList.remove('highlight-card'));
+            document.querySelectorAll('.pin-container').forEach(e=>e.classList.remove('pin-highlight'));
+            
+            // הוספת הדגשה חדשה
+            const c=document.getElementById('card-'+t.id); if(c){ c.classList.add('highlight-card'); c.scrollIntoView({behavior:"smooth",block:"center"}); }
+            const p=document.getElementById('pin-'+t.id); if(p) p.classList.add('pin-highlight');
+            
+            currentFlyIndex=(currentFlyIndex+1)%activeLocations.length;
+        }, 12000); // כל 12 שניות טיסה
 
-        map.on('mousedown touchstart', () => { isUserInteracting = true; setTimeout(() => isUserInteracting = false, 30000); });
-
-        setInterval(() => {
-            document.getElementById('val-clock').innerText = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-            const showTimer = (Math.floor(Date.now()/1000)%10)>5;
-            document.querySelectorAll('.info-bubble').forEach(el => showTimer ? el.classList.add('show-timer') : el.classList.remove('show-timer'));
-            document.querySelectorAll('.kc-timer, .mode-timer').forEach(el => { let s=parseInt(el.dataset.s)-1; el.dataset.s=s; el.innerText=fmt(s); });
-        }, 1000);
+        // 9. שעון וטיימרים
+        setInterval(()=>{
+            document.getElementById('val-clock').innerText=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+            const show=(Math.floor(Date.now()/1000)%10)>5;
+            document.querySelectorAll('.info-bubble').forEach(e=>show?e.classList.add('show-timer'):e.classList.remove('show-timer'));
+            document.querySelectorAll('.kc-timer, .mode-timer').forEach(e=>{let s=parseInt(e.dataset.s)-1; e.dataset.s=s; e.innerText=fmt(s);});
+        },1000);
     </script>
 </body>
 </html>
